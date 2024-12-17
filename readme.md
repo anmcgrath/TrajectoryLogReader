@@ -12,7 +12,7 @@ dotnet add package TrajectoryLogReader
 Load the log file:
 
 ```csharp
-TrajectoryLog log = TrajectoryLogReader.ReadBinary(filePath);
+TrajectoryLog log = LogReader.ReadBinary(filePath);
 ```
 
 There are some useful functions for interpolating data at various times. For example:

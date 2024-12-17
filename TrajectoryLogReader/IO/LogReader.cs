@@ -4,7 +4,7 @@ using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.IO
 {
-    public static class TrajectoryLogReader
+    public static class LogReader
     {
         /// <summary>
         /// Reads a binary (*.bin) trajectory log file (Varian).
