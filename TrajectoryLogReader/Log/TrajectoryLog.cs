@@ -84,7 +84,7 @@ namespace TrajectoryLogReader.Log
             InterpolateAxisData(axis, timeInMs, offset: recordType == RecordType.ActualPosition ? 1 : 0);
 
         /// <summary>
-        /// Returns the MLC position (in cm) at the specified time.
+        /// Returns the MLC position (in cm) at the specified time <paramref name="timeInMs"/>
         /// </summary>
         /// <param name="timeInMs">The time of the sample</param>
         /// <param name="bank">The bank position. Bank A = 0, Bank B = 1</param>
@@ -92,7 +92,7 @@ namespace TrajectoryLogReader.Log
         /// <param name="recordType"></param>
         /// <returns></returns>
         public float InterpolateMLCPosition(double timeInMs, int bank, int leafIndex, RecordType recordType)
-        { 
+        {
             var numLeaves = Header.GetNumberOfLeafPairs();
             var offset = (bank * numLeaves * 2 + leafIndex * 2) + (recordType == RecordType.ActualPosition ? 1 : 0) + 4;
             return InterpolateAxisData(Axis.MLC, timeInMs, offset);
@@ -100,7 +100,7 @@ namespace TrajectoryLogReader.Log
 
         /// <summary>
         /// Returns the time (in ms) at the control point index specified.
-        /// The control point index can be fractional, since the log samples the machine at a high rate.
+        /// The control point index <paramref name="fractionalCp"/> can be fractional, since the log samples the machine at a high rate.
         /// </summary>
         /// <param name="fractionalCp"></param>
         /// <returns></returns>
@@ -125,8 +125,14 @@ namespace TrajectoryLogReader.Log
 
             return -1;
         }
-        
-        private float[,] InterpolateMLCPositions(int timeInMs, RecordType recordType)
+
+        /// <summary>
+        /// Returns a 2D array of interpolated MLC positions (in cm) at time <paramref name="timeInMs"/> of the form mlc[bankIndex, leafIndex]
+        /// </summary>
+        /// <param name="timeInMs"></param>
+        /// <param name="recordType"></param>
+        /// <returns></returns>
+        public float[,] InterpolateMLCPositions(int timeInMs, RecordType recordType)
         {
             var numLeaves = Header.GetNumberOfLeafPairs();
             float[,] mlc = new float[2, numLeaves];
