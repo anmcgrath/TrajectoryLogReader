@@ -4,6 +4,13 @@ Reads Varian TrueBeam trajectory log files (*.bin). **This has only been tested 
 
 ## Usage
 
+Install from NuGet
+```commandline
+dotnet add package TrajectoryLogReader
+```
+
+Load the log file:
+
 ```csharp
 TrajectoryLog log = TrajectoryLogReader.ReadBinary(filePath);
 ```
