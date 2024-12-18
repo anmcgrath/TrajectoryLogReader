@@ -24,11 +24,11 @@ namespace TrajectoryLogReader.IO
         /// <summary>
         /// Reads a binary (*.bin) trajectory log file (Varian) from a file stream.
         /// </summary>
-        /// <param name="fs">The file stream</param>
+        /// <param name="stream">The file stream</param>
         /// <param name="mode">If set to HeaderAndMetaData, the reader does not read log data, only the header and metadata./></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public static TrajectoryLog ReadBinary(FileStream fs, LogReaderReadMode mode = LogReaderReadMode.All)
+        public static TrajectoryLog ReadBinary(Stream stream, LogReaderReadMode mode = LogReaderReadMode.All)
         {
             var utf8 = Encoding.UTF8;
 
@@ -39,9 +39,9 @@ namespace TrajectoryLogReader.IO
 
             var header = new Header();
 
-            using (fs)
+            using (stream)
             {
-                using (var br = new BinaryReader(fs, Encoding.UTF8, false))
+                using (var br = new BinaryReader(stream, Encoding.UTF8, false))
                 {
                     // first 16 bytes should be 'VOSTL'
                     var sig = utf8.GetString(br.ReadBytes(16));
