@@ -130,7 +130,7 @@ namespace TrajectoryLogReader.Log
                 {
                     var offset = (bank * numLeaves * 2 + leafIndex * 2) +
                                  (recordType == RecordType.ActualPosition ? 1 : 0) + 4;
-                    data[1 - bank, leafIndex] = GetAxisData(Axis.MLC, measIndex, leafIndex);
+                    data[1 - bank, leafIndex] = GetAxisData(Axis.MLC, measIndex, offset);
                 }
             }
 
