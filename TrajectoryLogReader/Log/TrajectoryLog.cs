@@ -39,6 +39,13 @@ namespace TrajectoryLogReader.Log
         /// </summary>
         public double TotalTimeInMs => Header.SamplingIntervalInMS * Header.NumberOfSnapshots;
 
+        public MeasurementDataCollection Snapshots { get; }
+
+        internal TrajectoryLog()
+        {
+            Snapshots = new MeasurementDataCollection(this);
+        }
+
         /// <summary>
         /// Interpolates axis data given a time in MS.
         /// </summary>
@@ -80,6 +87,15 @@ namespace TrajectoryLogReader.Log
             return (float)(v0 + (v1 - v0) * f);
         }
 
+        public float GetAxisData(Axis axis, int measIndex, RecordType recordType) =>
+            GetAxisData(axis, measIndex, offset: recordType == RecordType.ActualPosition ? 1 : 0);
+
+        public float GetAxisData(Axis axis, int measIndex, int offset)
+        {
+            var axisIndex = Header.GetAxisIndex(axis);
+            return AxisData[axisIndex].RawData[measIndex][offset];
+        }
+
         public float InterpolateAxisData(Axis axis, double timeInMs, RecordType recordType) =>
             InterpolateAxisData(axis, timeInMs, offset: recordType == RecordType.ActualPosition ? 1 : 0);
 
@@ -96,6 +112,29 @@ namespace TrajectoryLogReader.Log
             var numLeaves = Header.GetNumberOfLeafPairs();
             var offset = (bank * numLeaves * 2 + leafIndex * 2) + (recordType == RecordType.ActualPosition ? 1 : 0) + 4;
             return InterpolateAxisData(Axis.MLC, timeInMs, offset);
+        }
+
+        /// <summary>
+        /// Returns the MLC position (in cm) at the specified time <paramref name="timeInMs"/>
+        /// </summary>
+        /// <param name="measIndex">The measurement index 0.. number of data points - 1</param>
+        /// <param name="recordType"></param>
+        /// <returns></returns>
+        internal float[,] GetMlcPositions(int measIndex, RecordType recordType)
+        {
+            var numLeaves = Header.GetNumberOfLeafPairs();
+            var data = new float[2, numLeaves];
+            for (int bank = 0; bank < 2; bank++)
+            {
+                for (int leafIndex = 0; leafIndex < numLeaves; leafIndex++)
+                {
+                    var offset = (bank * numLeaves * 2 + leafIndex * 2) +
+                                 (recordType == RecordType.ActualPosition ? 1 : 0) + 4;
+                    data[1 - bank, leafIndex] = GetAxisData(Axis.MLC, measIndex, leafIndex);
+                }
+            }
+
+            return data;
         }
 
         /// <summary>
