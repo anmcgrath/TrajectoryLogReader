@@ -90,7 +90,7 @@ namespace TrajectoryLogReader.IO
                         subBeam.MU = br.ReadSingle();
                         subBeam.RadTime = br.ReadSingle();
                         subBeam.SequenceNumber = br.ReadInt32();
-                        subBeam.Name = utf8.GetString(br.ReadBytes(512));
+                        subBeam.Name = utf8.GetString(br.ReadBytes(512)).Trim().Trim(new[] { '\t', '\0' });
                         br.ReadBytes(32);
                         log.SubBeams.Add(subBeam);
                     }
