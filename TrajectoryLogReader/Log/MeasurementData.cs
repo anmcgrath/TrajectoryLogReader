@@ -86,7 +86,7 @@ public class MeasurementData
         get
         {
             _couchVrt ??= new(_log, Axis.CouchVrt, _measIndex);
-            return _x2;
+            return (_couchVrt);
         }
     }
 
