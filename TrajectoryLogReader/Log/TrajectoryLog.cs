@@ -39,11 +39,20 @@ namespace TrajectoryLogReader.Log
         /// </summary>
         public double TotalTimeInMs => Header.SamplingIntervalInMS * Header.NumberOfSnapshots;
 
-        public MeasurementDataCollection Snapshots { get; }
+        private MeasurementDataCollection _snapshots;
+
+        public MeasurementDataCollection Snapshots
+        {
+            get
+            {
+                if (_snapshots == null)
+                    _snapshots = new MeasurementDataCollection(this, 0, Header.NumberOfSnapshots);
+                return _snapshots;
+            }
+        }
 
         internal TrajectoryLog()
         {
-            Snapshots = new MeasurementDataCollection(this);
         }
 
         /// <summary>

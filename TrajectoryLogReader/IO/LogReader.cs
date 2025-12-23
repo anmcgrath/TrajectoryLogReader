@@ -85,7 +85,7 @@ namespace TrajectoryLogReader.IO
 
                     for (int i = 0; i < header.NumberOfSubBeams; i++)
                     {
-                        var subBeam = new SubBeam();
+                        var subBeam = new SubBeam(log);
                         subBeam.ControlPoint = br.ReadInt32();
                         subBeam.MU = br.ReadSingle();
                         subBeam.RadTime = br.ReadSingle();
