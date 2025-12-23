@@ -20,6 +20,16 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
         return new MeasurementDataEnumerator(_log, _startIndex, _endIndex);
     }
 
+    public MeasurementData Last()
+    {
+        return new MeasurementData(_endIndex, _log);
+    }
+
+    public MeasurementData First()
+    {
+        return new MeasurementData(_startIndex, _log);
+    }
+
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();

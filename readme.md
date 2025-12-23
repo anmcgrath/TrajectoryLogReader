@@ -15,6 +15,33 @@ Load the log file:
 TrajectoryLog log = LogReader.ReadBinary(filePath);
 ```
 
+### Reading snapshots
+Reading all snapshots can be done via:
+
+```csharp
+foreach (var snapshot in log.Snapshots)
+{
+    Console.WriteLine(snapshot.X1.Actual);
+    Console.WriteLine(snapshot.X1.Expected);
+}
+```
+
+The same can be performed for sub-beams:
+
+```csharp
+foreach (var sub in log.SubBeams)
+{
+    foreach (var snapshot in sub.Snapshots)
+    {
+        Console.WriteLine(snapshot.X1.Actual);
+        Console.WriteLine(snapshot.X1.Expected);
+    }
+}
+```
+
+
+### Interpolation
+
 There are some useful functions for interpolating data at various times. For example:
 
 ```csharp

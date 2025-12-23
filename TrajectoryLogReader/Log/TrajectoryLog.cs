@@ -46,7 +46,7 @@ namespace TrajectoryLogReader.Log
             get
             {
                 if (_snapshots == null)
-                    _snapshots = new MeasurementDataCollection(this, 0, Header.NumberOfSnapshots);
+                    _snapshots = new MeasurementDataCollection(this, 0, Header.NumberOfSnapshots - 1);
                 return _snapshots;
             }
         }
