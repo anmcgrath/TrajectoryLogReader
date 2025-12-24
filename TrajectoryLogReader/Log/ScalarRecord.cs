@@ -1,4 +1,6 @@
-﻿namespace TrajectoryLogReader.Log;
+﻿using TrajectoryLogReader.Util;
+
+namespace TrajectoryLogReader.Log;
 
 public class ScalarRecord
 {
@@ -16,4 +18,9 @@ public class ScalarRecord
     public float Expected => _log.GetAxisData(_axis, _measIndex, RecordType.ExpectedPosition);
 
     public float Actual => _log.GetAxisData(_axis, _measIndex, RecordType.ActualPosition);
+
+    /// <summary>
+    /// Actual - Expected
+    /// </summary>
+    public float Delta => Scale.Delta(_log.Header.AxisScale, Expected, _log.Header.AxisScale, Actual, _axis);
 }
