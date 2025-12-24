@@ -35,6 +35,30 @@ public class Statistics
         return (float)Math.Sqrt(sumSq / _data.Count);
     }
 
+    /// <summary>
+    /// Returns the error with the largest magnitude for the given axis (MLC not included)
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <returns></returns>
+    public float MaxError(Axis axis)
+    {
+        if (axis == Axis.MLC)
+            throw new Exception("Do not use this function for MLC max errors");
+
+        var maxError = 0f;
+
+        foreach (var data in _data)
+        {
+            var delta = data.GetScalarRecord(axis).Delta;
+            if (Math.Abs(delta) > Math.Abs(maxError))
+            {
+                maxError = delta;
+            }
+        }
+
+        return maxError;
+    }
+
     private float RootMeanSquareErrorMlcs()
     {
         float sumSq = 0;

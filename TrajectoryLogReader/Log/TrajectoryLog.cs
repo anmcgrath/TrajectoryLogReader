@@ -35,8 +35,6 @@ namespace TrajectoryLogReader.Log
         /// </summary>
         public string FilePath { get; internal set; }
 
-        public Statistics Statistics { get; private set; }
-
         /// <summary>
         /// The total time (in ms) of the trajectory log recording.
         /// </summary>
@@ -53,10 +51,22 @@ namespace TrajectoryLogReader.Log
                 return _snapshots;
             }
         }
+        
+        private Statistics _statistics;
+
+        public Statistics Statistics
+        {
+            get
+            {
+                if (_statistics == null)
+                    _statistics = new Statistics(Snapshots, this);
+                return _statistics;
+            }
+        }
 
         internal TrajectoryLog()
         {
-            Statistics = new Statistics(Snapshots, this);
+            
         }
 
         /// <summary>

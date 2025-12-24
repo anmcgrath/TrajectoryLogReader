@@ -76,12 +76,21 @@ namespace TrajectoryLogReader.Log
             }
         }
 
-        public Statistics Statistics { get; private set; }
+        private Statistics _statistics;
+
+        public Statistics Statistics
+        {
+            get
+            {
+                if (_statistics == null)
+                    _statistics = new Statistics(Snapshots, _log);
+                return _statistics;
+            }
+        }
 
         internal SubBeam(TrajectoryLog log)
         {
             _log = log;
-            Statistics = new Statistics(Snapshots, log);
         }
 
         private int CalculateStartIndex()
