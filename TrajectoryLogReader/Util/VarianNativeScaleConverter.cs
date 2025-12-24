@@ -37,7 +37,7 @@ public class VarianNativeScaleConverter : IScaleConverter
                 return ((180 - value) % 360 + 360) % 360;
             case Axis.CouchVrt:
             case Axis.CouchLat:
-                return 100 - value;
+                return -(100 - value);
         }
 
         return value;
@@ -53,7 +53,7 @@ public class VarianNativeScaleConverter : IScaleConverter
                 return ((180 - value) % 360 + 360) % 360;
             case Axis.CouchVrt:
             case Axis.CouchLat:
-                return 100 - value;
+                return -(100 - value);
         }
 
         return value;

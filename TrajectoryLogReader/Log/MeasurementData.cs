@@ -11,6 +11,8 @@ public class MeasurementData
     private readonly int _measIndex;
     private readonly TrajectoryLog _log;
 
+    public int MeasIndex => _measIndex;
+
     public int TimeInMs => _log.Header.SamplingIntervalInMS * _measIndex;
 
     private ScalarRecord _colRtn;

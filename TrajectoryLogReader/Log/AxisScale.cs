@@ -3,6 +3,11 @@
     public enum AxisScale
     {
         /// <summary>
+        /// Used for setting default axis
+        /// </summary>
+        Default = 0,
+
+        /// <summary>
         /// Varian native
         /// </summary>
         MachineScale = 1,
