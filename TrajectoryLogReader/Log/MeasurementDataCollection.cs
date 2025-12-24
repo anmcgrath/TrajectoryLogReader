@@ -8,6 +8,8 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
     private readonly int _startIndex;
     private readonly int _endIndex;
 
+    public int Count => (_endIndex - _startIndex + 1);
+
     internal MeasurementDataCollection(TrajectoryLog log, int startIndex, int endIndex)
     {
         _log = log;

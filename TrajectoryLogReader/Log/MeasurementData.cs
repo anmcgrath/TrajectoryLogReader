@@ -243,4 +243,9 @@ public class MeasurementData
             return _mlc;
         }
     }
+
+    internal ScalarRecord GetScalarRecord(Axis axis)
+    {
+        return new ScalarRecord(_log, axis, _measIndex);
+    }
 }

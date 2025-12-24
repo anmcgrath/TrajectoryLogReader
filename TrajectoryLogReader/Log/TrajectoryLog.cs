@@ -1,4 +1,5 @@
-﻿using TrajectoryLogReader.MLC;
+﻿using TrajectoryLogReader.LogStatistics;
+using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.Log
 {
@@ -34,6 +35,8 @@ namespace TrajectoryLogReader.Log
         /// </summary>
         public string FilePath { get; internal set; }
 
+        public Statistics Statistics { get; private set; }
+
         /// <summary>
         /// The total time (in ms) of the trajectory log recording.
         /// </summary>
@@ -53,6 +56,7 @@ namespace TrajectoryLogReader.Log
 
         internal TrajectoryLog()
         {
+            Statistics = new Statistics(Snapshots, this);
         }
 
         /// <summary>
@@ -198,6 +202,23 @@ namespace TrajectoryLogReader.Log
             }
 
             return mlc;
+        }
+
+        /// <summary>
+        /// Returns the MLC position at <paramref name="measindex"/> for a specific leaf/bank
+        /// </summary>
+        /// <param name="measindex">Measurement index offset</param>
+        /// <param name="recordType">Expected or actual position</param>
+        /// <param name="leafIndex">Zero-based leaf index</param>
+        /// <param name="bankIndex">Zero based bank index. Bank B is 0, A is 1</param>
+        /// <returns></returns>
+        public float GetMlcPosition(int measindex, RecordType recordType, int leafIndex, int bankIndex)
+        {
+            var numLeaves = Header.GetNumberOfLeafPairs();
+            var offset = (bankIndex * numLeaves * 2 + leafIndex * 2) +
+                         (recordType == RecordType.ActualPosition ? 1 : 0) + 4;
+
+            return GetAxisData(Axis.MLC, measindex, offset);
         }
 
         /// <summary>

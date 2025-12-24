@@ -1,4 +1,6 @@
-﻿namespace TrajectoryLogReader.Log
+﻿using TrajectoryLogReader.LogStatistics;
+
+namespace TrajectoryLogReader.Log
 {
     /// <summary>
     /// A sub-beam is created when a series of treatment fields are made automatic.
@@ -74,9 +76,12 @@
             }
         }
 
+        public Statistics Statistics { get; private set; }
+
         internal SubBeam(TrajectoryLog log)
         {
             _log = log;
+            Statistics = new Statistics(Snapshots, log);
         }
 
         private int CalculateStartIndex()
