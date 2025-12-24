@@ -45,7 +45,7 @@ namespace TrajectoryLogReader.IO
                 {
                     // first 16 bytes should be 'VOSTL'
                     var sig = utf8.GetString(br.ReadBytes(16));
-                    Console.WriteLine(sig);
+
                     if (!sig.StartsWith("VOSTL"))
                         throw new Exception($"Invalid start of file {sig}. Expected VOSTL");
 
