@@ -2,7 +2,7 @@ namespace TrajectoryLogReader.Fluence;
 
 internal class Polygon
 {
-    public IReadOnlyCollection<Point> Vertices => _vertices;
+    public List<Point> Vertices => _vertices;
     private readonly List<Point> _vertices;
 
     public Polygon(List<Point> vertices)

@@ -1,6 +1,7 @@
 namespace TrajectoryLogReader.Fluence;
 
 using System.Text;
+using System.Threading.Tasks;
 
 internal class GridF
 {
@@ -116,30 +117,34 @@ internal class GridF
         var row1 = GetRow(rect.Bounds.Y + rect.Bounds.Height);
 
         var areaPixel = XRes * YRes;
+        var polygonVertices = rect.Polygon.Vertices;
 
-        for (int row = row0; row <= row1; row++)
+        // Use Parallel.For to speed up the processing of rows
+        Parallel.For(row0, row1 + 1, row =>
         {
             for (int col = col0; col <= col1; col++)
             {
                 var pixelRect = GetPixelBounds(col, row);
-                var areaIntersection = Intersection.Intersect(rect.Polygon, pixelRect).Area();
+                
+                // Use the allocation-free intersection area calculation
+                var areaIntersection = Intersection.GetIntersectionArea(polygonVertices, pixelRect);
+                
                 if (areaIntersection > 0)
                 {
-                    var currentData = GetData(col, row);
-
+                    // Direct array access is safe here because each thread works on a unique row
+                    // and we are within bounds [row0, row1] which are valid indices.
+                    
                     if (areaIntersection >= areaPixel)
                     {
-                        currentData += value;
+                        Data[row, col] += value;
                     }
-                    else if (areaIntersection > 0)
+                    else
                     {
-                        currentData += value * (float)(areaIntersection / areaPixel);
+                        Data[row, col] += value * (float)(areaIntersection / areaPixel);
                     }
-
-                    SetData(col, row, currentData);
                 }
             }
-        }
+        });
     }
 
     /// <summary>

@@ -1,25 +1,49 @@
 namespace TrajectoryLogReader.Fluence;
 
-internal class Intersection
+internal static class Intersection
 {
-    public static Polygon Intersect(Polygon polygon, Rect rect)
+    /// <summary>
+    /// Calculates the area of the intersection between a polygon and a rectangle.
+    /// Optimized to avoid heap allocations using Span and stackalloc.
+    /// </summary>
+    public static double GetIntersectionArea(List<Point> polygonVertices, Rect rect)
     {
-        // Define the four edges of the rectangle
-        var left = rect.X;
-        var right = rect.X + rect.Width;
-        var bottom = rect.Y;
-        var top = rect.Y + rect.Height;
+        // Max vertices for a rect-rect intersection is usually small (max 8).
+        // We use a buffer of 16 to be safe.
+        Span<Point> buffer1 = stackalloc Point[16];
+        Span<Point> buffer2 = stackalloc Point[16];
 
-        // Start with the polygon's vertices
-        var vertices = new List<Point>(polygon.Vertices);
+        // Copy initial vertices to buffer1
+        int count = polygonVertices.Count;
+        if (count > 16) throw new InvalidOperationException("Polygon has too many vertices for stack optimization");
+        
+        // Manual copy from List to Span
+        for (int i = 0; i < count; i++)
+        {
+            buffer1[i] = polygonVertices[i];
+        }
 
-        // Clip against each edge of the rectangle sequentially
-        vertices = ClipAgainstEdge(vertices, left, EdgeType.Left);
-        vertices = ClipAgainstEdge(vertices, right, EdgeType.Right);
-        vertices = ClipAgainstEdge(vertices, bottom, EdgeType.Bottom);
-        vertices = ClipAgainstEdge(vertices, top, EdgeType.Top);
+        // Clip against edges
+        // We swap buffers: input -> output
+        
+        // Left
+        count = ClipAgainstEdge(buffer1.Slice(0, count), buffer2, rect.X, EdgeType.Left);
+        if (count == 0) return 0;
 
-        return new Polygon(vertices);
+        // Right
+        count = ClipAgainstEdge(buffer2.Slice(0, count), buffer1, rect.X + rect.Width, EdgeType.Right);
+        if (count == 0) return 0;
+
+        // Bottom
+        count = ClipAgainstEdge(buffer1.Slice(0, count), buffer2, rect.Y, EdgeType.Bottom);
+        if (count == 0) return 0;
+
+        // Top
+        count = ClipAgainstEdge(buffer2.Slice(0, count), buffer1, rect.Y + rect.Height, EdgeType.Top);
+        if (count == 0) return 0;
+
+        // Calculate Area of the final polygon in buffer1
+        return CalculateArea(buffer1.Slice(0, count));
     }
 
     private enum EdgeType
@@ -30,40 +54,35 @@ internal class Intersection
         Top
     }
 
-    private static List<Point> ClipAgainstEdge(List<Point> vertices, double edgePosition, EdgeType edgeType)
+    private static int ClipAgainstEdge(ReadOnlySpan<Point> input, Span<Point> output, double edgePosition, EdgeType edgeType)
     {
-        if (vertices.Count == 0) return vertices;
+        int outputCount = 0;
+        int inputCount = input.Length;
 
-        var outputVertices = new List<Point>();
-
-        for (int i = 0; i < vertices.Count; i++)
+        for (int i = 0; i < inputCount; i++)
         {
-            var current = vertices[i];
-            var next = vertices[(i + 1) % vertices.Count];
+            var current = input[i];
+            var next = input[(i + 1) % inputCount];
 
             bool currentInside = IsInside(current, edgePosition, edgeType);
             bool nextInside = IsInside(next, edgePosition, edgeType);
 
             if (currentInside && nextInside)
             {
-                // Both inside: add next vertex
-                outputVertices.Add(next);
+                output[outputCount++] = next;
             }
             else if (currentInside && !nextInside)
             {
-                // Leaving: add intersection point
-                outputVertices.Add(GetIntersection(current, next, edgePosition, edgeType));
+                output[outputCount++] = GetIntersection(current, next, edgePosition, edgeType);
             }
             else if (!currentInside && nextInside)
             {
-                // Entering: add intersection point and next vertex
-                outputVertices.Add(GetIntersection(current, next, edgePosition, edgeType));
-                outputVertices.Add(next);
+                output[outputCount++] = GetIntersection(current, next, edgePosition, edgeType);
+                output[outputCount++] = next;
             }
-            // else: both outside, add nothing
         }
 
-        return outputVertices;
+        return outputCount;
     }
 
     private static bool IsInside(Point point, double edgePosition, EdgeType edgeType)
@@ -89,14 +108,76 @@ internal class Intersection
         {
             case EdgeType.Left:
             case EdgeType.Right:
-                return new Point
-                    { X = edgePosition, Y = p1.Y + (p2.Y - p1.Y) * (edgePosition - p1.X) / (p2.X - p1.X) };
+                return new Point(edgePosition, p1.Y + (p2.Y - p1.Y) * (edgePosition - p1.X) / (p2.X - p1.X));
             case EdgeType.Bottom:
             case EdgeType.Top:
-                return new Point
-                    { X = p1.X + (p2.X - p1.X) * (edgePosition - p1.Y) / (p2.Y - p1.Y), Y = edgePosition };
+                return new Point(p1.X + (p2.X - p1.X) * (edgePosition - p1.Y) / (p2.Y - p1.Y), edgePosition);
             default:
                 return p1;
         }
+    }
+
+    private static double CalculateArea(ReadOnlySpan<Point> vertices)
+    {
+        if (vertices.Length < 3)
+            return 0;
+
+        double sum = 0;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            var current = vertices[i];
+            var next = vertices[(i + 1) % vertices.Length];
+
+            sum += current.X * next.Y - next.X * current.Y;
+        }
+
+        return Math.Abs(sum) / 2.0;
+    }
+    
+    public static Polygon Intersect(Polygon polygon, Rect rect)
+    {
+        // Max vertices for a rect-rect intersection is usually small (max 8).
+        // We use a buffer of 16 to be safe.
+        Span<Point> buffer1 = stackalloc Point[16];
+        Span<Point> buffer2 = stackalloc Point[16];
+
+        // Copy initial vertices to buffer1
+        int count = polygon.Vertices.Count;
+        if (count > 16) throw new InvalidOperationException("Polygon has too many vertices for stack optimization");
+        
+        // Manual copy from List to Span
+        for (int i = 0; i < count; i++)
+        {
+            buffer1[i] = polygon.Vertices[i];
+        }
+
+        // Clip against edges
+        // We swap buffers: input -> output
+        
+        // Left
+        count = ClipAgainstEdge(buffer1.Slice(0, count), buffer2, rect.X, EdgeType.Left);
+        if (count == 0) return new Polygon(new List<Point>());
+
+        // Right
+        count = ClipAgainstEdge(buffer2.Slice(0, count), buffer1, rect.X + rect.Width, EdgeType.Right);
+        if (count == 0) return new Polygon(new List<Point>());
+
+        // Bottom
+        count = ClipAgainstEdge(buffer1.Slice(0, count), buffer2, rect.Y, EdgeType.Bottom);
+        if (count == 0) return new Polygon(new List<Point>());
+
+        // Top
+        count = ClipAgainstEdge(buffer2.Slice(0, count), buffer1, rect.Y + rect.Height, EdgeType.Top);
+        if (count == 0) return new Polygon(new List<Point>());
+
+        // Convert result Span back to List<Point> for Polygon constructor
+        var resultList = new List<Point>(count);
+        for (int i = 0; i < count; i++)
+        {
+            resultList.Add(buffer1[i]);
+        }
+
+        return new Polygon(resultList);
     }
 }
