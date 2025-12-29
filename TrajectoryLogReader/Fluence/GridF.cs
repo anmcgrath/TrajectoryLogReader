@@ -111,9 +111,7 @@ internal class GridF
     /// <param name="value"></param>
     public void DrawData(RotatedRect rect, float value)
     {
-        var col0 = GetCol(rect.Bounds.X);
         var row0 = GetRow(rect.Bounds.Y);
-        var col1 = GetCol(rect.Bounds.X + rect.Bounds.Width);
         var row1 = GetRow(rect.Bounds.Y + rect.Bounds.Height);
 
         var areaPixel = XRes * YRes;
@@ -122,19 +120,37 @@ internal class GridF
         // Use Parallel.For to speed up the processing of rows
         Parallel.For(row0, row1 + 1, row =>
         {
-            for (int col = col0; col <= col1; col++)
+            // Scanline optimization:
+            // Calculate the X range of the polygon for this row's Y band.
+            // This avoids iterating over empty pixels in the bounding box.
+            
+            double yBottom = GetY(row);
+            double yTop = yBottom + YRes;
+            
+            GetXRange(polygonVertices, yBottom, yTop, out double minX, out double maxX);
+            
+            // Convert X range to columns
+            int startCol = GetCol(minX);
+            int endCol = GetCol(maxX);
+
+            // Ensure we don't go out of bounds of the grid or the rect's bounding box
+            // (GetCol already clamps to 0..SizeX-1)
+            
+            for (int col = startCol; col <= endCol; col++)
             {
                 var pixelRect = GetPixelBounds(col, row);
+                
+                // Optimization: Check if pixel is fully inside the X range (conservative)
+                // If the pixel is strictly between minX and maxX (with some margin), it might be fully inside.
+                // However, the edges are slanted, so minX/maxX are the extremes for the whole row.
+                // A pixel at the edge might still be partially covered.
                 
                 // Use the allocation-free intersection area calculation
                 var areaIntersection = Intersection.GetIntersectionArea(polygonVertices, pixelRect);
                 
                 if (areaIntersection > 0)
                 {
-                    // Direct array access is safe here because each thread works on a unique row
-                    // and we are within bounds [row0, row1] which are valid indices.
-                    
-                    if (areaIntersection >= areaPixel)
+                    if (areaIntersection >= areaPixel - 1e-9) // Tolerance for float precision
                     {
                         Data[row, col] += value;
                     }
@@ -145,6 +161,62 @@ internal class GridF
                 }
             }
         });
+    }
+
+    /// <summary>
+    /// Calculates the min and max X values of the polygon within the given Y range.
+    /// </summary>
+    private void GetXRange(List<Point> vertices, double yMin, double yMax, out double minX, out double maxX)
+    {
+        minX = double.MaxValue;
+        maxX = double.MinValue;
+
+        int count = vertices.Count;
+        for (int i = 0; i < count; i++)
+        {
+            var p1 = vertices[i];
+            var p2 = vertices[(i + 1) % count];
+
+            // Check if edge intersects the Y band
+            // Case 1: Both points above or below - skip (unless one is exactly on boundary)
+            if (Math.Max(p1.Y, p2.Y) < yMin || Math.Min(p1.Y, p2.Y) > yMax)
+                continue;
+
+            // Include vertices inside the band
+            if (p1.Y >= yMin && p1.Y <= yMax)
+            {
+                if (p1.X < minX) minX = p1.X;
+                if (p1.X > maxX) maxX = p1.X;
+            }
+            if (p2.Y >= yMin && p2.Y <= yMax)
+            {
+                if (p2.X < minX) minX = p2.X;
+                if (p2.X > maxX) maxX = p2.X;
+            }
+
+            // Intersect with yMin
+            if ((p1.Y < yMin && p2.Y > yMin) || (p1.Y > yMin && p2.Y < yMin))
+            {
+                double x = p1.X + (yMin - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y);
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+            }
+
+            // Intersect with yMax
+            if ((p1.Y < yMax && p2.Y > yMax) || (p1.Y > yMax && p2.Y < yMax))
+            {
+                double x = p1.X + (yMax - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y);
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+            }
+        }
+        
+        // Fallback if no intersection found (should not happen if row is within bounds)
+        if (minX > maxX)
+        {
+            minX = 0;
+            maxX = 0;
+        }
     }
 
     /// <summary>

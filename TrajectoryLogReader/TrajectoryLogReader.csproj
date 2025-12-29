@@ -3,7 +3,7 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>10.0</LangVersion>
-        <TargetFrameworks>net7.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+        <TargetFrameworks>net9.0;net7.0;netstandard2.0;netstandard2.1</TargetFrameworks>
         <Authors>Andrew McGrath</Authors>
         <Description>Reads Varian TrueBeam trajectory log files (*.bin).</Description>
         <PackageLicenseUrl>https://github.com/anmcgrath/TrajectoryLogReader/raw/refs/heads/main/LICENSE</PackageLicenseUrl>

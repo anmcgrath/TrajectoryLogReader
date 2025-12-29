@@ -44,8 +44,8 @@ internal class RotatedRect
     public bool Contains(Point p)
     {
         // rotate point by inverse of rotation matrix
-        var matrix = Matrix.Rotation(-Angle);
-        var rotatedP = matrix * p;
+        // Use the pre-calculated inverse matrix
+        var rotatedP = _invMatrix * p;
         return _originalRect.Contains(rotatedP.X, rotatedP.Y);
     }
 
