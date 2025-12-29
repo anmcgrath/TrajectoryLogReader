@@ -1,4 +1,5 @@
-﻿using TrajectoryLogReader.LogStatistics;
+﻿using TrajectoryLogReader.Fluence;
+using TrajectoryLogReader.LogStatistics;
 using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.Log
@@ -51,7 +52,7 @@ namespace TrajectoryLogReader.Log
                 return _snapshots;
             }
         }
-        
+
         private Statistics _statistics;
 
         public Statistics Statistics
@@ -64,9 +65,20 @@ namespace TrajectoryLogReader.Log
             }
         }
 
+        private FluenceCreator _fluenceCreator;
+
+        public FluenceCreator FluenceCreator
+        {
+            get
+            {
+                if (_statistics == null)
+                    _fluenceCreator = new FluenceCreator(Snapshots, this);
+                return _fluenceCreator;
+            }
+        }
+
         internal TrajectoryLog()
         {
-            
         }
 
         /// <summary>

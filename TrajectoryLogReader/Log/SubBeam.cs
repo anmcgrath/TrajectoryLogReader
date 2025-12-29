@@ -1,4 +1,5 @@
-﻿using TrajectoryLogReader.LogStatistics;
+﻿using TrajectoryLogReader.Fluence;
+using TrajectoryLogReader.LogStatistics;
 
 namespace TrajectoryLogReader.Log
 {
@@ -87,6 +88,19 @@ namespace TrajectoryLogReader.Log
                 return _statistics;
             }
         }
+
+        private FluenceCreator _fluenceCreator;
+
+        public FluenceCreator FluenceCreator
+        {
+            get
+            {
+                if (_statistics == null)
+                    _fluenceCreator = new FluenceCreator(Snapshots, _log);
+                return _fluenceCreator;
+            }
+        }
+
 
         internal SubBeam(TrajectoryLog log)
         {
