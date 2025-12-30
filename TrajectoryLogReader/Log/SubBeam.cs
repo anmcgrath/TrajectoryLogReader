@@ -110,9 +110,11 @@ namespace TrajectoryLogReader.Log
         private int CalculateStartIndex()
         {
             var cpData = _log.GetAxisData(Axis.ControlPoint);
+            var stride = cpData.SamplesPerSnapshot;
+            
             for (int i = 0; i < cpData.NumSnapshots; i++)
             {
-                var cp = cpData.RawData[i][0];
+                var cp = cpData.Data[i * stride + 0];
                 if (cp >= ControlPoint)
                     return i;
             }

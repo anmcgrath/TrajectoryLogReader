@@ -115,8 +115,11 @@ namespace TrajectoryLogReader.Log
             if (axis < 0 || axisIndex > AxisData.Length - 1)
                 throw new Exception($"Data for axis {axis} does not exist.");
 
-            var v0 = AxisData[axisIndex].RawData[i0][offset];
-            var v1 = AxisData[axisIndex].RawData[i1][offset];
+            var axisData = AxisData[axisIndex];
+            var stride = axisData.SamplesPerSnapshot;
+            
+            var v0 = axisData.Data[i0 * stride + offset];
+            var v1 = axisData.Data[i1 * stride + offset];
 
             var f = (timeInMs - t0) / (t1 - t0);
             return (float)(v0 + (v1 - v0) * f);
@@ -128,7 +131,8 @@ namespace TrajectoryLogReader.Log
         public float GetAxisData(Axis axis, int measIndex, int offset)
         {
             var axisIndex = Header.GetAxisIndex(axis);
-            return AxisData[axisIndex].RawData[measIndex][offset];
+            var axisData = AxisData[axisIndex];
+            return axisData.Data[measIndex * axisData.SamplesPerSnapshot + offset];
         }
 
         public float InterpolateAxisData(Axis axis, double timeInMs, RecordType recordType) =>
@@ -186,13 +190,15 @@ namespace TrajectoryLogReader.Log
                 throw new Exception("No control point data found.");
 
             var cpData = AxisData[cpAxisIndex];
+            var stride = cpData.SamplesPerSnapshot;
+            
             for (int i = 0; i < cpData.NumSnapshots; i++)
             {
-                var cp = cpData.RawData[i][0]; // expected and actual are the same for CP
+                var cp = cpData.Data[i * stride + 0]; // expected and actual are the same for CP
                 if (cp >= fractionalCp)
                 {
-                    var nextCpFrac = cpData.RawData[i + 1][0];
-                    var f = (nextCpFrac - cp == 0) ? 0 : (fractionalCp - cp) / (cpData.RawData[i + 1][0] - cp);
+                    var nextCpFrac = cpData.Data[(i + 1) * stride + 0];
+                    var f = (nextCpFrac - cp == 0) ? 0 : (fractionalCp - cp) / (nextCpFrac - cp);
                     return (int)(i * Header.SamplingIntervalInMS + f * Header.SamplingIntervalInMS);
                 }
             }
@@ -253,7 +259,9 @@ namespace TrajectoryLogReader.Log
             if (cpAxisIndex < 0)
                 return 0;
             var axisData = AxisData[cpAxisIndex];
-            return (int)Math.Round(axisData.RawData.Last()[0], 0) + 1;
+            var stride = axisData.SamplesPerSnapshot;
+            var lastIndex = (axisData.NumSnapshots - 1) * stride;
+            return (int)Math.Round(axisData.Data[lastIndex], 0) + 1;
         }
 
         /// <summary>

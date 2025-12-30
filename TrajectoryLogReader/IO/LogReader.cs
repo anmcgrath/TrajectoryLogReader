@@ -98,22 +98,22 @@ namespace TrajectoryLogReader.IO
                     log.AxisData = new AxisData[header.NumAxesSampled];
                     for (int i = 0; i < header.NumAxesSampled; i++)
                     {
-                        log.AxisData[i] = new AxisData(header.NumberOfSnapshots);
+                        var samplesForAxis = header.GetNumberOfSamples(i) * 2;
+                        log.AxisData[i] = new AxisData(header.NumberOfSnapshots, samplesForAxis);
                     }
 
                     for (int i = 0; i < header.NumberOfSnapshots; i++)
                     {
                         for (int j = 0; j < header.NumAxesSampled; j++)
                         {
-                            // number of samples * 2 because we have expected and actual for all axes
-                            var samplesForAxis = header.GetNumberOfSamples(j) * 2;
-                            var snapShotData = new float[samplesForAxis];
+                            var axisData = log.AxisData[j];
+                            var samplesForAxis = axisData.SamplesPerSnapshot;
+                            var offset = i * samplesForAxis;
+                            
                             for (int k = 0; k < samplesForAxis; k++)
                             {
-                                snapShotData[k] = br.ReadSingle();
+                                axisData.Data[offset + k] = br.ReadSingle();
                             }
-
-                            log.AxisData[j].RawData[i] = snapShotData;
                         }
                     }
                 }
