@@ -1,6 +1,6 @@
 namespace TrajectoryLogReader.Fluence;
 
-internal struct Point
+public struct Point
 {
     public double X { get; set; }
     public double Y { get; set; }
@@ -10,6 +10,6 @@ internal struct Point
         X = x;
         Y = y;
     }
-    
+
     public override string ToString() => $"({X}, {Y})";
 }

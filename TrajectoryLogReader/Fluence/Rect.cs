@@ -1,9 +1,10 @@
 using System.Runtime.CompilerServices;
-[assembly:InternalsVisibleTo("TrajectoryLogReader.Tests")]
+
+[assembly: InternalsVisibleTo("TrajectoryLogReader.Tests")]
 
 namespace TrajectoryLogReader.Fluence;
 
-internal class Rect
+public class Rect
 {
     public double X { get; set; }
     public double Y { get; set; }

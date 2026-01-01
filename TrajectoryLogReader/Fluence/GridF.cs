@@ -3,7 +3,7 @@ namespace TrajectoryLogReader.Fluence;
 using System.Text;
 using System.Threading.Tasks;
 
-internal class GridF
+public class GridF
 {
     public double Width { get; }
     public double Height { get; }
@@ -109,7 +109,7 @@ internal class GridF
     /// </summary>
     /// <param name="rect"></param>
     /// <param name="value"></param>
-    public void DrawData(RotatedRect rect, float value)
+    private void DrawData(RotatedRect rect, float value)
     {
         var row0 = GetRow(rect.Bounds.Y);
         var row1 = GetRow(rect.Bounds.Y + rect.Bounds.Height);
@@ -123,31 +123,31 @@ internal class GridF
             // Scanline optimization:
             // Calculate the X range of the polygon for this row's Y band.
             // This avoids iterating over empty pixels in the bounding box.
-            
+
             double yBottom = GetY(row);
             double yTop = yBottom + YRes;
-            
+
             GetXRange(polygonVertices, yBottom, yTop, out double minX, out double maxX);
-            
+
             // Convert X range to columns
             int startCol = GetCol(minX);
             int endCol = GetCol(maxX);
 
             // Ensure we don't go out of bounds of the grid or the rect's bounding box
             // (GetCol already clamps to 0..SizeX-1)
-            
+
             for (int col = startCol; col <= endCol; col++)
             {
                 var pixelRect = GetPixelBounds(col, row);
-                
+
                 // Optimization: Check if pixel is fully inside the X range (conservative)
                 // If the pixel is strictly between minX and maxX (with some margin), it might be fully inside.
                 // However, the edges are slanted, so minX/maxX are the extremes for the whole row.
                 // A pixel at the edge might still be partially covered.
-                
+
                 // Use the allocation-free intersection area calculation
                 var areaIntersection = Intersection.GetIntersectionArea(polygonVertices, pixelRect);
-                
+
                 if (areaIntersection > 0)
                 {
                     if (areaIntersection >= areaPixel - 1e-9) // Tolerance for float precision
@@ -188,6 +188,7 @@ internal class GridF
                 if (p1.X < minX) minX = p1.X;
                 if (p1.X > maxX) maxX = p1.X;
             }
+
             if (p2.Y >= yMin && p2.Y <= yMax)
             {
                 if (p2.X < minX) minX = p2.X;
@@ -210,7 +211,7 @@ internal class GridF
                 if (x > maxX) maxX = x;
             }
         }
-        
+
         // Fallback if no intersection found (should not happen if row is within bounds)
         if (minX > maxX)
         {
@@ -225,7 +226,7 @@ internal class GridF
     /// <param name="rect"></param>
     /// <param name="angle"></param>
     /// <param name="value"></param>
-    public void DrawData(Rect rect, double angle, float value)
+    internal void DrawData(Rect rect, double angle, float value)
     {
         DrawData(RotatedRect.Create(rect, angle), value);
     }
