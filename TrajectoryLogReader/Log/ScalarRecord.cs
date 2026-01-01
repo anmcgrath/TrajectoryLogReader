@@ -20,6 +20,16 @@ public class ScalarRecord
     public float Actual => _log.GetAxisData(_axis, _measIndex, RecordType.ActualPosition);
 
     /// <summary>
+    /// Returns the scalar record of type <paramref name="type"/>
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public float GetRecord(RecordType type)
+    {
+        return type == RecordType.ExpectedPosition ? Expected : Actual;
+    }
+
+    /// <summary>
     /// Actual - Expected
     /// </summary>
     public float Delta => Scale.Delta(_log.Header.AxisScale, Expected, _log.Header.AxisScale, Actual, _axis);

@@ -53,7 +53,7 @@ public static class TrajectoryLogIOExtensions
             {
                 var axis = axes[axisIndex];
                 var axisData = log.GetAxisData(axis);
-                var numSamples = axisData.RawData[0].Length;
+                var numSamples = axisData.SamplesPerSnapshot;
                 for (int i = 0; i < numSamples; i++)
                 {
                     headerLine.Append($"{axis}[{i}]");
@@ -78,10 +78,13 @@ public static class TrajectoryLogIOExtensions
             {
                 var axis = axes[axisIndex];
                 var axisData = log.GetAxisData(axis);
-                var numSamples = axisData.RawData[0].Length;
+                var numSamples = axisData.SamplesPerSnapshot;
+                var offset = s * numSamples;
+                
                 for (int i = 0; i < numSamples; i++)
                 {
-                    var converted = Scale.Convert(log.Header.AxisScale, scale, axis, axisData.RawData[s][i]);
+                    var val = axisData.Data[offset + i];
+                    var converted = Scale.Convert(log.Header.AxisScale, scale, axis, val);
                     line.Append(converted);
                     if (i != numSamples - 1)
                         line.Append(delimiter);

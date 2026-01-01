@@ -1,4 +1,5 @@
-﻿using TrajectoryLogReader.LogStatistics;
+﻿using TrajectoryLogReader.Fluence;
+using TrajectoryLogReader.LogStatistics;
 
 namespace TrajectoryLogReader.Log
 {
@@ -88,6 +89,19 @@ namespace TrajectoryLogReader.Log
             }
         }
 
+        private FluenceCreator _fluenceCreator;
+
+        public FluenceCreator FluenceCreator
+        {
+            get
+            {
+                if (_statistics == null)
+                    _fluenceCreator = new FluenceCreator(Snapshots, _log);
+                return _fluenceCreator;
+            }
+        }
+
+
         internal SubBeam(TrajectoryLog log)
         {
             _log = log;
@@ -96,9 +110,11 @@ namespace TrajectoryLogReader.Log
         private int CalculateStartIndex()
         {
             var cpData = _log.GetAxisData(Axis.ControlPoint);
+            var stride = cpData.SamplesPerSnapshot;
+            
             for (int i = 0; i < cpData.NumSnapshots; i++)
             {
-                var cp = cpData.RawData[i][0];
+                var cp = cpData.Data[i * stride + 0];
                 if (cp >= ControlPoint)
                     return i;
             }
