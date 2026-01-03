@@ -246,7 +246,7 @@ public class MeasurementData
         }
     }
 
-    internal ScalarRecord GetScalarRecord(Axis axis)
+    public ScalarRecord GetScalarRecord(Axis axis)
     {
         return new ScalarRecord(_log, axis, _measIndex);
     }

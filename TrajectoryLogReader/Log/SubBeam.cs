@@ -111,7 +111,7 @@ namespace TrajectoryLogReader.Log
         {
             var cpData = _log.GetAxisData(Axis.ControlPoint);
             var stride = cpData.SamplesPerSnapshot;
-            
+
             for (int i = 0; i < cpData.NumSnapshots; i++)
             {
                 var cp = cpData.Data[i * stride + 0];
@@ -119,17 +119,23 @@ namespace TrajectoryLogReader.Log
                     return i;
             }
 
-            return -1;
+            return -2;
         }
 
         private int CalculateEndIndex()
         {
+            if (StartIndex == -2)
+                return StartIndex;
+
             var nextBeam = _log
                 .SubBeams
                 .OrderBy(x => x.SequenceNumber)
                 .FirstOrDefault(x => x.SequenceNumber > SequenceNumber);
 
             if (nextBeam == null)
+                return _log.Header.NumberOfSnapshots - 1;
+
+            if (nextBeam.StartIndex == -2) // beam has not started
                 return _log.Header.NumberOfSnapshots - 1;
 
             return nextBeam.StartIndex - 1;

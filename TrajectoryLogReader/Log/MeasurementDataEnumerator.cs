@@ -20,7 +20,7 @@ internal class MeasurementDataEnumerator : IEnumerator<MeasurementData>
     public bool MoveNext()
     {
         _measurementIndex++;
-        return _measurementIndex <= _endIndex;
+        return _measurementIndex <= _endIndex && _endIndex >= 0;
     }
 
     public void Reset()
