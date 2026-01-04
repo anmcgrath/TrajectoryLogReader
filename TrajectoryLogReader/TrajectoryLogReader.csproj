@@ -8,17 +8,22 @@
         <Description>Reads Varian TrueBeam trajectory log files (*.bin).</Description>
         <PackageLicenseUrl>https://github.com/anmcgrath/TrajectoryLogReader/raw/refs/heads/main/LICENSE</PackageLicenseUrl>
         <RepositoryUrl>https://github.com/anmcgrath/TrajectoryLogReader</RepositoryUrl>
-        <Version>2.0.2-alpha</Version>
+        <Version>2.0.3-alpha</Version>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <ItemGroup>
-      <Content Include="..\readme.md">
-        <Link>readme.md</Link>
-      </Content>
+        <Content Include="..\readme.md">
+            <Link>readme.md</Link>
+        </Content>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-        <PackageReference Include="System.Memory" Version="4.5.5" />
+        <PackageReference Include="System.Memory" Version="4.5.5"/>
     </ItemGroup>
 
 </Project>

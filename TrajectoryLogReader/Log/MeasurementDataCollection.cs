@@ -19,8 +19,6 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
 
     public IEnumerator<MeasurementData> GetEnumerator()
     {
-        var list = new List<MeasurementData>();
-        list.First();
         return new MeasurementDataEnumerator(_log, _startIndex, _endIndex);
     }
 
