@@ -62,7 +62,7 @@ public static class DicomFluenceExtensions
         double posX = -(cols * spacingX / 2.0);
         double posY = -(rows * spacingY / 2.0);
         dataset.Add(DicomTag.RTImagePosition,
-            $"{posX.ToString("G12", CultureInfo.InvariantCulture)}\\{posY.ToString("G12", CultureInfo.InvariantCulture)}");
+            $"{posX.ToString("G10", CultureInfo.InvariantCulture)}\\{posY.ToString("G10", CultureInfo.InvariantCulture)}");
 
         // --- IMAGE STRUCTURE ---
         dataset.Add(DicomTag.SamplesPerPixel, (ushort)1);
@@ -75,8 +75,8 @@ public static class DicomFluenceExtensions
         dataset.Add(DicomTag.PixelRepresentation, (ushort)0); // Unsigned
 
 
-        dataset.Add(DicomTag.RescaleSlope, rescaleSlope.ToString("G12", CultureInfo.InvariantCulture));
-        dataset.Add(DicomTag.RescaleIntercept, rescaleIntercept.ToString("G12", CultureInfo.InvariantCulture));
+        dataset.Add(DicomTag.RescaleSlope, rescaleSlope.ToString("G10", CultureInfo.InvariantCulture));
+        dataset.Add(DicomTag.RescaleIntercept, rescaleIntercept.ToString("G10", CultureInfo.InvariantCulture));
         dataset.Add(DicomTag.RescaleType, "RELATIVE");
 
         // Pixel Data (using the helper)
