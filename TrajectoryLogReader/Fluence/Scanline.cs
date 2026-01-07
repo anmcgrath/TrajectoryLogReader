@@ -91,11 +91,29 @@ public class Scanline
         // Setup Left Edge
         Vector2 vL1 = corners[topIdx];
         Vector2 vL2 = corners[leftIdx];
+        
+        // Handle horizontal top edge on Left
+        while (vL2.Y <= vL1.Y)
+        {
+             vL1 = vL2;
+             leftIdx = NextVert(leftIdx, -1);
+             vL2 = corners[leftIdx];
+             if (leftIdx == topIdx) return; 
+        }
         float slopeL = (vL2.X - vL1.X) / (vL2.Y - vL1.Y);
 
         // Setup Right Edge
         Vector2 vR1 = corners[topIdx];
         Vector2 vR2 = corners[rightIdx];
+        
+        // Handle horizontal top edge on Right
+        while (vR2.Y <= vR1.Y)
+        {
+             vR1 = vR2;
+             rightIdx = NextVert(rightIdx, 1);
+             vR2 = corners[rightIdx];
+             if (rightIdx == topIdx) return;
+        }
         float slopeR = (vR2.X - vR1.X) / (vR2.Y - vR1.Y);
 
         // Correction for the first sub-pixel step

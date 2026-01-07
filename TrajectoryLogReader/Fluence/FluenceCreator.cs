@@ -55,6 +55,7 @@ public class FluenceCreator
                 _log.Header.AxisScale,
                 AxisScale.ModifiedIEC61217, Axis.CollRtn,
                 s.CollRtn.GetRecord(recordType));
+            coll = 0;
 
             var mlc = _log.MlcModel;
 
@@ -84,17 +85,27 @@ public class FluenceCreator
                 bankAPos = Math.Min(bankAPos, x2);
 
                 var leafInfo = mlc.GetLeafInformation(i);
-                var y0 = leafInfo.YInMm / 10f - leafInfo.WidthInMm / 10f / 2;
 
-                if (y0 + leafInfo.WidthInMm < y1)
+                // Working in CM
+                var leafWidthCm = leafInfo.WidthInMm / 10f;
+                var leafCenterYCm = leafInfo.YInMm / 10f;
+                var yMinCm = leafCenterYCm - leafWidthCm / 2f;
+                var yMaxCm = leafCenterYCm + leafWidthCm / 2f;
+
+                if (yMinCm < y1)
                     continue;
-                if (y0 > y2)
+                if (yMaxCm > y2)
                     continue;
 
-                var x0 = bankBPos;
+                var width = bankAPos - bankBPos;
+                var xCenter = bankBPos + width / 2f;
 
-                FastRotatedRect.GetRotatedRectAndBounds(new Vector2(x0, y0), bankAPos - bankBPos,
-                    leafInfo.WidthInMm / 10f, cos, sin, corners, out var bounds);
+                FastRotatedRect.GetRotatedRectAndBounds(
+                    new Vector2(xCenter, leafCenterYCm),
+                    width,
+                    leafWidthCm,
+                    cos, sin, corners, out var bounds);
+                
                 grid.DrawDataFast(corners, bounds, deltaMu);
             }
         }

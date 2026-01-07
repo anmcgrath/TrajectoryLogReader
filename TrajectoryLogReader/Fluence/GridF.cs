@@ -182,27 +182,60 @@ public class GridF
 
     public void DrawDataFast(Span<Vector2> corners, AABB bounds, float value)
     {
-        // 2. Extract to local variables (Value Types can be captured!)
-        Vector2 p0 = corners[0];
-        Vector2 p1 = corners[1];
-        Vector2 p2 = corners[2];
-        Vector2 p3 = corners[3];
-
-        // Inside the scanline loop, for a specific Y:
-        int x0 = GetCol(bounds.MinX - XRes);
-        int x1 = GetCol(bounds.MaxX + XRes);
-        int y0 = GetRow(bounds.MinY - YRes);
-        int y1 = GetRow(bounds.MaxY + YRes);
-
-        for (int yi = x0; yi <= y1; yi++)
+        // 1. Convert Corners to Grid Space (Pixels)
+        // We use stackalloc for the grid-space corners to avoid GC
+        Span<Vector2> gridCorners = stackalloc Vector2[4];
+        for (int i = 0; i < 4; i++)
         {
-            for (int xi = y0; xi <= x1; xi++)
-            {
-                var pixelRect = GetPixelBoundsAABB(xi, yi);
-                var inters = FastIntersection.GetIntersectionArea(pixelRect, corners);
-                Data[yi, xi] += inters * value;
-            }
+            float gx = (float)((corners[i].X - Bounds.X) / XRes);
+            float gy = (float)((corners[i].Y - Bounds.Y) / YRes);
+            gridCorners[i] = new Vector2(gx, gy);
         }
+
+        // 2. Calculate Clipping Bounds in Grid Space (Pixels)
+        // We clamp to the grid dimensions (0 to SizeY)
+        // Scanline expects integer Y range.
+        int clipMinY = 0;
+        int clipMaxY = SizeY - 1;
+
+        // 3. Process Scanlines
+        Scanline.ProcessScanlines(gridCorners, clipMinY, clipMaxY, (y, startX, endX) =>
+        {
+            // y is the row index.
+            // startX and endX are column indices (float).
+            
+            // Validate row index just in case
+            if (y < 0 || y >= SizeY) return;
+
+            // Determine integer column range
+            int colStart = (int)Math.Floor(startX);
+            int colEnd = (int)Math.Floor(endX);
+
+            // Clamp columns to grid
+            if (colEnd < 0) return;
+            if (colStart >= SizeX) return;
+
+            int c0 = Math.Max(0, colStart);
+            int c1 = Math.Min(SizeX - 1, colEnd);
+
+            for (int x = c0; x <= c1; x++)
+            {
+                // Calculate coverage
+                // Pixel x covers range [x, x+1]
+                // Segment is [startX, endX]
+                
+                // Intersection of [x, x+1] and [startX, endX]
+                float segMin = Math.Max(x, startX);
+                float segMax = Math.Min(x + 1, endX);
+                
+                float coverage = segMax - segMin;
+                
+                if (coverage > 0)
+                {
+                    Data[y, x] += value * coverage;
+                }
+            }
+        });
     }
 
     /// <summary>
