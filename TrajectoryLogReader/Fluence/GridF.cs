@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace TrajectoryLogReader.Fluence;
 
 using System.Text;
@@ -69,6 +71,21 @@ public class GridF
             Width = XRes,
             Height = YRes
         };
+    }
+
+    /// <summary>
+    /// Gets the pixel bounds at <paramref name="col"/>, <paramref name="row"/>
+    /// </summary>
+    /// <param name="col"></param>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    private AABB GetPixelBoundsAABB(int col, int row)
+    {
+        var minX = (float)GetX(col);
+        var minY = (float)GetY(row);
+        var maxX = minX + (float)XRes;
+        var maxY = minY + (float)YRes;
+        return new AABB(minX, minY, maxX, maxY);
     }
 
     /// <summary>
@@ -161,6 +178,31 @@ public class GridF
                 }
             }
         });
+    }
+
+    public void DrawDataFast(Span<Vector2> corners, AABB bounds, float value)
+    {
+        // 2. Extract to local variables (Value Types can be captured!)
+        Vector2 p0 = corners[0];
+        Vector2 p1 = corners[1];
+        Vector2 p2 = corners[2];
+        Vector2 p3 = corners[3];
+
+        // Inside the scanline loop, for a specific Y:
+        int x0 = GetCol(bounds.MinX - XRes);
+        int x1 = GetCol(bounds.MaxX + XRes);
+        int y0 = GetRow(bounds.MinY - YRes);
+        int y1 = GetRow(bounds.MaxY + YRes);
+
+        for (int yi = x0; yi <= y1; yi++)
+        {
+            for (int xi = y0; xi <= x1; xi++)
+            {
+                var pixelRect = GetPixelBoundsAABB(xi, yi);
+                var inters = FastIntersection.GetIntersectionArea(pixelRect, corners);
+                Data[yi, xi] += inters * value;
+            }
+        }
     }
 
     /// <summary>

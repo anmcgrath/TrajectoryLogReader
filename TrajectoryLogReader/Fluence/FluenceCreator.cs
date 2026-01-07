@@ -1,3 +1,4 @@
+using System.Numerics;
 using TrajectoryLogReader.Log;
 using TrajectoryLogReader.Util;
 
@@ -33,6 +34,8 @@ public class FluenceCreator
         // but not zero
         time = Math.Max(time, _log.Header.SamplingIntervalInMS);
 
+        Span<Vector2> corners = stackalloc Vector2[4];
+
         var prevMu = _data.First().MU.GetRecord(recordType);
         foreach (var s in _data)
         {
@@ -56,6 +59,15 @@ public class FluenceCreator
             var mlc = _log.MlcModel;
 
             var leafPositions = recordType == RecordType.ActualPosition ? s.MLC.Actual : s.MLC.Expected;
+
+            var angleRadians = coll * (float)Math.PI / 180;
+
+#if NET7_0_OR_GREATER
+            var (sin, cos) = MathF.SinCos(angleRadians);
+#else
+            var sin = (float)Math.Sin(angleRadians);
+            var cos = (float)Math.Cos(angleRadians);
+#endif
 
             for (int i = 0; i < _log.Header.GetNumberOfLeafPairs(); i++)
             {
@@ -81,8 +93,9 @@ public class FluenceCreator
 
                 var x0 = bankBPos;
 
-                var rect = new Rect(x0, y0, bankAPos - bankBPos, leafInfo.WidthInMm / 10f);
-                grid.DrawData(rect, coll * Math.PI / 180, deltaMu);
+                FastRotatedRect.GetRotatedRectAndBounds(new Vector2(x0, y0), bankAPos - bankBPos,
+                    leafInfo.WidthInMm / 10f, cos, sin, corners, out var bounds);
+                grid.DrawDataFast(corners, bounds, deltaMu);
             }
         }
 
