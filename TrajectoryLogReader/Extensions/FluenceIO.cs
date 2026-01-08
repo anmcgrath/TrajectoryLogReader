@@ -8,16 +8,16 @@ public static class FluenceIO
     public static void SaveToTsv(this FieldFluence fluence, string fileName)
     {
         var sb = new StringBuilder();
-        for (int i = 0; i < fluence.Grid.SizeY; i++)
+        for (int i = 0; i < fluence.Grid.Rows; i++)
         {
-            for (int j = 0; j < fluence.Grid.SizeX; j++)
+            for (int j = 0; j < fluence.Grid.Cols; j++)
             {
-                sb.Append(fluence.Grid.Data[fluence.Grid.SizeY - 1 - i, j]);
-                if (j != fluence.Grid.SizeX - 1)
+                sb.Append(fluence.Grid.Data[fluence.Grid.Rows - 1 - i, j]);
+                if (j != fluence.Grid.Cols - 1)
                     sb.Append("\t");
             }
 
-            if (i != fluence.Grid.SizeY - 1)
+            if (i != fluence.Grid.Rows - 1)
                 sb.Append(Environment.NewLine);
         }
 
@@ -30,8 +30,8 @@ public static class FluenceIO
         // write header
         sb.AppendLine("PTW-Image File Format");
         sb.AppendLine("Version\t1.0");
-        sb.AppendLine($"PIXELSPERLINE\t{fluence.Grid.SizeX}");
-        sb.AppendLine($"LINESPERIMAGE\t{fluence.Grid.SizeY}");
+        sb.AppendLine($"PIXELSPERLINE\t{fluence.Grid.Cols}");
+        sb.AppendLine($"LINESPERIMAGE\t{fluence.Grid.Rows}");
         sb.AppendLine($"XRESOLUTION\t{(fluence.Grid.XRes * 10):N3}");
         sb.AppendLine($"YRESOLUTION\t{(fluence.Grid.YRes * 10):N3}");
         var x0 = -fluence.Grid.Width / 2;
@@ -45,22 +45,22 @@ public static class FluenceIO
 
         // x coords
         var xCoords = Enumerable
-            .Range(0, fluence.Grid.SizeX)
+            .Range(0, fluence.Grid.Cols)
             .Select(x => $"{(10 * x * fluence.Grid.XRes + 10 * x0):N3}");
 
         sb.AppendLine($"0;" + string.Join("\t", xCoords));
 
-        for (int i = 0; i < fluence.Grid.SizeY; i++)
+        for (int i = 0; i < fluence.Grid.Rows; i++)
         {
             sb.Append($"{(10 * y0 - 10 * fluence.Grid.YRes * i):N3}\t");
-            for (int j = 0; j < fluence.Grid.SizeX; j++)
+            for (int j = 0; j < fluence.Grid.Cols; j++)
             {
-                sb.Append($"{(fluence.Grid.Data[fluence.Grid.SizeY - 1 - i, j]):N3}");
-                if (j != fluence.Grid.SizeX - 1)
+                sb.Append($"{(fluence.Grid.Data[fluence.Grid.Rows - 1 - i, j]):N3}");
+                if (j != fluence.Grid.Cols - 1)
                     sb.Append("\t");
             }
 
-            if (i != fluence.Grid.SizeY - 1)
+            if (i != fluence.Grid.Rows - 1)
                 sb.Append(Environment.NewLine);
         }
 

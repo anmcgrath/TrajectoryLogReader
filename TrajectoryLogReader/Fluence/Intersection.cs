@@ -1,183 +1,183 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
 namespace TrajectoryLogReader.Fluence;
 
-internal static class Intersection
+internal class Intersection
 {
     /// <summary>
-    /// Calculates the area of the intersection between a polygon and a rectangle.
-    /// Optimized to avoid heap allocations using Span and stackalloc.
+    /// Calculates the intersection area between an Axis-Aligned Rectangle (clipRect) 
+    /// and a Rotated Rectangle (defined by 4 vertices).
     /// </summary>
-    public static double GetIntersectionArea(List<Point> polygonVertices, Rect rect)
+    /// <param name="clipRect">The stationary axis-aligned rectangle.</param>
+    /// <param name="subjectPoly">The 4 vertices of the rotated rectangle.</param>
+    /// <returns>The area of intersection.</returns>
+#if NET7_0_OR_GREATER
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
+    public static float GetIntersectionArea(AABB clipRect, ReadOnlySpan<Vector2> subjectPoly)
     {
-        // Max vertices for a rect-rect intersection is usually small (max 8).
-        // We use a buffer of 16 to be safe.
-        Span<Point> buffer1 = stackalloc Point[16];
-        Span<Point> buffer2 = stackalloc Point[16];
+        // 1. Prepare buffers on the stack to avoid GC.
+        // A rect-rect intersection produces at most 8 vertices.
+        const int maxVertices = 16;
 
-        // Copy initial vertices to buffer1
-        int count = polygonVertices.Count;
-        if (count > 16) throw new InvalidOperationException("Polygon has too many vertices for stack optimization");
-        
-        // Manual copy from List to Span
-        for (int i = 0; i < count; i++)
+        // Double buffering: 'input' is the geometry to clip, 'output' is the result of a clip stage.
+        Span<Vector2> buffer1 = stackalloc Vector2[maxVertices];
+        Span<Vector2> buffer2 = stackalloc Vector2[maxVertices];
+
+        // Copy initial rotated rect into buffer1
+        if (subjectPoly.Length > maxVertices) return 0; // Should not happen for a rectangle
+        subjectPoly.CopyTo(buffer1);
+        int inputCount = subjectPoly.Length;
+
+        // 2. Run the Sutherland-Hodgman pipeline (4 stages for AABB)
+
+        // --- Stage 1: Clip against MinX (Left) ---
+        int outputCount = 0;
+        if (inputCount > 0)
         {
-            buffer1[i] = polygonVertices[i];
+            var prev = buffer1[inputCount - 1];
+            for (int i = 0; i < inputCount; i++)
+            {
+                var curr = buffer1[i];
+                // "Inside" is x >= MinX
+                bool isPrevIn = prev.X >= clipRect.MinX;
+                bool isCurrIn = curr.X >= clipRect.MinX;
+
+                if (isCurrIn)
+                {
+                    if (!isPrevIn) // Out -> In: Add Intersection
+                    {
+                        float t = (clipRect.MinX - prev.X) / (curr.X - prev.X);
+                        buffer2[outputCount++] = new Vector2(clipRect.MinX, prev.Y + t * (curr.Y - prev.Y));
+                    }
+
+                    buffer2[outputCount++] = curr; // In -> In: Add Current
+                }
+                else if (isPrevIn) // In -> Out: Add Intersection
+                {
+                    float t = (clipRect.MinX - prev.X) / (curr.X - prev.X);
+                    buffer2[outputCount++] = new Vector2(clipRect.MinX, prev.Y + t * (curr.Y - prev.Y));
+                }
+
+                prev = curr;
+            }
         }
 
-        // Clip against edges
-        // We swap buffers: input -> output
-        
-        // Left
-        count = ClipAgainstEdge(buffer1.Slice(0, count), buffer2, rect.X, EdgeType.Left);
-        if (count == 0) return 0;
+        // Swap buffers: buffer2 becomes input for next stage
+        inputCount = outputCount;
+        if (inputCount == 0) return 0f;
 
-        // Right
-        count = ClipAgainstEdge(buffer2.Slice(0, count), buffer1, rect.X + rect.Width, EdgeType.Right);
-        if (count == 0) return 0;
+        // --- Stage 2: Clip against MaxX (Right) ---
+        outputCount = 0;
+        {
+            var prev = buffer2[inputCount - 1];
+            for (int i = 0; i < inputCount; i++)
+            {
+                var curr = buffer2[i];
+                bool isPrevIn = prev.X <= clipRect.MaxX;
+                bool isCurrIn = curr.X <= clipRect.MaxX;
 
-        // Bottom
-        count = ClipAgainstEdge(buffer1.Slice(0, count), buffer2, rect.Y, EdgeType.Bottom);
-        if (count == 0) return 0;
+                if (isCurrIn)
+                {
+                    if (!isPrevIn)
+                    {
+                        float t = (clipRect.MaxX - prev.X) / (curr.X - prev.X);
+                        buffer1[outputCount++] = new Vector2(clipRect.MaxX, prev.Y + t * (curr.Y - prev.Y));
+                    }
 
-        // Top
-        count = ClipAgainstEdge(buffer2.Slice(0, count), buffer1, rect.Y + rect.Height, EdgeType.Top);
-        if (count == 0) return 0;
+                    buffer1[outputCount++] = curr;
+                }
+                else if (isPrevIn)
+                {
+                    float t = (clipRect.MaxX - prev.X) / (curr.X - prev.X);
+                    buffer1[outputCount++] = new Vector2(clipRect.MaxX, prev.Y + t * (curr.Y - prev.Y));
+                }
 
-        // Calculate Area of the final polygon in buffer1
-        return CalculateArea(buffer1.Slice(0, count));
-    }
+                prev = curr;
+            }
+        }
 
-    private enum EdgeType
-    {
-        Left,
-        Right,
-        Bottom,
-        Top
-    }
+        inputCount = outputCount;
+        if (inputCount == 0) return 0f;
 
-    private static int ClipAgainstEdge(ReadOnlySpan<Point> input, Span<Point> output, double edgePosition, EdgeType edgeType)
-    {
-        int outputCount = 0;
-        int inputCount = input.Length;
+        // --- Stage 3: Clip against MinY (Bottom) ---
+        outputCount = 0;
+        {
+            var prev = buffer1[inputCount - 1];
+            for (int i = 0; i < inputCount; i++)
+            {
+                var curr = buffer1[i];
+                bool isPrevIn = prev.Y >= clipRect.MinY;
+                bool isCurrIn = curr.Y >= clipRect.MinY;
 
+                if (isCurrIn)
+                {
+                    if (!isPrevIn)
+                    {
+                        float t = (clipRect.MinY - prev.Y) / (curr.Y - prev.Y);
+                        buffer2[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), clipRect.MinY);
+                    }
+
+                    buffer2[outputCount++] = curr;
+                }
+                else if (isPrevIn)
+                {
+                    float t = (clipRect.MinY - prev.Y) / (curr.Y - prev.Y);
+                    buffer2[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), clipRect.MinY);
+                }
+
+                prev = curr;
+            }
+        }
+
+        inputCount = outputCount;
+        if (inputCount == 0) return 0f;
+
+        // --- Stage 4: Clip against MaxY (Top) ---
+        outputCount = 0;
+        {
+            var prev = buffer2[inputCount - 1];
+            for (int i = 0; i < inputCount; i++)
+            {
+                var curr = buffer2[i];
+                bool isPrevIn = prev.Y <= clipRect.MaxY;
+                bool isCurrIn = curr.Y <= clipRect.MaxY;
+
+                if (isCurrIn)
+                {
+                    if (!isPrevIn)
+                    {
+                        float t = (clipRect.MaxY - prev.Y) / (curr.Y - prev.Y);
+                        buffer1[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), clipRect.MaxY);
+                    }
+
+                    buffer1[outputCount++] = curr;
+                }
+                else if (isPrevIn)
+                {
+                    float t = (clipRect.MaxY - prev.Y) / (curr.Y - prev.Y);
+                    buffer1[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), clipRect.MaxY);
+                }
+
+                prev = curr;
+            }
+        }
+
+        inputCount = outputCount;
+        if (inputCount < 3) return 0f;
+
+        // 3. Calculate Area (Shoelace Formula)
+        // Area = 0.5 * |sum(x_i * y_{i+1} - x_{i+1} * y_i)|
+        float area = 0f;
+        var last = buffer1[inputCount - 1];
         for (int i = 0; i < inputCount; i++)
         {
-            var current = input[i];
-            var next = input[(i + 1) % inputCount];
-
-            bool currentInside = IsInside(current, edgePosition, edgeType);
-            bool nextInside = IsInside(next, edgePosition, edgeType);
-
-            if (currentInside && nextInside)
-            {
-                output[outputCount++] = next;
-            }
-            else if (currentInside && !nextInside)
-            {
-                output[outputCount++] = GetIntersection(current, next, edgePosition, edgeType);
-            }
-            else if (!currentInside && nextInside)
-            {
-                output[outputCount++] = GetIntersection(current, next, edgePosition, edgeType);
-                output[outputCount++] = next;
-            }
+            var curr = buffer1[i];
+            area += (last.X * curr.Y) - (last.Y * curr.X);
+            last = curr;
         }
 
-        return outputCount;
-    }
-
-    private static bool IsInside(Point point, double edgePosition, EdgeType edgeType)
-    {
-        switch (edgeType)
-        {
-            case EdgeType.Left:
-                return point.X >= edgePosition;
-            case EdgeType.Right:
-                return point.X <= edgePosition;
-            case EdgeType.Bottom:
-                return point.Y >= edgePosition;
-            case EdgeType.Top:
-                return point.Y <= edgePosition;
-            default:
-                return false;
-        }
-    }
-
-    private static Point GetIntersection(Point p1, Point p2, double edgePosition, EdgeType edgeType)
-    {
-        switch (edgeType)
-        {
-            case EdgeType.Left:
-            case EdgeType.Right:
-                return new Point(edgePosition, p1.Y + (p2.Y - p1.Y) * (edgePosition - p1.X) / (p2.X - p1.X));
-            case EdgeType.Bottom:
-            case EdgeType.Top:
-                return new Point(p1.X + (p2.X - p1.X) * (edgePosition - p1.Y) / (p2.Y - p1.Y), edgePosition);
-            default:
-                return p1;
-        }
-    }
-
-    private static double CalculateArea(ReadOnlySpan<Point> vertices)
-    {
-        if (vertices.Length < 3)
-            return 0;
-
-        double sum = 0;
-
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            var current = vertices[i];
-            var next = vertices[(i + 1) % vertices.Length];
-
-            sum += current.X * next.Y - next.X * current.Y;
-        }
-
-        return Math.Abs(sum) / 2.0;
-    }
-    
-    public static Polygon Intersect(Polygon polygon, Rect rect)
-    {
-        // Max vertices for a rect-rect intersection is usually small (max 8).
-        // We use a buffer of 16 to be safe.
-        Span<Point> buffer1 = stackalloc Point[16];
-        Span<Point> buffer2 = stackalloc Point[16];
-
-        // Copy initial vertices to buffer1
-        int count = polygon.Vertices.Count;
-        if (count > 16) throw new InvalidOperationException("Polygon has too many vertices for stack optimization");
-        
-        // Manual copy from List to Span
-        for (int i = 0; i < count; i++)
-        {
-            buffer1[i] = polygon.Vertices[i];
-        }
-
-        // Clip against edges
-        // We swap buffers: input -> output
-        
-        // Left
-        count = ClipAgainstEdge(buffer1.Slice(0, count), buffer2, rect.X, EdgeType.Left);
-        if (count == 0) return new Polygon(new List<Point>());
-
-        // Right
-        count = ClipAgainstEdge(buffer2.Slice(0, count), buffer1, rect.X + rect.Width, EdgeType.Right);
-        if (count == 0) return new Polygon(new List<Point>());
-
-        // Bottom
-        count = ClipAgainstEdge(buffer1.Slice(0, count), buffer2, rect.Y, EdgeType.Bottom);
-        if (count == 0) return new Polygon(new List<Point>());
-
-        // Top
-        count = ClipAgainstEdge(buffer2.Slice(0, count), buffer1, rect.Y + rect.Height, EdgeType.Top);
-        if (count == 0) return new Polygon(new List<Point>());
-
-        // Convert result Span back to List<Point> for Polygon constructor
-        var resultList = new List<Point>(count);
-        for (int i = 0; i < count; i++)
-        {
-            resultList.Add(buffer1[i]);
-        }
-
-        return new Polygon(resultList);
+        return Math.Abs(area) * 0.5f;
     }
 }

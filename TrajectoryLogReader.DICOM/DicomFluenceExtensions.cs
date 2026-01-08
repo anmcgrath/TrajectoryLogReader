@@ -15,8 +15,8 @@ public static class DicomFluenceExtensions
         var fluenceGrid = fluence.Grid.Data;
         var spacingX = fluence.Grid.XRes * 10;
         var spacingY = fluence.Grid.YRes * 10;
-        int rows = fluence.Grid.SizeY;
-        int cols = fluence.Grid.SizeX;
+        int rows = fluence.Grid.Rows;
+        int cols = fluence.Grid.Cols;
 
         // 1. Calculate Scaling (Map float grid to 16-bit unsigned integer)
         float maxVal = fluenceGrid.Cast<float>().Max();
@@ -62,7 +62,7 @@ public static class DicomFluenceExtensions
         double posX = -(cols * spacingX / 2.0);
         double posY = -(rows * spacingY / 2.0);
         dataset.Add(DicomTag.RTImagePosition,
-            $"{posX.ToString("G12", CultureInfo.InvariantCulture)}\\{posY.ToString("G12", CultureInfo.InvariantCulture)}");
+            $"{posX.ToString("G10", CultureInfo.InvariantCulture)}\\{posY.ToString("G10", CultureInfo.InvariantCulture)}");
 
         // --- IMAGE STRUCTURE ---
         dataset.Add(DicomTag.SamplesPerPixel, (ushort)1);
@@ -75,8 +75,8 @@ public static class DicomFluenceExtensions
         dataset.Add(DicomTag.PixelRepresentation, (ushort)0); // Unsigned
 
 
-        dataset.Add(DicomTag.RescaleSlope, rescaleSlope.ToString("G12", CultureInfo.InvariantCulture));
-        dataset.Add(DicomTag.RescaleIntercept, rescaleIntercept.ToString("G12", CultureInfo.InvariantCulture));
+        dataset.Add(DicomTag.RescaleSlope, rescaleSlope.ToString("G10", CultureInfo.InvariantCulture));
+        dataset.Add(DicomTag.RescaleIntercept, rescaleIntercept.ToString("G10", CultureInfo.InvariantCulture));
         dataset.Add(DicomTag.RescaleType, "RELATIVE");
 
         // Pixel Data (using the helper)

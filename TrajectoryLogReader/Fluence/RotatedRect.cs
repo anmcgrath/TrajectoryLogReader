@@ -1,80 +1,44 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
 namespace TrajectoryLogReader.Fluence;
 
 internal class RotatedRect
 {
-    public Rect Bounds { get; }
-    public Polygon Polygon { get; }
-
-    /// <summary>
-    /// Inverse rotation matrix
-    /// </summary>
-    private readonly Matrix _invMatrix;
-
-    /// <summary>
-    /// The angle the rectangle was rotated by.
-    /// </summary>
-    public double Angle { get; }
-
-    /// <summary>
-    /// Original rect
-    /// </summary>
-    private readonly Rect _originalRect;
-
-    private RotatedRect(List<Point> coords, double angle, Rect originalRect)
+#if NET7_0_OR_GREATER
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+    public static void GetRotatedRectAndBounds(
+        Vector2 center, float width, float height, float cos, float sin,
+        Span<Vector2> corners, out AABB bounds)
     {
-        var x0 = coords.Min(p => p.X);
-        var xMax = coords.Max(p => p.X);
-        var y0 = coords.Min(p => p.Y);
-        var yMax = coords.Max(p => p.Y);
+        // 1. Calculate Half-Axes (Same as before)
+        float hw = width * 0.5f;
+        float hwX = hw * cos;
+        float hwY = hw * sin;
 
-        Bounds = new Rect()
-        {
-            X = x0,
-            Y = y0,
-            Width = xMax - x0,
-            Height = yMax - y0,
-        };
+        float hh = height * 0.5f;
+        float hhX = -hh * sin;
+        float hhY = hh * cos;
 
-        _invMatrix = Matrix.Rotation(-angle);
-        Angle = angle;
-        _originalRect = originalRect;
-        Polygon = new Polygon(coords);
-    }
+        // 2. Generate Corners (Same as before)
+        // Top-Right
+        corners[0] = new Vector2(center.X + hwX - hhX, center.Y + hwY - hhY);
+        // Bottom-Right
+        corners[1] = new Vector2(center.X + hwX + hhX, center.Y + hwY + hhY);
+        // Bottom-Left
+        corners[2] = new Vector2(center.X - hwX + hhX, center.Y - hwY + hhY);
+        // Top-Left
+        corners[3] = new Vector2(center.X - hwX - hhX, center.Y - hwY - hhY);
 
-    public bool Contains(Point p)
-    {
-        // rotate point by inverse of rotation matrix
-        // Use the pre-calculated inverse matrix
-        var rotatedP = _invMatrix * p;
-        return _originalRect.Contains(rotatedP.X, rotatedP.Y);
-    }
+        float xExtent = Math.Abs(hwX) + Math.Abs(hhX);
+        float yExtent = Math.Abs(hwY) + Math.Abs(hhY);
 
-    public bool Contains(Rect rect)
-    {
-        return Contains(rect.TopLeft()) &&
-               Contains(rect.BottomRight()) &&
-               Contains(rect.TopRight()) &&
-               Contains(rect.BottomLeft());
-    }
-
-    /// <summary>
-    /// Creates a rotated rectangle
-    /// </summary>
-    /// <param name="rect">The rectangle to rotate around (0, 0)</param>
-    /// <param name="angle">The rotation angle in radians</param>
-    /// <returns></returns>
-    public static RotatedRect Create(Rect rect, double angle)
-    {
-        var matrix = Matrix.Rotation(angle);
-
-        var newCoords = new List<Point>()
-        {
-            matrix * rect.BottomLeft(),
-            matrix * rect.TopLeft(),
-            matrix * rect.TopRight(),
-            matrix * rect.BottomRight(),
-        };
-
-        return new RotatedRect(newCoords, angle, rect);
+        bounds = new AABB(
+            center.X - xExtent,
+            center.Y - yExtent,
+            center.X + xExtent,
+            center.Y + yExtent
+        );
     }
 }
