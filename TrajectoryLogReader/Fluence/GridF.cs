@@ -121,6 +121,25 @@ public class GridF
     }
 
     /// <summary>
+    /// Adds the values from another grid to this grid.
+    /// Used for aggregating results from parallel execution.
+    /// </summary>
+    internal void Add(GridF other)
+    {
+        if (other.SizeX != SizeX || other.SizeY != SizeY)
+            throw new ArgumentException("Grid dimensions must match");
+
+        // Parallelize the merge
+        Parallel.For(0, SizeY, row =>
+        {
+            for (int col = 0; col < SizeX; col++)
+            {
+                Data[row, col] += other.Data[row, col];
+            }
+        });
+    }
+
+    /// <summary>
     /// Adds <paramref name="value"/> to the grid cells covered by <paramref name="rect"/>. Partially covered grid cells
     /// will add the fractional area where the rect covers the pixel.
     /// </summary>
@@ -203,7 +222,7 @@ public class GridF
         {
             // y is the row index.
             // startX and endX are column indices (float).
-            
+
             // Validate row index just in case
             if (y < 0 || y >= SizeY) return;
 
@@ -223,13 +242,13 @@ public class GridF
                 // Calculate coverage
                 // Pixel x covers range [x, x+1]
                 // Segment is [startX, endX]
-                
+
                 // Intersection of [x, x+1] and [startX, endX]
                 float segMin = Math.Max(x, startX);
                 float segMax = Math.Min(x + 1, endX);
-                
+
                 float coverage = segMax - segMin;
-                
+
                 if (coverage > 0)
                 {
                     Data[y, x] += value * coverage;

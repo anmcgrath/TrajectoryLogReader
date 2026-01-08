@@ -1,4 +1,6 @@
 using System.Numerics;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using TrajectoryLogReader.Log;
 using TrajectoryLogReader.Util;
 
@@ -34,93 +36,112 @@ public class FluenceCreator
         // but not zero
         time = Math.Max(time, _log.Header.SamplingIntervalInMS);
 
-        Span<Vector2> corners = stackalloc Vector2[4];
+        // Prepare work items
+        var workItems = new List<(MeasurementData s, float deltaMu)>();
+        var iteratorPrevMu = _data.First().MU.GetRecord(recordType);
 
-        var prevMu = _data.First().MU.GetRecord(recordType);
         foreach (var s in _data)
         {
             if (s.TimeInMs % time != 0)
                 continue;
 
-            var deltaMu = s.MU.GetRecord(recordType) - prevMu;
-            prevMu = s.MU.GetRecord(recordType);
-            if (deltaMu <= 0)
-                continue;
+            var currentMu = s.MU.GetRecord(recordType);
+            var deltaMu = currentMu - iteratorPrevMu;
+            iteratorPrevMu = currentMu;
 
-            var x1 = -s.X1.GetRecord(recordType);
-            var y1 = -s.Y1.GetRecord(recordType);
-            var x2 = s.X2.GetRecord(recordType);
-            var y2 = s.Y2.GetRecord(recordType);
-            var coll = Scale.Convert(
-                _log.Header.AxisScale,
-                AxisScale.ModifiedIEC61217, Axis.CollRtn,
-                s.CollRtn.GetRecord(recordType));
+            if (deltaMu > 0)
+                workItems.Add((s, deltaMu));
+        }
 
-            var mlc = _log.MlcModel;
+        Parallel.ForEach(workItems,
+            () => new GridF(w, h, options.GridCountX, options.GridCountY),
+            (item, loopState, localGrid) =>
+            {
+                var s = item.s;
+                var deltaMu = item.deltaMu;
+                Span<Vector2> corners = stackalloc Vector2[4];
 
-            var leafPositions = recordType == RecordType.ActualPosition ? s.MLC.Actual : s.MLC.Expected;
+                var x1 = -s.X1.GetRecord(recordType);
+                var y1 = -s.Y1.GetRecord(recordType);
+                var x2 = s.X2.GetRecord(recordType);
+                var y2 = s.Y2.GetRecord(recordType);
+                var coll = Scale.Convert(
+                    _log.Header.AxisScale,
+                    AxisScale.ModifiedIEC61217, Axis.CollRtn,
+                    s.CollRtn.GetRecord(recordType));
 
-            var angleRadians = coll * (float)Math.PI / 180;
+                var mlc = _log.MlcModel;
+
+                var leafPositions = recordType == RecordType.ActualPosition ? s.MLC.Actual : s.MLC.Expected;
+
+                var angleRadians = coll * (float)Math.PI / 180;
 
 #if NET7_0_OR_GREATER
-            var (sin, cos) = MathF.SinCos(angleRadians);
+                var (sin, cos) = MathF.SinCos(angleRadians);
 #else
-            var sin = (float)Math.Sin(angleRadians);
-            var cos = (float)Math.Cos(angleRadians);
+                var sin = (float)Math.Sin(angleRadians);
+                var cos = (float)Math.Cos(angleRadians);
 #endif
 
-            for (int i = 0; i < _log.Header.GetNumberOfLeafPairs(); i++)
+                for (int i = 0; i < _log.Header.GetNumberOfLeafPairs(); i++)
+                {
+                    var bankAPos = leafPositions[1, i];
+                    var bankBPos = -leafPositions[0, i];
+
+                    if (bankBPos < x1 && bankAPos < x1)
+                        continue;
+
+                    if (bankBPos > x2 && bankAPos > x2)
+                        continue;
+
+                    bankBPos = Math.Max(bankBPos, x1);
+                    bankAPos = Math.Min(bankAPos, x2);
+
+                    var leafInfo = mlc.GetLeafInformation(i);
+
+                    // Working in CM
+                    var leafWidthCm = leafInfo.WidthInMm / 10f;
+                    var leafCenterYCm = leafInfo.YInMm / 10f;
+                    var yMinCm = leafCenterYCm - leafWidthCm / 2f;
+                    var yMaxCm = leafCenterYCm + leafWidthCm / 2f;
+
+                    // Constrain to jaw positions
+                    if (yMinCm < y1)
+                        yMinCm = y1;
+                    if (yMaxCm < y1)
+                        yMaxCm = y1;
+                    if (yMinCm > y2)
+                        yMinCm = y2;
+                    if (yMaxCm > y2)
+                        yMaxCm = y2;
+
+                    if (Math.Abs(yMinCm - yMaxCm) < 0.0001)
+                        continue;
+
+                    var width = bankAPos - bankBPos;
+                    var xCenter = bankBPos + width / 2f;
+                    var yCenter = leafCenterYCm;
+
+                    // Rotate the center of the leaf around (0,0) to account for collimator rotation
+                    var xRot = xCenter * cos - yCenter * sin;
+                    var yRot = xCenter * sin + yCenter * cos;
+
+                    FastRotatedRect.GetRotatedRectAndBounds(
+                        new Vector2(xRot, yRot),
+                        width,
+                        leafWidthCm,
+                        cos, sin, corners, out var bounds);
+                    localGrid.DrawDataFast(corners, bounds, deltaMu);
+                }
+                return localGrid;
+            },
+            (localGrid) =>
             {
-                var bankAPos = leafPositions[1, i];
-                var bankBPos = -leafPositions[0, i];
-
-                if (bankBPos < x1 && bankAPos < x1)
-                    continue;
-
-                if (bankBPos > x2 && bankAPos > x2)
-                    continue;
-
-                bankBPos = Math.Max(bankBPos, x1);
-                bankAPos = Math.Min(bankAPos, x2);
-
-                var leafInfo = mlc.GetLeafInformation(i);
-
-                // Working in CM
-                var leafWidthCm = leafInfo.WidthInMm / 10f;
-                var leafCenterYCm = leafInfo.YInMm / 10f;
-                var yMinCm = leafCenterYCm - leafWidthCm / 2f;
-                var yMaxCm = leafCenterYCm + leafWidthCm / 2f;
-
-                // Constrain to jaw positions
-                if (yMinCm < y1)
-                    yMinCm = y1;
-                if (yMaxCm < y1)
-                    yMaxCm = y1;
-                if (yMinCm > y2)
-                    yMinCm = y2;
-                if (yMaxCm > y2)
-                    yMaxCm = y2;
-
-                if (Math.Abs(yMinCm - yMaxCm) < 0.0001)
-                    continue;
-
-                var width = bankAPos - bankBPos;
-                var xCenter = bankBPos + width / 2f;
-                var yCenter = leafCenterYCm;
-
-                // Rotate the center of the leaf around (0,0) to account for collimator rotation
-                var xRot = xCenter * cos - yCenter * sin;
-                var yRot = xCenter * sin + yCenter * cos;
-
-                FastRotatedRect.GetRotatedRectAndBounds(
-                    new Vector2(xRot, yRot),
-                    width,
-                    leafWidthCm,
-                    cos, sin, corners, out var bounds);
-
-                grid.DrawDataFast(corners, bounds, deltaMu);
-            }
-        }
+                lock (grid)
+                {
+                    grid.Add(localGrid);
+                }
+            });
 
         return new FieldFluence(grid);
     }
