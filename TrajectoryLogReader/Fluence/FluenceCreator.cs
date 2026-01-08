@@ -55,7 +55,6 @@ public class FluenceCreator
                 _log.Header.AxisScale,
                 AxisScale.ModifiedIEC61217, Axis.CollRtn,
                 s.CollRtn.GetRecord(recordType));
-            coll = 0;
 
             var mlc = _log.MlcModel;
 
@@ -99,13 +98,18 @@ public class FluenceCreator
 
                 var width = bankAPos - bankBPos;
                 var xCenter = bankBPos + width / 2f;
+                var yCenter = leafCenterYCm;
+
+                // Rotate the center of the leaf around (0,0) to account for collimator rotation
+                var xRot = xCenter * cos - yCenter * sin;
+                var yRot = xCenter * sin + yCenter * cos;
 
                 FastRotatedRect.GetRotatedRectAndBounds(
-                    new Vector2(xCenter, leafCenterYCm),
+                    new Vector2(xRot, yRot),
                     width,
                     leafWidthCm,
                     cos, sin, corners, out var bounds);
-                
+
                 grid.DrawDataFast(corners, bounds, deltaMu);
             }
         }
