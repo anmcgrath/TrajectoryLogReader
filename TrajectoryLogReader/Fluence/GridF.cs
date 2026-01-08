@@ -56,37 +56,6 @@ public class GridF
         Data[row, col] = value;
     }
 
-    /// <summary>
-    /// Gets the pixel bounds at <paramref name="col"/>, <paramref name="row"/>
-    /// </summary>
-    /// <param name="col"></param>
-    /// <param name="row"></param>
-    /// <returns></returns>
-    private Rect GetPixelBounds(int col, int row)
-    {
-        return new Rect()
-        {
-            X = GetX(col),
-            Y = GetY(row),
-            Width = XRes,
-            Height = YRes
-        };
-    }
-
-    /// <summary>
-    /// Gets the pixel bounds at <paramref name="col"/>, <paramref name="row"/>
-    /// </summary>
-    /// <param name="col"></param>
-    /// <param name="row"></param>
-    /// <returns></returns>
-    private AABB GetPixelBoundsAABB(int col, int row)
-    {
-        var minX = (float)GetX(col);
-        var minY = (float)GetY(row);
-        var maxX = minX + (float)XRes;
-        var maxY = minY + (float)YRes;
-        return new AABB(minX, minY, maxX, maxY);
-    }
 
     /// <summary>
     /// Returns the grid column that <paramref name="x"/> is inside. If outside, returns either 0 or <see cref="SizeX"/> - 1 depending on which is closer
@@ -139,70 +108,21 @@ public class GridF
         });
     }
 
-    /// <summary>
-    /// Adds <paramref name="value"/> to the grid cells covered by <paramref name="rect"/>. Partially covered grid cells
-    /// will add the fractional area where the rect covers the pixel.
-    /// </summary>
-    /// <param name="rect"></param>
-    /// <param name="value"></param>
-    private void DrawData(RotatedRect rect, float value)
+    public void DrawDataFast(Span<Vector2> corners, AABB bounds, float value, bool useApproximate)
     {
-        var row0 = GetRow(rect.Bounds.Y);
-        var row1 = GetRow(rect.Bounds.Y + rect.Bounds.Height);
-
-        var areaPixel = XRes * YRes;
-        var polygonVertices = rect.Polygon.Vertices;
-
-        // Use Parallel.For to speed up the processing of rows
-        Parallel.For(row0, row1 + 1, row =>
+        if (useApproximate)
         {
-            // Scanline optimization:
-            // Calculate the X range of the polygon for this row's Y band.
-            // This avoids iterating over empty pixels in the bounding box.
-
-            double yBottom = GetY(row);
-            double yTop = yBottom + YRes;
-
-            GetXRange(polygonVertices, yBottom, yTop, out double minX, out double maxX);
-
-            // Convert X range to columns
-            int startCol = GetCol(minX);
-            int endCol = GetCol(maxX);
-
-            // Ensure we don't go out of bounds of the grid or the rect's bounding box
-            // (GetCol already clamps to 0..SizeX-1)
-
-            for (int col = startCol; col <= endCol; col++)
-            {
-                var pixelRect = GetPixelBounds(col, row);
-
-                // Optimization: Check if pixel is fully inside the X range (conservative)
-                // If the pixel is strictly between minX and maxX (with some margin), it might be fully inside.
-                // However, the edges are slanted, so minX/maxX are the extremes for the whole row.
-                // A pixel at the edge might still be partially covered.
-
-                // Use the allocation-free intersection area calculation
-                var areaIntersection = Intersection.GetIntersectionArea(polygonVertices, pixelRect);
-
-                if (areaIntersection > 0)
-                {
-                    if (areaIntersection >= areaPixel - 1e-9) // Tolerance for float precision
-                    {
-                        Data[row, col] += value;
-                    }
-                    else
-                    {
-                        Data[row, col] += value * (float)(areaIntersection / areaPixel);
-                    }
-                }
-            }
-        });
+            DrawDataFastApproximate(corners, bounds, value);
+        }
+        else
+        {
+            DrawDataFastExact(corners, bounds, value);
+        }
     }
 
-    public void DrawDataFast(Span<Vector2> corners, AABB bounds, float value)
+    public void DrawDataFastApproximate(Span<Vector2> corners, AABB bounds, float value)
     {
         // 1. Convert Corners to Grid Space (Pixels)
-        // We use stackalloc for the grid-space corners to avoid GC
         Span<Vector2> gridCorners = stackalloc Vector2[4];
         for (int i = 0; i < 4; i++)
         {
@@ -212,8 +132,6 @@ public class GridF
         }
 
         // 2. Calculate Clipping Bounds in Grid Space (Pixels)
-        // We clamp to the grid dimensions (0 to SizeY)
-        // Scanline expects integer Y range.
         int clipMinY = 0;
         int clipMaxY = SizeY - 1;
 
@@ -257,15 +175,68 @@ public class GridF
         });
     }
 
-    /// <summary>
-    /// Calculates the min and max X values of the polygon within the given Y range.
-    /// </summary>
-    private void GetXRange(List<Point> vertices, double yMin, double yMax, out double minX, out double maxX)
+    public void DrawDataFastExact(Span<Vector2> corners, AABB bounds, float value)
     {
-        minX = double.MaxValue;
-        maxX = double.MinValue;
+        // 1. Convert Corners to Grid Space (Pixels)
+        Span<Vector2> gridCorners = stackalloc Vector2[4];
+        for (int i = 0; i < 4; i++)
+        {
+            float gx = (float)((corners[i].X - Bounds.X) / XRes);
+            float gy = (float)((corners[i].Y - Bounds.Y) / YRes);
+            gridCorners[i] = new Vector2(gx, gy);
+        }
 
-        int count = vertices.Count;
+        // 2. Determine Row Range
+        // We need to cover the full vertical extent of the polygon in grid space
+        // Bounds are also in World Space, convert them
+        float boundsMinY = (float)((bounds.MinY - Bounds.Y) / YRes);
+        float boundsMaxY = (float)((bounds.MaxY - Bounds.Y) / YRes);
+
+        int y0 = Math.Max(0, (int)Math.Floor(boundsMinY));
+        int y1 = Math.Min(SizeY - 1, (int)Math.Ceiling(boundsMaxY));
+
+        var areaPixel = 1.0f; // In grid space, pixel area is 1x1 = 1.
+
+        for (int row = y0; row <= y1; row++)
+        {
+            // Calculate X Range for this row (y to y+1)
+            GetXRangeFast(gridCorners, row, row + 1, out float minX, out float maxX);
+
+            int startCol = Math.Max(0, (int)Math.Floor(minX));
+            int endCol = Math.Min(SizeX - 1, (int)Math.Ceiling(maxX));
+
+            for (int col = startCol; col <= endCol; col++)
+            {
+                // Pixel bounds in Grid Space are simply (col, row, col+1, row+1)
+                var pixelRect = new AABB(col, row, col + 1, row + 1);
+
+                var areaIntersection = Intersection.GetIntersectionArea(pixelRect, gridCorners);
+
+                if (areaIntersection > 0)
+                {
+                    if (areaIntersection >= areaPixel - 1e-9)
+                    {
+                        Data[row, col] += value;
+                    }
+                    else
+                    {
+                        Data[row, col] +=
+                            value * areaIntersection; // areaIntersection is fraction since pixel area is 1
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Calculates the min and max X values of the polygon within the given Y range (Optimized for Span).
+    /// </summary>
+    private void GetXRangeFast(ReadOnlySpan<Vector2> vertices, float yMin, float yMax, out float minX, out float maxX)
+    {
+        minX = float.MaxValue;
+        maxX = float.MinValue;
+
+        int count = vertices.Length;
         for (int i = 0; i < count; i++)
         {
             var p1 = vertices[i];
@@ -292,7 +263,7 @@ public class GridF
             // Intersect with yMin
             if ((p1.Y < yMin && p2.Y > yMin) || (p1.Y > yMin && p2.Y < yMin))
             {
-                double x = p1.X + (yMin - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y);
+                float x = p1.X + (yMin - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y);
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
             }
@@ -300,29 +271,18 @@ public class GridF
             // Intersect with yMax
             if ((p1.Y < yMax && p2.Y > yMax) || (p1.Y > yMax && p2.Y < yMax))
             {
-                double x = p1.X + (yMax - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y);
+                float x = p1.X + (yMax - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y);
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
             }
         }
 
-        // Fallback if no intersection found (should not happen if row is within bounds)
+        // Fallback if no intersection found
         if (minX > maxX)
         {
             minX = 0;
             maxX = 0;
         }
-    }
-
-    /// <summary>
-    /// Draws the rect, rotated by <paramref name="angle"/>
-    /// </summary>
-    /// <param name="rect"></param>
-    /// <param name="angle"></param>
-    /// <param name="value"></param>
-    internal void DrawData(Rect rect, double angle, float value)
-    {
-        DrawData(RotatedRect.Create(rect, angle), value);
     }
 
     public override string ToString()

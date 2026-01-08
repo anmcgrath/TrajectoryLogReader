@@ -18,7 +18,7 @@ public class FastRectTests
         float sin = 0;
         
         Span<Vector2> corners = stackalloc Vector2[4];
-        FastRotatedRect.GetRotatedRectAndBounds(center, width, height, cos, sin, corners, out var bounds);
+        RotatedRect.GetRotatedRectAndBounds(center, width, height, cos, sin, corners, out var bounds);
         
         // Expected corners:
         // TR: 10 + 2, 10 + 1 = 12, 11
@@ -72,7 +72,7 @@ public class FastRectTests
         float sin = 1;
         
         Span<Vector2> corners = stackalloc Vector2[4];
-        FastRotatedRect.GetRotatedRectAndBounds(center, width, height, cos, sin, corners, out var bounds);
+        RotatedRect.GetRotatedRectAndBounds(center, width, height, cos, sin, corners, out var bounds);
         
         // hwX = 2 * 0 = 0
         // hwY = 2 * 1 = 2

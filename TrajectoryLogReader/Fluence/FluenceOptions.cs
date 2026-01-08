@@ -32,4 +32,10 @@ public class FluenceOptions
     /// Must be a multiple of the log file sampling rate
     /// </summary>
     public int SampleRateInMs { get; set; } = 20;
+
+    /// <summary>
+    /// If true, uses a faster approximation (Scanline) algorithm for fluence calculation.
+    /// If false (default), uses the exact intersection area calculation.
+    /// </summary>
+    public bool UseApproximateFluence { get; set; } = false;
 }

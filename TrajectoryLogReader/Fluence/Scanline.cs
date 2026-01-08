@@ -61,7 +61,6 @@ public class Scanline
         int startY = (int)Math.Ceiling(minY);
         // Pre-advance X to the center of the first scanline if needed, 
         // or just interpolate from the exact Y.
-        // Better precision: Calculate X based on (startY - vTop.Y)
         currentLeftX += (startY - vLeftTop.Y) * leftSlope;
         currentRightX += (startY - vRightTop.Y) * rightSlope;
 
@@ -73,11 +72,10 @@ public class Scanline
         // We stop when we pass the lowest vertex.
         // To do this simply, we just track "Current Target Y" for left and right.
 
-        // (Re-implmenting the loop for clarity and robustness below)
         ScanlineCore(corners, topIdx, leftIdx, rightIdx, startY, clipMinY, clipMaxY, onScanline);
     }
 
-// Broken out for clarity - this is the "Hot Loop"
+
     private static void ScanlineCore(
         ReadOnlySpan<Vector2> corners,
         int topIdx, int leftIdx, int rightIdx,
@@ -91,29 +89,31 @@ public class Scanline
         // Setup Left Edge
         Vector2 vL1 = corners[topIdx];
         Vector2 vL2 = corners[leftIdx];
-        
+
         // Handle horizontal top edge on Left
         while (vL2.Y <= vL1.Y)
         {
-             vL1 = vL2;
-             leftIdx = NextVert(leftIdx, -1);
-             vL2 = corners[leftIdx];
-             if (leftIdx == topIdx) return; 
+            vL1 = vL2;
+            leftIdx = NextVert(leftIdx, -1);
+            vL2 = corners[leftIdx];
+            if (leftIdx == topIdx) return;
         }
+
         float slopeL = (vL2.X - vL1.X) / (vL2.Y - vL1.Y);
 
         // Setup Right Edge
         Vector2 vR1 = corners[topIdx];
         Vector2 vR2 = corners[rightIdx];
-        
+
         // Handle horizontal top edge on Right
         while (vR2.Y <= vR1.Y)
         {
-             vR1 = vR2;
-             rightIdx = NextVert(rightIdx, 1);
-             vR2 = corners[rightIdx];
-             if (rightIdx == topIdx) return;
+            vR1 = vR2;
+            rightIdx = NextVert(rightIdx, 1);
+            vR2 = corners[rightIdx];
+            if (rightIdx == topIdx) return;
         }
+
         float slopeR = (vR2.X - vR1.X) / (vR2.Y - vR1.Y);
 
         // Correction for the first sub-pixel step
@@ -123,7 +123,6 @@ public class Scanline
         // We need the bottom-most Y to know when to stop globally
         // But we just loop until both sides are exhausted.
         // For a rect, we have 3 stages max (Top triangle, Middle, Bottom triangle).
-        // It's simpler to just loop Y and switch edges as we pass them.
 
         // Find the global bottom Y to stop the loop
         float totalMaxY = corners[0].Y;

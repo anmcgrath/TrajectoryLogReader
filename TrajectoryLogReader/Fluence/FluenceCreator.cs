@@ -53,6 +53,8 @@ public class FluenceCreator
                 workItems.Add((s, deltaMu));
         }
 
+        var useApproximate = options.UseApproximateFluence;
+
         Parallel.ForEach(workItems,
             () => new GridF(w, h, options.GridCountX, options.GridCountY),
             (item, loopState, localGrid) =>
@@ -126,13 +128,14 @@ public class FluenceCreator
                     var xRot = xCenter * cos - yCenter * sin;
                     var yRot = xCenter * sin + yCenter * cos;
 
-                    FastRotatedRect.GetRotatedRectAndBounds(
+                    RotatedRect.GetRotatedRectAndBounds(
                         new Vector2(xRot, yRot),
                         width,
                         leafWidthCm,
                         cos, sin, corners, out var bounds);
-                    localGrid.DrawDataFast(corners, bounds, deltaMu);
+                    localGrid.DrawDataFast(corners, bounds, deltaMu, useApproximate);
                 }
+
                 return localGrid;
             },
             (localGrid) =>
