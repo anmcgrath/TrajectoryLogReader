@@ -95,7 +95,7 @@ namespace TrajectoryLogReader.Log
         {
             get
             {
-                if (_statistics == null)
+                if (_fluenceCreator == null)
                     _fluenceCreator = new FluenceCreator(Snapshots, _log);
                 return _fluenceCreator;
             }
