@@ -26,8 +26,8 @@ public class FluenceCreator
         var grid = new GridF(
             w,
             h,
-            options.GridCountX,
-            options.GridCountY);
+            options.Cols,
+            options.Rows);
 
         var time = options.SampleRateInMs;
         // ensure time is a multiple of the sampling rate
@@ -56,7 +56,7 @@ public class FluenceCreator
         var useApproximate = options.UseApproximateFluence;
 
         Parallel.ForEach(workItems,
-            () => new GridF(w, h, options.GridCountX, options.GridCountY),
+            () => new GridF(w, h, options.Cols, options.Rows),
             (item, loopState, localGrid) =>
             {
                 var s = item.s;

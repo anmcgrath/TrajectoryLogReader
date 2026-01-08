@@ -15,8 +15,8 @@ public static class DicomFluenceExtensions
         var fluenceGrid = fluence.Grid.Data;
         var spacingX = fluence.Grid.XRes * 10;
         var spacingY = fluence.Grid.YRes * 10;
-        int rows = fluence.Grid.SizeY;
-        int cols = fluence.Grid.SizeX;
+        int rows = fluence.Grid.Rows;
+        int cols = fluence.Grid.Cols;
 
         // 1. Calculate Scaling (Map float grid to 16-bit unsigned integer)
         float maxVal = fluenceGrid.Cast<float>().Max();

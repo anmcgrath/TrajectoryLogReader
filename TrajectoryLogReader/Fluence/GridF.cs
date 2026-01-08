@@ -11,8 +11,8 @@ public class GridF
     public double Height { get; }
     public double XRes { get; }
     public double YRes { get; }
-    public int SizeX { get; }
-    public int SizeY { get; }
+    public int Cols { get; }
+    public int Rows { get; }
 
     public Rect Bounds { get; }
 
@@ -21,15 +21,15 @@ public class GridF
     /// </summary>
     public float[,] Data { get; }
 
-    public GridF(double width, double height, int sizeX, int sizeY)
+    public GridF(double width, double height, int cols, int rows)
     {
         Width = width;
         Height = height;
-        SizeX = sizeX;
-        SizeY = sizeY;
-        XRes = width / sizeX;
-        YRes = height / sizeY;
-        Data = new float[sizeY, sizeX];
+        Cols = cols;
+        Rows = rows;
+        XRes = width / cols;
+        YRes = height / rows;
+        Data = new float[rows, cols];
         Bounds = new Rect() { X = -width / 2, Y = -height / 2, Width = width, Height = height };
     }
 
@@ -50,7 +50,7 @@ public class GridF
 
     public void SetData(int col, int row, float value)
     {
-        if (col < 0 || col >= SizeX || row < 0 || row >= SizeY)
+        if (col < 0 || col >= Cols || row < 0 || row >= Rows)
             return;
 
         Data[row, col] = value;
@@ -58,7 +58,7 @@ public class GridF
 
 
     /// <summary>
-    /// Returns the grid column that <paramref name="x"/> is inside. If outside, returns either 0 or <see cref="SizeX"/> - 1 depending on which is closer
+    /// Returns the grid column that <paramref name="x"/> is inside. If outside, returns either 0 or <see cref="Cols"/> - 1 depending on which is closer
     /// </summary>
     /// <param name="x"></param>
     /// <returns></returns>
@@ -67,14 +67,14 @@ public class GridF
         var col = (int)((x - Bounds.X) / XRes);
         if (col < 0)
             return 0;
-        if (col >= SizeX)
-            return SizeX - 1;
+        if (col >= Cols)
+            return Cols - 1;
 
         return col;
     }
 
     /// <summary>
-    /// Returns the grid row that <paramref name="y"/> is inside. If outside, returns either 0 or <see cref="SizeY"/> - 1 depending on which is closer
+    /// Returns the grid row that <paramref name="y"/> is inside. If outside, returns either 0 or <see cref="Rows"/> - 1 depending on which is closer
     /// </summary>
     /// <param name="y"></param>
     /// <returns></returns>
@@ -83,8 +83,8 @@ public class GridF
         var row = (int)((y - Bounds.Y) / YRes);
         if (row < 0)
             return 0;
-        if (row >= SizeY)
-            return SizeY - 1;
+        if (row >= Rows)
+            return Rows - 1;
 
         return row;
     }
@@ -95,13 +95,13 @@ public class GridF
     /// </summary>
     internal void Add(GridF other)
     {
-        if (other.SizeX != SizeX || other.SizeY != SizeY)
+        if (other.Cols != Cols || other.Rows != Rows)
             throw new ArgumentException("Grid dimensions must match");
 
         // Parallelize the merge
-        Parallel.For(0, SizeY, row =>
+        Parallel.For(0, Rows, row =>
         {
-            for (int col = 0; col < SizeX; col++)
+            for (int col = 0; col < Cols; col++)
             {
                 Data[row, col] += other.Data[row, col];
             }
@@ -133,7 +133,7 @@ public class GridF
 
         // 2. Calculate Clipping Bounds in Grid Space (Pixels)
         int clipMinY = 0;
-        int clipMaxY = SizeY - 1;
+        int clipMaxY = Rows - 1;
 
         // 3. Process Scanlines
         Scanline.ProcessScanlines(gridCorners, clipMinY, clipMaxY, (y, startX, endX) =>
@@ -142,7 +142,7 @@ public class GridF
             // startX and endX are column indices (float).
 
             // Validate row index just in case
-            if (y < 0 || y >= SizeY) return;
+            if (y < 0 || y >= Rows) return;
 
             // Determine integer column range
             int colStart = (int)Math.Floor(startX);
@@ -150,10 +150,10 @@ public class GridF
 
             // Clamp columns to grid
             if (colEnd < 0) return;
-            if (colStart >= SizeX) return;
+            if (colStart >= Cols) return;
 
             int c0 = Math.Max(0, colStart);
-            int c1 = Math.Min(SizeX - 1, colEnd);
+            int c1 = Math.Min(Cols - 1, colEnd);
 
             for (int x = c0; x <= c1; x++)
             {
@@ -193,7 +193,7 @@ public class GridF
         float boundsMaxY = (float)((bounds.MaxY - Bounds.Y) / YRes);
 
         int y0 = Math.Max(0, (int)Math.Floor(boundsMinY));
-        int y1 = Math.Min(SizeY - 1, (int)Math.Ceiling(boundsMaxY));
+        int y1 = Math.Min(Rows - 1, (int)Math.Ceiling(boundsMaxY));
 
         var areaPixel = 1.0f; // In grid space, pixel area is 1x1 = 1.
 
@@ -203,7 +203,7 @@ public class GridF
             GetXRangeFast(gridCorners, row, row + 1, out float minX, out float maxX);
 
             int startCol = Math.Max(0, (int)Math.Floor(minX));
-            int endCol = Math.Min(SizeX - 1, (int)Math.Ceiling(maxX));
+            int endCol = Math.Min(Cols - 1, (int)Math.Ceiling(maxX));
 
             for (int col = startCol; col <= endCol; col++)
             {
@@ -288,13 +288,13 @@ public class GridF
     public override string ToString()
     {
         var sb = new StringBuilder();
-        for (int row = 0; row < SizeY; row++)
+        for (int row = 0; row < Rows; row++)
         {
             var line = new StringBuilder();
-            for (int col = 0; col < SizeX; col++)
+            for (int col = 0; col < Cols; col++)
             {
                 line.Append(GetData(col, row));
-                if (col != SizeX - 1)
+                if (col != Cols - 1)
                     line.Append($"\t");
             }
 

@@ -7,12 +7,12 @@ public class FluenceOptions
     /// <summary>
     /// The number of grid points in the x direction, defaults to 100
     /// </summary>
-    public int GridCountX { get; set; } = 100;
+    public int Cols { get; set; } = 100;
 
     /// <summary>
     /// The number of grid points in the y direction, defaults to 100
     /// </summary>
-    public int GridCountY { get; set; } = 100;
+    public int Rows { get; set; } = 100;
 
     /// <summary>
     /// The total grid size in cm in the x-direction.
