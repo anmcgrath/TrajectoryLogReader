@@ -91,9 +91,17 @@ public class FluenceCreator
                 var yMinCm = leafCenterYCm - leafWidthCm / 2f;
                 var yMaxCm = leafCenterYCm + leafWidthCm / 2f;
 
+                // Constrain to jaw positions
                 if (yMinCm < y1)
-                    continue;
+                    yMinCm = y1;
+                if (yMaxCm < y1)
+                    yMaxCm = y1;
+                if (yMinCm > y2)
+                    yMinCm = y2;
                 if (yMaxCm > y2)
+                    yMaxCm = y2;
+
+                if (Math.Abs(yMinCm - yMaxCm) < 0.0001)
                     continue;
 
                 var width = bankAPos - bankBPos;
