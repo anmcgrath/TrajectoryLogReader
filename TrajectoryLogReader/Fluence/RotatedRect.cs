@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace TrajectoryLogReader.Fluence;
 
-public class RotatedRect
+internal class RotatedRect
 {
 #if NET7_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace TrajectoryLogReader.Fluence;
 
-public class Scanline
+internal class Scanline
 {
     public static void ProcessScanlines(
         ReadOnlySpan<Vector2> corners, // The 4 corners from previous step

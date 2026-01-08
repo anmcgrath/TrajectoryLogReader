@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace TrajectoryLogReader.Fluence;
 
-public class Intersection
+internal class Intersection
 {
     /// <summary>
     /// Calculates the intersection area between an Axis-Aligned Rectangle (clipRect) 

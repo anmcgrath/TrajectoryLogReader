@@ -1,6 +1,4 @@
 using System.Numerics;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using TrajectoryLogReader.Log;
 using TrajectoryLogReader.Util;
 
@@ -76,7 +74,7 @@ public class FluenceCreator
 
                 var leafPositions = recordType == RecordType.ActualPosition ? s.MLC.Actual : s.MLC.Expected;
 
-                var angleRadians = coll * (float)Math.PI / 180;
+                var angleRadians = (float)(coll * Math.PI / 180);
 
 #if NET7_0_OR_GREATER
                 var (sin, cos) = MathF.SinCos(angleRadians);
@@ -133,7 +131,8 @@ public class FluenceCreator
                         width,
                         leafWidthCm,
                         cos, sin, corners, out var bounds);
-                    localGrid.DrawDataFast(corners, bounds, deltaMu, useApproximate);
+
+                    localGrid.DrawData(corners, bounds, deltaMu, useApproximate);
                 }
 
                 return localGrid;

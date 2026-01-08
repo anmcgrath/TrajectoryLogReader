@@ -108,7 +108,7 @@ public class GridF
         });
     }
 
-    public void DrawDataFast(Span<Vector2> corners, AABB bounds, float value, bool useApproximate)
+    internal void DrawData(Span<Vector2> corners, AABB bounds, float value, bool useApproximate)
     {
         if (useApproximate)
         {
@@ -120,7 +120,7 @@ public class GridF
         }
     }
 
-    public void DrawDataFastApproximate(Span<Vector2> corners, AABB bounds, float value)
+    private void DrawDataFastApproximate(Span<Vector2> corners, AABB bounds, float value)
     {
         // 1. Convert Corners to Grid Space (Pixels)
         Span<Vector2> gridCorners = stackalloc Vector2[4];
@@ -175,7 +175,7 @@ public class GridF
         });
     }
 
-    public void DrawDataFastExact(Span<Vector2> corners, AABB bounds, float value)
+    private void DrawDataFastExact(Span<Vector2> corners, AABB bounds, float value)
     {
         // 1. Convert Corners to Grid Space (Pixels)
         Span<Vector2> gridCorners = stackalloc Vector2[4];
@@ -302,5 +302,48 @@ public class GridF
         }
 
         return sb.ToString();
+    }
+
+    public float Interpolate(double x, double y, float valIfNotFound = 0)
+    {
+        if (!Bounds.Contains(x, y))
+            return valIfNotFound;
+
+        if (Cols <= 1 || Rows <= 1)
+            return valIfNotFound;
+
+        var xi1 = GetCol(x);
+        var yi1 = GetRow(y);
+
+        // Ensure we don't go out of bounds for the second point
+        if (xi1 >= Cols - 1) xi1 = Cols - 2;
+        if (yi1 >= Rows - 1) yi1 = Rows - 2;
+
+        var xi2 = xi1 + 1;
+        var yi2 = yi1 + 1;
+
+        var x1 = GetX(xi1);
+        var x2 = GetX(xi2);
+
+        var y1 = GetY(yi1);
+        var y2 = GetY(yi2);
+
+        var fX1Y1 = Data[yi1, xi1];
+        var fX1Y2 = Data[yi2, xi1];
+        var fX2Y1 = Data[yi1, xi2];
+        var fX2Y2 = Data[yi2, xi2];
+
+        return InterpXy(x, y, x1, x2, fX1Y1, fX2Y1, fX1Y2, fX2Y2, y1, y2);
+    }
+
+    private static float InterpXy(double x, double y, double x1, double x2, double fX1Y1, double fX2Y1,
+        float fX1Y2,
+        float fX2Y2, double y1, double y2)
+    {
+        var fxY1 = (x2 - x) / (x2 - x1) * fX1Y1 + (x - x1) / (x2 - x1) * fX2Y1;
+        var fxY2 = (x2 - x) / (x2 - x1) * fX1Y2 + (x - x1) / (x2 - x1) * fX2Y2;
+        var fxy = (y2 - y) / (y2 - y1) * fxY1 + (y - y1) / (y2 - y1) * fxY2;
+
+        return (float)fxy;
     }
 }
