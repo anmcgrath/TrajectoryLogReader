@@ -2,7 +2,7 @@ namespace TrajectoryLogReader.DICOM;
 
 public class ControlPointData
 {
-    public int ControlPointNumber { get; set; }
+    public int ControlPointIndex { get; set; }
     public float[,] MlcData { get; set; }
     public float CumulativeMetersetWeight { get; set; }
     public float X1 { get; set; }

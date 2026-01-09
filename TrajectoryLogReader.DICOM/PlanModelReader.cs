@@ -33,6 +33,7 @@ public class PlanModelReader
         {
             plan.PlanTimestamp = dataset.GetDateTime(DicomTag.RTPlanDate, DicomTag.RTPlanTime);
         }
+
         plan.PlanDescription = dataset.GetSingleValueOrDefault(DicomTag.RTPlanDescription, string.Empty);
         plan.TreatmentSite = dataset.GetSingleValueOrDefault(DicomTag.TreatmentSite, string.Empty);
         return plan;
@@ -197,6 +198,7 @@ public class PlanModelReader
                 }
             }
         }
+
         return null;
     }
 
@@ -213,9 +215,11 @@ public class PlanModelReader
                 var firstCp = cpSeq.First();
                 beam.Energy = firstCp.GetSingleValueOrDefault<float>(DicomTag.NominalBeamEnergy, 0f);
 
+                int cpIndex = 0;
                 foreach (var cp in cpSeq)
                 {
                     var cpData = new ControlPointData();
+                    cpData.ControlPointIndex = cpIndex++;
                     cpData.CumulativeMetersetWeight = cp.GetSingleValue<float>(DicomTag.CumulativeMetersetWeight);
                     if (cp.Contains(DicomTag.BeamLimitingDeviceAngle))
                     {
@@ -243,7 +247,8 @@ public class PlanModelReader
         {
             foreach (var beamLimitSeq in cp.GetSequence(DicomTag.BeamLimitingDevicePositionSequence))
             {
-                var type = beamLimitSeq.GetSingleValueOrDefault<string>(DicomTag.RTBeamLimitingDeviceType, string.Empty);
+                var type = beamLimitSeq.GetSingleValueOrDefault<string>(DicomTag.RTBeamLimitingDeviceType,
+                    string.Empty);
                 var vals = beamLimitSeq.GetValues<float>(DicomTag.LeafJawPositions);
                 switch (type)
                 {
@@ -265,6 +270,7 @@ public class PlanModelReader
                             cpData.MlcData[1, mlcIndex] = vals[i];
                             mlcIndex++;
                         }
+
                         break;
                     default:
                         throw new ApplicationException("Unknown type: " + type);
@@ -308,10 +314,13 @@ public class PlanModelReader
             {
                 var prescription = new PrescriptionModel();
                 prescription.DoseReferenceNumber = item.GetSingleValue<int>(DicomTag.DoseReferenceNumber);
-                prescription.DoseReferenceStructureType = item.GetSingleValueOrDefault(DicomTag.DoseReferenceStructureType, string.Empty);
-                prescription.DoseReferenceDescription = item.GetSingleValueOrDefault(DicomTag.DoseReferenceDescription, string.Empty);
+                prescription.DoseReferenceStructureType =
+                    item.GetSingleValueOrDefault(DicomTag.DoseReferenceStructureType, string.Empty);
+                prescription.DoseReferenceDescription =
+                    item.GetSingleValueOrDefault(DicomTag.DoseReferenceDescription, string.Empty);
                 prescription.DoseReferenceType = item.GetSingleValueOrDefault(DicomTag.DoseReferenceType, string.Empty);
-                prescription.TargetPrescriptionDose = item.GetSingleValueOrDefault<float>(DicomTag.TargetPrescriptionDose, 0f);
+                prescription.TargetPrescriptionDose =
+                    item.GetSingleValueOrDefault<float>(DicomTag.TargetPrescriptionDose, 0f);
                 plan.Prescriptions.Add(prescription);
             }
         }
