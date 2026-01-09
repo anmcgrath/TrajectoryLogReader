@@ -43,9 +43,12 @@ public interface IFieldData
     float CollimatorInDegrees { get; }
 
     /// <summary>
-    /// The MLC positions accessible through [bankIndex, leafIndex]
+    /// Return the leaf position in (cm) at bank <paramref name="bank"/> and <paramref name="leafIndex"/>
     /// </summary>
-    float[,] MlcPositionsInCm { get; }
+    /// <param name="bank"></param>
+    /// <param name="leafIndex"></param>
+    /// <returns></returns>
+    float GetLeafPosition(int bank, int leafIndex);
 
     /// <summary>
     /// The amount of MU delivered during this beam snapshot

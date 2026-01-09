@@ -7,7 +7,7 @@ namespace TrajectoryLogReader.Fluence;
 
 public class FluenceCreator
 {
-    internal FluenceCreator()
+    public FluenceCreator()
     {
     }
 
@@ -69,13 +69,12 @@ public class FluenceCreator
                 var deltaMu = item.deltaMu;
                 Span<Vector2> corners = stackalloc Vector2[4];
 
-                var x1 = -s.X1InCm;
-                var y1 = -s.Y1InCm;
+                var x1 = s.X1InCm;
+                var y1 = s.Y1InCm;
                 var x2 = s.X2InCm;
                 var y2 = s.Y2InCm;
                 var coll = s.CollimatorInDegrees;
                 var mlc = s.Mlc;
-                var leafPositions = s.MlcPositionsInCm;
 
                 var angleRadians = (float)(coll * Math.PI / 180);
 
@@ -88,8 +87,8 @@ public class FluenceCreator
 
                 for (int i = 0; i < mlc.GetNumberOfLeafPairs(); i++)
                 {
-                    var bankAPos = leafPositions[1, i];
-                    var bankBPos = -leafPositions[0, i];
+                    var bankAPos = s.GetLeafPosition(1, i);
+                    var bankBPos = s.GetLeafPosition(0, i);
 
                     if (bankBPos < x1 && bankAPos < x1)
                         continue;

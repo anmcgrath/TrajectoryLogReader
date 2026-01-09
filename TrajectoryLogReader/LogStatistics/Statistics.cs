@@ -66,8 +66,8 @@ public class Statistics
         {
             for (int leafIndex = 0; leafIndex < _log.Header.GetNumberOfLeafPairs(); leafIndex++)
             {
-                var deltaA = data.MLC.Delta(leafIndex, 1);
-                var deltaB = data.MLC.Delta(leafIndex, 0);
+                var deltaA = data.MLC.Delta(1, leafIndex);
+                var deltaB = data.MLC.Delta(0, leafIndex);
                 sumSq += deltaA * deltaA + deltaB * deltaB;
             }
         }

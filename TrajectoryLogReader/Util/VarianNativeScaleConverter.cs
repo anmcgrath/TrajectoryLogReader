@@ -38,6 +38,10 @@ public class VarianNativeScaleConverter : IScaleConverter
             case Axis.CouchVrt:
             case Axis.CouchLat:
                 return -(100 - value);
+            case Axis.X1:
+                return -value;
+            case Axis.Y1:
+                return -value;
         }
 
         return value;
@@ -54,8 +58,26 @@ public class VarianNativeScaleConverter : IScaleConverter
             case Axis.CouchVrt:
             case Axis.CouchLat:
                 return -(100 - value);
+            case Axis.X1:
+                return -value;
+            case Axis.Y1:
+                return -value;
         }
 
+        return value;
+    }
+
+    public float MlcPositionToIec(int bank, float value)
+    {
+        if (bank == 0)
+            return -value;
+        return value;
+    }
+
+    public float MlcPositionFromIec(int bank, float value)
+    {
+        if (bank == 0)
+            return -value;
         return value;
     }
 }

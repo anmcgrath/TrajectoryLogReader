@@ -84,8 +84,13 @@ public static class DicomFluenceExtensions
         byte[] rawBytes = new byte[pixelData.Length * 2];
         Buffer.BlockCopy(pixelData, 0, rawBytes, 0, rawBytes.Length);
         dicomPixelData.AddFrame(new MemoryByteBuffer(rawBytes));
-        
+
         var file = new DicomFile(dataset);
         file.Save(fileName);
+    }
+
+    public static FieldFluence Create(this FluenceCreator creator, DicomFile rtPlanFile, int beamNumber)
+    {
+        return null;
     }
 }

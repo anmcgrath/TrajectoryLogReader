@@ -33,6 +33,16 @@ public static class Scale
         throw new Exception($"Cannot convert {from} to IEC for axis {axis}");
     }
 
+    public static float MlcToIec(AxisScale from, int bank, float value)
+    {
+        if (_converters.TryGetValue(from, out var fromConverter))
+        {
+            return fromConverter.MlcPositionToIec(bank, value);
+        }
+
+        throw new Exception($"Cannot convert {from} to IEC for axis MLC");
+    }
+
     /// <summary>
     /// Computes the smallest difference <paramref name="val2"/> - <paramref name="val2"/>
     /// </summary>

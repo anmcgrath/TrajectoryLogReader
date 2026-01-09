@@ -1,5 +1,6 @@
 using TrajectoryLogReader.Log;
 using TrajectoryLogReader.MLC;
+using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Fluence.Adapters;
 
@@ -26,6 +27,12 @@ internal class MeasurementDataAdapter : IFieldData
 
     public float[,] MlcPositionsInCm =>
         _recordType == RecordType.ActualPosition ? _data.MLC.Actual : _data.MLC.Expected;
+
+
+    public float GetLeafPosition(int bank, int leafIndex)
+    {
+        return _data.MLC.GetRecordInIec(bank, leafIndex, _recordType);
+    }
 
     public float DeltaMu => _data.GetScalarRecord(Axis.MU).GetRecord(_recordType) - _prevMu;
 }

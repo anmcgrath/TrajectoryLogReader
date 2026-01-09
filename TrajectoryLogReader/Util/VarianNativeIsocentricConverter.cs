@@ -20,4 +20,14 @@ public class VarianNativeIsocentricConverter : IScaleConverter
     {
         return _varianNativeScaleConverter.FromIec(axis, value);
     }
+
+    public float MlcPositionToIec(int bank, float value)
+    {
+        return _varianNativeScaleConverter.MlcPositionToIec(bank, value);
+    }
+
+    public float MlcPositionFromIec(int bank, float value)
+    {
+        return _varianNativeScaleConverter.MlcPositionFromIec(bank, value);
+    }
 }

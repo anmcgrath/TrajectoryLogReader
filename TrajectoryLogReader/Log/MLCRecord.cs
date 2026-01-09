@@ -1,4 +1,6 @@
-﻿namespace TrajectoryLogReader.Log;
+﻿using TrajectoryLogReader.Util;
+
+namespace TrajectoryLogReader.Log;
 
 public class MLCRecord
 {
@@ -28,11 +30,24 @@ public class MLCRecord
     /// <summary>
     /// Returns the difference (actual - expected) for the leaf at <paramref name="leafIndex"/> and bank <paramref name="bankIndex"/>
     /// </summary>
-    /// <param name="leafIndex"></param>
     /// <param name="bankIndex"></param>
+    /// <param name="leafIndex"></param>
     /// <returns></returns>
-    public float Delta(int leafIndex, int bankIndex)
+    public float Delta(int bankIndex, int leafIndex)
     {
         return GetActual(leafIndex, bankIndex) - GetExpected(leafIndex, bankIndex);
+    }
+
+    public float GetRecord(int bankIndex, int leafIndex, RecordType recordType)
+    {
+        if (recordType == RecordType.ActualPosition)
+            return _log.GetMlcPosition(_measIndex, RecordType.ActualPosition, leafIndex, bankIndex);
+        else
+            return _log.GetMlcPosition(_measIndex, RecordType.ExpectedPosition, leafIndex, bankIndex);
+    }
+
+    public float GetRecordInIec(int bankIndex, int leafIndex, RecordType recordType)
+    {
+        return Scale.MlcToIec(_log.Header.AxisScale, bankIndex, GetRecord(bankIndex, leafIndex, recordType));
     }
 }
