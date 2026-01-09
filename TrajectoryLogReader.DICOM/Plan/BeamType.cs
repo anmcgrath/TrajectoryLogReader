@@ -1,4 +1,4 @@
-namespace TrajectoryLogReader.DICOM;
+namespace TrajectoryLogReader.DICOM.Plan;
 
 /// <summary>
 /// The type of beam delivery.

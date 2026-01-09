@@ -1,4 +1,4 @@
-namespace TrajectoryLogReader.DICOM;
+namespace TrajectoryLogReader.DICOM.Plan;
 
 /// <summary>
 /// Represents a wedge in a DICOM plan.

@@ -1,4 +1,4 @@
-namespace TrajectoryLogReader.DICOM;
+namespace TrajectoryLogReader.DICOM.Plan;
 
 /// <summary>
 /// Data for a single control point in a DICOM plan.

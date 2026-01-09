@@ -2,6 +2,8 @@
 using Dicom;
 using Dicom.Imaging;
 using Dicom.IO.Buffer;
+using TrajectoryLogReader.DICOM.FluenceAdapters;
+using TrajectoryLogReader.DICOM.Plan;
 using TrajectoryLogReader.Fluence;
 
 namespace TrajectoryLogReader.DICOM;
@@ -94,5 +96,20 @@ public static class DicomFluenceExtensions
 
         var file = new DicomFile(dataset);
         file.Save(fileName);
+    }
+
+    /// <summary>
+    /// Creates a <see cref="FieldFluence"/> from a <see cref="BeamModel"/>
+    /// </summary>
+    /// <param name="beam"></param>
+    /// <param name="options"></param>
+    /// <param name="cpDelta">
+    /// Set to control the fractional control points that are included in the fluence.
+    /// When set to one, for example, the fluence will be created from every control point.
+    /// When set to 0.5, every 0.5 control points will be used (interpolated).</param>
+    /// <returns></returns>
+    public static FieldFluence CreateFluence(this BeamModel beam, FluenceOptions options, double cpDelta = 1)
+    {
+        return new FluenceCreator().Create(options, new BeamCollectionAdapter(beam, cpDelta));
     }
 }

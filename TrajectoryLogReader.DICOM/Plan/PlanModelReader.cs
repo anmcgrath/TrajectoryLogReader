@@ -1,7 +1,7 @@
 using Dicom;
 using TrajectoryLogReader.MLC;
 
-namespace TrajectoryLogReader.DICOM;
+namespace TrajectoryLogReader.DICOM.Plan;
 
 public class PlanModelReader
 {
@@ -10,12 +10,40 @@ public class PlanModelReader
     private const string MLCX = "MLCX";
     private const string MLCY = "MLCY";
 
+    public static PlanModel Read(string dicomFile)
+    {
+        if (!File.Exists(dicomFile))
+            return new PlanModel();
+        if (!DicomFile.HasValidHeader(dicomFile))
+            return new PlanModel();
+        return Read(DicomFile.Open(dicomFile));
+    }
+
+    public static PlanModel Read(Stream stream)
+    {
+        return Read(DicomFile.Open(stream));
+    }
+
+    public static async Task<PlanModel> ReadAsync(string dicomFile)
+    {
+        if (!File.Exists(dicomFile))
+            return new PlanModel();
+        if (!DicomFile.HasValidHeader(dicomFile))
+            return new PlanModel();
+        return Read(await DicomFile.OpenAsync(dicomFile));
+    }
+
+    public static async Task<PlanModel> ReadAsync(Stream stream)
+    {
+        return Read(await DicomFile.OpenAsync(stream));
+    }
+
     /// <summary>
     /// Reads a plan model from a DICOM file.
     /// </summary>
     /// <param name="dcm">The DicomFile object.</param>
     /// <returns>A PlanModel.</returns>
-    public static PlanModel Read(DicomFile dcm)
+    internal static PlanModel Read(DicomFile dcm)
     {
         var plan = ReadPlanGeneralInfo(dcm.Dataset);
         plan.Beams = ReadBeams(dcm.Dataset);
@@ -52,6 +80,7 @@ public class PlanModelReader
         {
             beams.Add(ReadBeam(beamSeq));
         }
+
         return beams;
     }
 

@@ -1,4 +1,4 @@
-namespace TrajectoryLogReader.DICOM;
+namespace TrajectoryLogReader.DICOM.Plan;
 
 /// <summary>
 /// Interpolates between two control points.

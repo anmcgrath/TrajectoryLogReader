@@ -1,6 +1,6 @@
 using TrajectoryLogReader.MLC;
 
-namespace TrajectoryLogReader.DICOM;
+namespace TrajectoryLogReader.DICOM.Plan;
 
 public class BeamModel
 {

@@ -1,6 +1,6 @@
 using TrajectoryLogReader.MLC;
 
-namespace TrajectoryLogReader.DICOM;
+namespace TrajectoryLogReader.DICOM.Plan;
 
 /// <summary>
 /// Represents an MLC model derived from DICOM data.
