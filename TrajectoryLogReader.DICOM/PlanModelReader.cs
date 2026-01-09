@@ -14,6 +14,10 @@ public class PlanModelReader
     {
         var plan = new PlanModel();
 
+        plan.PatientName = dcm.Dataset.GetSingleValueOrDefault(DicomTag.PatientName, string.Empty);
+        plan.PatientID = dcm.Dataset.GetSingleValueOrDefault(DicomTag.PatientID, string.Empty);
+        plan.PlanName = dcm.Dataset.GetSingleValueOrDefault(DicomTag.RTPlanLabel, string.Empty);
+
         var beamSequences = dcm.Dataset.GetSequence(DicomTag.BeamSequence);
 
         foreach (var beamSeq in beamSequences)
@@ -21,6 +25,13 @@ public class PlanModelReader
             var beam = new BeamModel();
             beam.BeamName = beamSeq.GetSingleValueOrDefault(DicomTag.BeamName, string.Empty);
             beam.BeamNumber = beamSeq.GetSingleValue<int>(DicomTag.BeamNumber);
+            beam.PrimaryDosimeterUnit = beamSeq.GetSingleValueOrDefault(DicomTag.PrimaryDosimeterUnit, string.Empty);
+            beam.NumberOfControlPoints = beamSeq.GetSingleValue<int>(DicomTag.NumberOfControlPoints);
+
+            if (beam.PrimaryDosimeterUnit != "MU")
+            {
+                throw new ApplicationException($"Primary dosimeter unit must be MU, found: {beam.PrimaryDosimeterUnit}");
+            }
 
             foreach (var ds in beamSeq.GetSequence(DicomTag.BeamLimitingDeviceSequence))
             {
@@ -34,8 +45,13 @@ public class PlanModelReader
             }
 
             float colAngle = 0; // will be updated if it exists
+            float gantryAngle = 0;
 
-            foreach (var cp in beamSeq.GetSequence(DicomTag.ControlPointSequence))
+            var cpSeq = beamSeq.GetSequence(DicomTag.ControlPointSequence);
+            var firstCp = cpSeq.First();
+            beam.Energy = firstCp.GetSingleValueOrDefault<float>(DicomTag.NominalBeamEnergy, 0f);
+
+            foreach (var cp in cpSeq)
             {
                 var cpData = new ControlPointData();
                 cpData.CumulativeMetersetWeight = cp.GetSingleValue<float>(DicomTag.CumulativeMetersetWeight);
@@ -44,7 +60,13 @@ public class PlanModelReader
                     colAngle = cp.GetSingleValue<float>(DicomTag.BeamLimitingDeviceAngle);
                 }
 
+                if (cp.Contains(DicomTag.GantryAngle))
+                {
+                    gantryAngle = cp.GetSingleValue<float>(DicomTag.GantryAngle);
+                }
+
                 cpData.CollimatorAngle = colAngle;
+                cpData.GantryAngle = gantryAngle;
 
                 foreach (var beamLimitSeq in cp.GetSequence(DicomTag.BeamLimitingDevicePositionSequence))
                 {
@@ -87,6 +109,12 @@ public class PlanModelReader
 
         foreach (var fractionSeq in dcm.Dataset.GetSequence(DicomTag.FractionGroupSequence))
         {
+            var fraction = new FractionModel();
+            fraction.FractionGroupNumber = fractionSeq.GetSingleValue<int>(DicomTag.FractionGroupNumber);
+            fraction.NumberOfFractionsPlanned = fractionSeq.GetSingleValue<int>(DicomTag.NumberOfFractionsPlanned);
+            fraction.NumberOfBeams = fractionSeq.GetSingleValue<int>(DicomTag.NumberOfBeams);
+            plan.Fractions.Add(fraction);
+
             foreach (var beamSeq in fractionSeq.GetSequence(DicomTag.ReferencedBeamSequence))
             {
                 var mu = beamSeq.GetSingleValue<float>(DicomTag.BeamMeterset);
