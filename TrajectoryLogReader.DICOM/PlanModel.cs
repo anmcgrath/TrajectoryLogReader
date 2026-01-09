@@ -7,4 +7,5 @@ public class PlanModel
     public string PlanName { get; set; }
     public List<FractionModel> Fractions { get; set; } = new();
     public List<BeamModel> Beams { get; set; } = new();
+    public List<PrescriptionModel> Prescriptions { get; set; } = new();
 }

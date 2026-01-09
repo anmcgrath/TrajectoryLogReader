@@ -219,27 +219,42 @@ public class PlanModelReader
             plan.Beams.Add(beam);
         }
 
-        if (dcm.Dataset.Contains(DicomTag.FractionGroupSequence))
+        foreach (var fractionSeq in dcm.Dataset.GetSequence(DicomTag.FractionGroupSequence))
         {
-            foreach (var fractionSeq in dcm.Dataset.GetSequence(DicomTag.FractionGroupSequence))
-            {
-                var fraction = new FractionModel();
-                fraction.FractionGroupNumber = fractionSeq.GetSingleValue<int>(DicomTag.FractionGroupNumber);
-                fraction.NumberOfFractionsPlanned = fractionSeq.GetSingleValue<int>(DicomTag.NumberOfFractionsPlanned);
-                fraction.NumberOfBeams = fractionSeq.GetSingleValue<int>(DicomTag.NumberOfBeams);
-                plan.Fractions.Add(fraction);
+            var fraction = new FractionModel();
+            fraction.FractionGroupNumber = fractionSeq.GetSingleValue<int>(DicomTag.FractionGroupNumber);
+            fraction.NumberOfFractionsPlanned = fractionSeq.GetSingleValue<int>(DicomTag.NumberOfFractionsPlanned);
+            fraction.NumberOfBeams = fractionSeq.GetSingleValue<int>(DicomTag.NumberOfBeams);
+            plan.Fractions.Add(fraction);
 
-                if (fractionSeq.Contains(DicomTag.ReferencedBeamSequence))
+            if (fractionSeq.Contains(DicomTag.ReferencedBeamSequence))
+            {
+                foreach (var beamSeq in fractionSeq.GetSequence(DicomTag.ReferencedBeamSequence))
                 {
-                    foreach (var beamSeq in fractionSeq.GetSequence(DicomTag.ReferencedBeamSequence))
-                    {
-                        var mu = beamSeq.GetSingleValue<float>(DicomTag.BeamMeterset);
-                        var refBeamNum = beamSeq.GetSingleValue<int>(DicomTag.ReferencedBeamNumber);
-                        var beam = plan.Beams.FirstOrDefault(x => x.BeamNumber == refBeamNum);
-                        if (beam != null)
-                            beam.MU = mu;
-                    }
+                    var mu = beamSeq.GetSingleValue<float>(DicomTag.BeamMeterset);
+                    var refBeamNum = beamSeq.GetSingleValue<int>(DicomTag.ReferencedBeamNumber);
+                    var beam = plan.Beams.FirstOrDefault(x => x.BeamNumber == refBeamNum);
+                    if (beam != null)
+                        beam.MU = mu;
                 }
+            }
+        }
+
+        if (dcm.Dataset.Contains(DicomTag.DoseReferenceSequence))
+        {
+            foreach (var item in dcm.Dataset.GetSequence(DicomTag.DoseReferenceSequence))
+            {
+                var prescription = new PrescriptionModel();
+                prescription.DoseReferenceNumber = item.GetSingleValue<int>(DicomTag.DoseReferenceNumber);
+                prescription.DoseReferenceStructureType =
+                    item.GetSingleValueOrDefault(DicomTag.DoseReferenceStructureType, string.Empty);
+                prescription.DoseReferenceDescription =
+                    item.GetSingleValueOrDefault(DicomTag.DoseReferenceDescription, string.Empty);
+                prescription.DoseReferenceType =
+                    item.GetSingleValueOrDefault(DicomTag.DoseReferenceType, string.Empty);
+                prescription.TargetPrescriptionDose =
+                    item.GetSingleValueOrDefault<float>(DicomTag.TargetPrescriptionDose, 0f);
+                plan.Prescriptions.Add(prescription);
             }
         }
 
