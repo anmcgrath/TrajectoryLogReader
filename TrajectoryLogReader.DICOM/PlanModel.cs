@@ -9,8 +9,7 @@ public class PlanModel
     public string SeriesInstanceUID { get; set; }
     public string StudyInstanceUID { get; set; }
     public string PlanIntent { get; set; }
-    public string PlanDate { get; set; }
-    public string PlanTime { get; set; }
+    public DateTime? PlanTimestamp { get; set; }
     public string PlanDescription { get; set; }
     public string TreatmentSite { get; set; }
     public List<FractionModel> Fractions { get; set; } = new();
