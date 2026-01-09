@@ -2,8 +2,18 @@ using TrajectoryLogReader.Fluence;
 
 namespace TrajectoryLogReader.Gamma;
 
+/// <summary>
+/// Calculates 2D Gamma index between two fluence maps.
+/// </summary>
 public class GammaCalculator2D
 {
+    /// <summary>
+    /// Perform a gamma comparison between two field fluences.
+    /// </summary>
+    /// <param name="parameters">Gamma parameters.</param>
+    /// <param name="reference">Reference fluence.</param>
+    /// <param name="compared">Compared fluence.</param>
+    /// <returns>Gamma result.</returns>
     public GammaResult2D Calculate(GammaParameters2D parameters, FieldFluence reference, FieldFluence compared)
     {
         return Calculate(parameters, new FluenceGridWrapper(reference.Grid), new FluenceGridWrapper(compared.Grid));

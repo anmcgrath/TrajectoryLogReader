@@ -1,5 +1,8 @@
 ﻿namespace TrajectoryLogReader.Log
 {
+    /// <summary>
+    /// Represents the various machine axes recorded in the trajectory log.
+    /// </summary>
     public enum Axis
     {
         CollRtn = 0,

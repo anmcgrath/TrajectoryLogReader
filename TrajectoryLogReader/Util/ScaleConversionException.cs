@@ -2,6 +2,9 @@ using TrajectoryLogReader.Log;
 
 namespace TrajectoryLogReader.Util;
 
+/// <summary>
+/// Exception thrown when a scale conversion fails.
+/// </summary>
 public class ScaleConversionException : Exception
 {
     public AxisScale From { get; }

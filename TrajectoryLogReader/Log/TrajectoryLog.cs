@@ -43,6 +43,9 @@ namespace TrajectoryLogReader.Log
 
         private MeasurementDataCollection _snapshots;
 
+        /// <summary>
+        /// A collection of all measurement snapshots in the log.
+        /// </summary>
         public MeasurementDataCollection Snapshots
         {
             get
@@ -55,6 +58,9 @@ namespace TrajectoryLogReader.Log
 
         private Statistics _statistics;
 
+        /// <summary>
+        /// Calculated statistics for the entire log.
+        /// </summary>
         public Statistics Statistics
         {
             get
@@ -128,9 +134,23 @@ namespace TrajectoryLogReader.Log
             return (float)(v0 + (v1 - v0) * f);
         }
 
+        /// <summary>
+        /// Retrieves the axis data at a specific measurement index.
+        /// </summary>
+        /// <param name="axis">The axis to retrieve data for.</param>
+        /// <param name="measIndex">The index of the measurement snapshot.</param>
+        /// <param name="recordType">Specifies whether to retrieve expected or actual position.</param>
+        /// <returns>The position of the axis.</returns>
         public float GetAxisData(Axis axis, int measIndex, RecordType recordType) =>
             GetAxisData(axis, measIndex, offset: recordType == RecordType.ActualPosition ? 1 : 0);
 
+        /// <summary>
+        /// Retrieves the axis data at a specific measurement index with a manual offset.
+        /// </summary>
+        /// <param name="axis">The axis to retrieve data for.</param>
+        /// <param name="measIndex">The index of the measurement snapshot.</param>
+        /// <param name="offset">The data offset within the snapshot.</param>
+        /// <returns>The position of the axis.</returns>
         public float GetAxisData(Axis axis, int measIndex, int offset)
         {
             var axisIndex = Header.GetAxisIndex(axis);
@@ -138,6 +158,13 @@ namespace TrajectoryLogReader.Log
             return axisData.Data[measIndex * axisData.SamplesPerSnapshot + offset];
         }
 
+        /// <summary>
+        /// Interpolates the axis data at a specific time.
+        /// </summary>
+        /// <param name="axis">The axis to interpolate.</param>
+        /// <param name="timeInMs">The time in milliseconds.</param>
+        /// <param name="recordType">Specifies whether to interpolate expected or actual position.</param>
+        /// <returns>The interpolated position.</returns>
         public float InterpolateAxisData(Axis axis, double timeInMs, RecordType recordType) =>
             InterpolateAxisData(axis, timeInMs, offset: recordType == RecordType.ActualPosition ? 1 : 0);
 

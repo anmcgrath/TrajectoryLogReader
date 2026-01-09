@@ -7,7 +7,7 @@
         /// </summary>
         public double Version { get; internal set; }
         /// <summary>
-        /// 
+        /// Sampling interval in milliseconds (typically 20ms).
         /// </summary>
         public int SamplingIntervalInMS { get; internal set; }
         /// <summary>
@@ -27,6 +27,9 @@
         /// Machine scale recorded in the log file
         /// </summary>
         public AxisScale AxisScale { get; internal set; }
+        /// <summary>
+        /// The number of sub-beams in the log.
+        /// </summary>
         public int NumberOfSubBeams { get; internal set; }
         /// <summary>
         /// If the beam delivery exceeds the max number of snapshots (20 mins) the system stops recording.

@@ -1,5 +1,8 @@
 ﻿namespace TrajectoryLogReader.Log
 {
+    /// <summary>
+    /// Specifies the type of position record (Expected or Actual).
+    /// </summary>
     public enum RecordType
     {
         /// <summary>

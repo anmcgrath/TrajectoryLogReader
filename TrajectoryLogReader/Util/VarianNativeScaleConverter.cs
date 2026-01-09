@@ -2,8 +2,14 @@ using TrajectoryLogReader.Log;
 
 namespace TrajectoryLogReader.Util;
 
+/// <summary>
+/// Converts between Varian native scale and other scales.
+/// </summary>
 public class VarianNativeScaleConverter : IScaleConverter
 {
+    /// <summary>
+    /// Converts a value to the specified scale.
+    /// </summary>
     public float Convert(AxisScale to, Axis axis, float value)
     {
         switch (to)
@@ -27,6 +33,7 @@ public class VarianNativeScaleConverter : IScaleConverter
         throw new ScaleConversionException(AxisScale.ModifiedIEC61217, to, axis);
     }
 
+    /// <inheritdoc />
     public float ToIec(Axis axis, float value)
     {
         switch (axis)
@@ -47,6 +54,7 @@ public class VarianNativeScaleConverter : IScaleConverter
         return value;
     }
 
+    /// <inheritdoc />
     public float FromIec(Axis axis, float value)
     {
         switch (axis)
@@ -67,6 +75,7 @@ public class VarianNativeScaleConverter : IScaleConverter
         return value;
     }
 
+    /// <inheritdoc />
     public float MlcPositionToIec(int bank, float value)
     {
         if (bank == 0)
@@ -74,6 +83,7 @@ public class VarianNativeScaleConverter : IScaleConverter
         return value;
     }
 
+    /// <inheritdoc />
     public float MlcPositionFromIec(int bank, float value)
     {
         if (bank == 0)

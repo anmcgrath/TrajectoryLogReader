@@ -3,6 +3,9 @@ using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.DICOM.FluenceAdapters;
 
+/// <summary>
+/// Adapts a single control point and MU to IFieldData.
+/// </summary>
 public class BeamFieldDataAdapter : IFieldData
 {
     private ControlPointData _cp;

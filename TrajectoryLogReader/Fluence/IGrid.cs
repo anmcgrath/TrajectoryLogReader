@@ -3,12 +3,12 @@ namespace TrajectoryLogReader.Fluence;
 public interface IGrid<T>
 {
     /// <summary>
-    /// The number of rows
+    /// The number of cols
     /// </summary>
     int Cols { get; }
 
     /// <summary>
-    /// The number of cols
+    /// The number of rows
     /// </summary>
     int Rows { get; }
 

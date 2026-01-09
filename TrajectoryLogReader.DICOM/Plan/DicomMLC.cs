@@ -2,6 +2,9 @@ using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.DICOM;
 
+/// <summary>
+/// Represents an MLC model derived from DICOM data.
+/// </summary>
 public class DicomMLC : IMLCModel
 {
     private float[] _leafCentres;
@@ -21,11 +24,13 @@ public class DicomMLC : IMLCModel
         }
     }
 
+    /// <inheritdoc />
     public LeafInformation GetLeafInformation(int leafIndex)
     {
         return new LeafInformation(_leafCentres[leafIndex], _leafWidths[leafIndex]);
     }
 
+    /// <inheritdoc />
     public int GetNumberOfLeafPairs()
     {
         return _nLeafPairs;

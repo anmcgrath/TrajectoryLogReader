@@ -5,6 +5,9 @@ using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Fluence;
 
+/// <summary>
+/// Creates 2D fluence maps from trajectory log data.
+/// </summary>
 public class FluenceCreator
 {
     public FluenceCreator()
@@ -12,17 +15,17 @@ public class FluenceCreator
     }
 
     /// <summary>
-    /// 
+    /// Creates a fluence map from measurement data.
     /// </summary>
-    /// <param name="options"></param>
-    /// <param name="recordType"></param>
+    /// <param name="options">Fluence generation options.</param>
+    /// <param name="recordType">Expected or Actual position.</param>
     /// <param name="samplingRateInMs">
     ///     The number of ms between each sample. Default is 20.
     ///     Set to higher for less accurate but faster fluence generation.
     ///     Must be a multiple of the log file sampling rate
     /// </param>
-    /// <param name="data"></param>
-    /// <returns></returns>
+    /// <param name="data">The measurement data.</param>
+    /// <returns>A <see cref="FieldFluence"/> object.</returns>
     internal FieldFluence Create(FluenceOptions options, RecordType recordType, double samplingRateInMs,
         MeasurementDataCollection data)
     {
@@ -37,6 +40,12 @@ public class FluenceCreator
         return Create(options, measAdapter);
     }
 
+    /// <summary>
+    /// Creates a fluence map from a generic field data collection.
+    /// </summary>
+    /// <param name="options">Fluence generation options.</param>
+    /// <param name="fieldData">The field data source.</param>
+    /// <returns>A <see cref="FieldFluence"/> object.</returns>
     public FieldFluence Create(FluenceOptions options, IFieldDataCollection fieldData)
     {
         var data = fieldData.ToList();

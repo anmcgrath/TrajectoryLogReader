@@ -14,6 +14,9 @@
         /// DICOM plan UID
         /// </summary>
         public string PlanUID { get; internal set; }
+        /// <summary>
+        /// The SOP Instance UID of the plan.
+        /// </summary>
         public string SOPInstanceUID { get; internal set; }
         /// <summary>
         /// Total MU planned for the beam.

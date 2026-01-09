@@ -10,6 +10,13 @@ using System.Linq;
 
 public static class DicomFluenceExtensions
 {
+    /// <summary>
+    /// Saves the fluence map as a DICOM RT Image.
+    /// </summary>
+    /// <param name="fluence">The field fluence.</param>
+    /// <param name="fileName">The output file name.</param>
+    /// <param name="patientName">Patient Name.</param>
+    /// <param name="patientId">Patient ID.</param>
     public static void SaveToDicom(this FieldFluence fluence, string fileName, string patientName, string patientId)
     {
         var fluenceGrid = fluence.Grid.Data;

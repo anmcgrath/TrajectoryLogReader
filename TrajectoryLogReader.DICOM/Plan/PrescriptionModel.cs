@@ -1,5 +1,8 @@
 namespace TrajectoryLogReader.DICOM;
 
+/// <summary>
+/// Represents a prescription in a DICOM plan.
+/// </summary>
 public class PrescriptionModel
 {
     public int DoseReferenceNumber { get; set; }

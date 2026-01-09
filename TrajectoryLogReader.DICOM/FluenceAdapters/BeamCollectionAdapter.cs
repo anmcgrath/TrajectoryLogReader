@@ -3,15 +3,18 @@ using TrajectoryLogReader.Fluence;
 
 namespace TrajectoryLogReader.DICOM.FluenceAdapters;
 
+/// <summary>
+/// Adapts a BeamModel to an IFieldDataCollection.
+/// </summary>
 public class BeamCollectionAdapter : IFieldDataCollection
 {
     public BeamModel _beam;
     private readonly double _cpDelta;
 
     /// <summary>
-    /// 
+    /// Initializes a new instance of the <see cref="BeamCollectionAdapter"/> class.
     /// </summary>
-    /// <param name="beam"></param>
+    /// <param name="beam">The beam model.</param>
     /// <param name="cpDelta">The fraction of cp to progres each step</param>
     public BeamCollectionAdapter(BeamModel beam, double cpDelta)
     {
@@ -34,7 +37,7 @@ public class BeamCollectionAdapter : IFieldDataCollection
             var cp1 = _beam.ControlPoints[i + 1];
             while (cpFrac < i + 1)
             {
-                var cpInterp = new ControlPointInterpolator(cp, cp1).Interpolate(cpFrac);
+                var cpInterp = ControlPointInterpolator.Interpolate(cp, cp1, cpFrac);
                 var mu = cpInterp.CumulativeMetersetWeight * _beam.MU;
                 yield return new BeamFieldDataAdapter(cpInterp, mu - prevMu, _beam);
                 prevMu = mu;

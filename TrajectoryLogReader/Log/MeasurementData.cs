@@ -2,6 +2,9 @@
 
 namespace TrajectoryLogReader.Log;
 
+/// <summary>
+/// Represents a single snapshot of measurement data at a specific time point.
+/// </summary>
 public class MeasurementData
 {
     internal MeasurementData(int measIndex, TrajectoryLog log)
@@ -13,12 +16,21 @@ public class MeasurementData
     private readonly int _measIndex;
     private readonly TrajectoryLog _log;
 
+    /// <summary>
+    /// The index of this measurement in the log sequence.
+    /// </summary>
     public int MeasIndex => _measIndex;
 
+    /// <summary>
+    /// The time in milliseconds from the start of the log.
+    /// </summary>
     public int TimeInMs => _log.Header.SamplingIntervalInMS * _measIndex;
 
     private ScalarRecord _colRtn;
 
+    /// <summary>
+    /// Collimator rotation angle.
+    /// </summary>
     public ScalarRecord CollRtn
     {
         get
@@ -30,6 +42,9 @@ public class MeasurementData
 
     private ScalarRecord _gantryRtn;
 
+    /// <summary>
+    /// Gantry rotation angle.
+    /// </summary>
     public ScalarRecord GantryRtn
     {
         get
@@ -41,6 +56,9 @@ public class MeasurementData
 
     private ScalarRecord _y1;
 
+    /// <summary>
+    /// Y1 jaw position.
+    /// </summary>
     public ScalarRecord Y1
     {
         get
@@ -52,6 +70,9 @@ public class MeasurementData
 
     private ScalarRecord _y2;
 
+    /// <summary>
+    /// Y2 jaw position.
+    /// </summary>
     public ScalarRecord Y2
     {
         get
@@ -63,6 +84,9 @@ public class MeasurementData
 
     private ScalarRecord _x1;
 
+    /// <summary>
+    /// X1 jaw position.
+    /// </summary>
     public ScalarRecord X1
     {
         get
@@ -74,6 +98,9 @@ public class MeasurementData
 
     private ScalarRecord _x2;
 
+    /// <summary>
+    /// X2 jaw position.
+    /// </summary>
     public ScalarRecord X2
     {
         get
@@ -85,6 +112,9 @@ public class MeasurementData
 
     private ScalarRecord _couchVrt;
 
+    /// <summary>
+    /// Couch vertical position.
+    /// </summary>
     public ScalarRecord CouchVrt
     {
         get
@@ -96,6 +126,9 @@ public class MeasurementData
 
     private ScalarRecord _couchLng;
 
+    /// <summary>
+    /// Couch longitudinal position.
+    /// </summary>
     public ScalarRecord CouchLng
     {
         get
@@ -107,6 +140,9 @@ public class MeasurementData
 
     private ScalarRecord _couchLat;
 
+    /// <summary>
+    /// Couch lateral position.
+    /// </summary>
     public ScalarRecord CouchLat
     {
         get
@@ -118,6 +154,9 @@ public class MeasurementData
 
     private ScalarRecord _couchRtn;
 
+    /// <summary>
+    /// Couch rotation angle.
+    /// </summary>
     public ScalarRecord CouchRtn
     {
         get
@@ -129,6 +168,9 @@ public class MeasurementData
 
     private ScalarRecord _couchPitch;
 
+    /// <summary>
+    /// Couch pitch angle.
+    /// </summary>
     public ScalarRecord CouchPitch
     {
         get
@@ -140,6 +182,9 @@ public class MeasurementData
 
     private ScalarRecord _couchRoll;
 
+    /// <summary>
+    /// Couch roll angle.
+    /// </summary>
     public ScalarRecord CouchRoll
     {
         get
@@ -151,6 +196,9 @@ public class MeasurementData
 
     private ScalarRecord _mu;
 
+    /// <summary>
+    /// Monitor units delivered.
+    /// </summary>
     public ScalarRecord MU
     {
         get
@@ -162,6 +210,9 @@ public class MeasurementData
 
     private ScalarRecord _beamHold;
 
+    /// <summary>
+    /// Beam hold status.
+    /// </summary>
     public ScalarRecord BeamHold
     {
         get
@@ -173,6 +224,9 @@ public class MeasurementData
 
     private ScalarRecord _controlPoint;
 
+    /// <summary>
+    /// Current control point index.
+    /// </summary>
     public ScalarRecord ControlPoint
     {
         get
@@ -184,6 +238,9 @@ public class MeasurementData
 
     private ScalarRecord _targetPosition;
 
+    /// <summary>
+    /// Target position.
+    /// </summary>
     public ScalarRecord TargetPosition
     {
         get
@@ -195,6 +252,9 @@ public class MeasurementData
 
     private ScalarRecord _trackingTarget;
 
+    /// <summary>
+    /// Tracking target position.
+    /// </summary>
     public ScalarRecord TrackingTarget
     {
         get
@@ -206,6 +266,9 @@ public class MeasurementData
 
     private ScalarRecord _trackingPhase;
 
+    /// <summary>
+    /// Tracking phase.
+    /// </summary>
     public ScalarRecord TrackingPhase
     {
         get
@@ -217,6 +280,9 @@ public class MeasurementData
 
     private ScalarRecord _trackingBase;
 
+    /// <summary>
+    /// Tracking base position.
+    /// </summary>
     public ScalarRecord TrackingBase
     {
         get
@@ -228,6 +294,9 @@ public class MeasurementData
 
     private ScalarRecord _trackingConformityIndex;
 
+    /// <summary>
+    /// Tracking conformity index.
+    /// </summary>
     public ScalarRecord TrackingConformityIndex
     {
         get
@@ -239,6 +308,9 @@ public class MeasurementData
 
     private MLCRecord _mlc;
 
+    /// <summary>
+    /// MLC leaf positions.
+    /// </summary>
     public MLCRecord MLC
     {
         get
@@ -248,10 +320,18 @@ public class MeasurementData
         }
     }
 
+    /// <summary>
+    /// Retrieves a scalar record for a specific axis.
+    /// </summary>
+    /// <param name="axis">The axis to retrieve.</param>
+    /// <returns>The scalar record for the axis.</returns>
     public ScalarRecord GetScalarRecord(Axis axis)
     {
         return new ScalarRecord(_log, axis, _measIndex);
     }
 
+    /// <summary>
+    /// The MLC model used.
+    /// </summary>
     public IMLCModel MlcModel => _log.MlcModel;
 }

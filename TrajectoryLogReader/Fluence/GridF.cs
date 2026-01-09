@@ -5,15 +5,39 @@ namespace TrajectoryLogReader.Fluence;
 using System.Text;
 using System.Threading.Tasks;
 
+/// <summary>
+/// A dense 2D grid of floating point values.
+/// </summary>
 public class GridF
 {
+    /// <summary>
+    /// Total width of the grid in physical units (cm).
+    /// </summary>
     public double Width { get; }
+    /// <summary>
+    /// Total height of the grid in physical units (cm).
+    /// </summary>
     public double Height { get; }
+    /// <summary>
+    /// Resolution in X direction (width / cols).
+    /// </summary>
     public double XRes { get; }
+    /// <summary>
+    /// Resolution in Y direction (height / rows).
+    /// </summary>
     public double YRes { get; }
+    /// <summary>
+    /// Number of columns.
+    /// </summary>
     public int Cols { get; }
+    /// <summary>
+    /// Number of rows.
+    /// </summary>
     public int Rows { get; }
 
+    /// <summary>
+    /// The physical bounds of the grid.
+    /// </summary>
     public Rect Bounds { get; }
 
     /// <summary>
@@ -33,21 +57,33 @@ public class GridF
         Bounds = new Rect() { X = -width / 2, Y = -height / 2, Width = width, Height = height };
     }
 
+    /// <summary>
+    /// Returns the physical X coordinate for the given column index.
+    /// </summary>
     public double GetX(int col)
     {
         return Bounds.X + col * XRes;
     }
 
+    /// <summary>
+    /// Returns the physical Y coordinate for the given row index.
+    /// </summary>
     public double GetY(int row)
     {
         return Bounds.Y + row * YRes;
     }
 
+    /// <summary>
+    /// Returns the data value at the specified column and row.
+    /// </summary>
     public float GetData(int col, int row)
     {
         return Data[row, col];
     }
 
+    /// <summary>
+    /// Sets the data value at the specified column and row.
+    /// </summary>
     public void SetData(int col, int row, float value)
     {
         if (col < 0 || col >= Cols || row < 0 || row >= Rows)
@@ -304,6 +340,13 @@ public class GridF
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Bilinearly interpolates the grid value at the specified physical coordinates (x, y).
+    /// </summary>
+    /// <param name="x">X coordinate in cm.</param>
+    /// <param name="y">Y coordinate in cm.</param>
+    /// <param name="valIfNotFound">Value to return if coordinates are outside bounds.</param>
+    /// <returns>Interpolated value.</returns>
     public float Interpolate(double x, double y, float valIfNotFound = 0)
     {
         if (!Bounds.Contains(x, y))

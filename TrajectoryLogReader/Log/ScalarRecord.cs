@@ -2,6 +2,9 @@
 
 namespace TrajectoryLogReader.Log;
 
+/// <summary>
+/// Represents a single scalar value record (e.g., Gantry angle, Couch position) from the log.
+/// </summary>
 public class ScalarRecord
 {
     private readonly int _measIndex;
@@ -15,8 +18,14 @@ public class ScalarRecord
         _axis = axis;
     }
 
+    /// <summary>
+    /// The expected position of the axis.
+    /// </summary>
     public float Expected => _log.GetAxisData(_axis, _measIndex, RecordType.ExpectedPosition);
 
+    /// <summary>
+    /// The actual position of the axis.
+    /// </summary>
     public float Actual => _log.GetAxisData(_axis, _measIndex, RecordType.ActualPosition);
 
     /// <summary>
@@ -64,6 +73,11 @@ public class ScalarRecord
     public float ActualInIec() =>
         Scale.ToIec(_log.Header.AxisScale, _axis, Actual);
 
+    /// <summary>
+    /// Returns the record value in IEC scale.
+    /// </summary>
+    /// <param name="recordType">The type of record (Expected or Actual).</param>
+    /// <returns>The value in IEC scale.</returns>
     public float GetRecordInIec(RecordType recordType) =>
         Scale.ToIec(_log.Header.AxisScale, _axis, GetRecord(recordType));
 }

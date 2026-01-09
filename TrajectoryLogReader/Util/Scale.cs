@@ -2,6 +2,9 @@ using TrajectoryLogReader.Log;
 
 namespace TrajectoryLogReader.Util;
 
+/// <summary>
+/// Utility class for handling axis scale conversions.
+/// </summary>
 public static class Scale
 {
     private static Dictionary<AxisScale, IScaleConverter> _converters = new()
@@ -11,6 +14,9 @@ public static class Scale
         { AxisScale.MachineScaleIsocentric, new VarianNativeIsocentricConverter() }
     };
 
+    /// <summary>
+    /// Converts a value from one scale to another.
+    /// </summary>
     public static float Convert(AxisScale from, AxisScale to, Axis axis, float value)
     {
         if (_converters.TryGetValue(from, out var fromConverter))
@@ -23,6 +29,9 @@ public static class Scale
         throw new ScaleConversionException(from, to, axis);
     }
 
+    /// <summary>
+    /// Converts a value to IEC scale.
+    /// </summary>
     public static float ToIec(AxisScale from, Axis axis, float value)
     {
         if (_converters.TryGetValue(from, out var fromConverter))
@@ -33,6 +42,9 @@ public static class Scale
         throw new Exception($"Cannot convert {from} to IEC for axis {axis}");
     }
 
+    /// <summary>
+    /// Converts an MLC position to IEC scale.
+    /// </summary>
     public static float MlcToIec(AxisScale from, int bank, float value)
     {
         if (_converters.TryGetValue(from, out var fromConverter))

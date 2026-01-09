@@ -67,6 +67,9 @@ namespace TrajectoryLogReader.Log
 
         private MeasurementDataCollection _snapshots;
 
+        /// <summary>
+        /// A collection of measurement snapshots specific to this sub-beam.
+        /// </summary>
         public MeasurementDataCollection Snapshots
         {
             get
@@ -79,6 +82,9 @@ namespace TrajectoryLogReader.Log
 
         private Statistics _statistics;
 
+        /// <summary>
+        /// Calculated statistics for this sub-beam.
+        /// </summary>
         public Statistics Statistics
         {
             get

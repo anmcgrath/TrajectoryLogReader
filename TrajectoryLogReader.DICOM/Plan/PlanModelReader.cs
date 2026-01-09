@@ -10,6 +10,11 @@ public class PlanModelReader
     private const string MLCX = "MLCX";
     private const string MLCY = "MLCY";
 
+    /// <summary>
+    /// Reads a plan model from a DICOM file.
+    /// </summary>
+    /// <param name="dcm">The DicomFile object.</param>
+    /// <returns>A PlanModel.</returns>
     public static PlanModel Read(DicomFile dcm)
     {
         var plan = ReadPlanGeneralInfo(dcm.Dataset);

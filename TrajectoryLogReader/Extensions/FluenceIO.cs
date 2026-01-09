@@ -3,8 +3,16 @@ using TrajectoryLogReader.Fluence;
 
 namespace TrajectoryLogReader.Extensions;
 
+/// <summary>
+/// Extension methods for saving fluence data to files.
+/// </summary>
 public static class FluenceIO
 {
+    /// <summary>
+    /// Saves the fluence grid to a Tab-Separated Values (TSV) file.
+    /// </summary>
+    /// <param name="fluence">The field fluence.</param>
+    /// <param name="fileName">The output file name.</param>
     public static void SaveToTsv(this FieldFluence fluence, string fileName)
     {
         var sb = new StringBuilder();
@@ -24,6 +32,11 @@ public static class FluenceIO
         File.WriteAllText(fileName, sb.ToString());
     }
 
+    /// <summary>
+    /// Saves the fluence grid to a PTW-Image File Format (.dat) file.
+    /// </summary>
+    /// <param name="fluence">The field fluence.</param>
+    /// <param name="fileName">The output file name.</param>
     public static void SaveToDat(this FieldFluence fluence, string fileName)
     {
         var sb = new StringBuilder();

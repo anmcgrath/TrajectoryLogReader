@@ -45,6 +45,9 @@ public class GammaParameters2D
         ThresholdPercent = thresholdPercent;
     }
 
+    /// <summary>
+    /// Returns a string representation of the parameters.
+    /// </summary>
     public string ToDetailsString()
     {
         var globalString = Global ? "Global" : "Local";

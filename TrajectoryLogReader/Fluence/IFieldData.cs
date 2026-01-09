@@ -3,7 +3,7 @@ using TrajectoryLogReader.MLC;
 namespace TrajectoryLogReader.Fluence;
 
 /// <summary>
-/// Field data for a beam snapshot. All axes values should be in Varian IEC.
+/// Field data for a beam snapshot. All axes values should be in IEC.
 /// </summary>
 public interface IFieldData
 {

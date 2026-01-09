@@ -7,6 +7,7 @@ namespace TrajectoryLogReader.Util;
 /// </summary>
 public class VarianIECScaleConverter : IScaleConverter
 {
+    /// <inheritdoc />
     public float ToIec(Axis axis, float value)
     {
         switch (axis)
@@ -26,6 +27,7 @@ public class VarianIECScaleConverter : IScaleConverter
         return value;
     }
 
+    /// <inheritdoc />
     public float FromIec(Axis axis, float value)
     {
         switch (axis)
@@ -46,6 +48,7 @@ public class VarianIECScaleConverter : IScaleConverter
         return value;
     }
 
+    /// <inheritdoc />
     public float MlcPositionToIec(int bank, float value)
     {
         if (bank == 0)
@@ -53,6 +56,7 @@ public class VarianIECScaleConverter : IScaleConverter
         return value;
     }
 
+    /// <inheritdoc />
     public float MlcPositionFromIec(int bank, float value)
     {
         if (bank == 0)

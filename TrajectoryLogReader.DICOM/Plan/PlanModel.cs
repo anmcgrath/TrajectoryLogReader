@@ -1,5 +1,8 @@
 namespace TrajectoryLogReader.DICOM;
 
+/// <summary>
+/// Represents a DICOM RT Plan.
+/// </summary>
 public class PlanModel
 {
     public string PatientName { get; set; }
@@ -12,7 +15,19 @@ public class PlanModel
     public DateTime? PlanTimestamp { get; set; }
     public string PlanDescription { get; set; }
     public string TreatmentSite { get; set; }
+    
+    /// <summary>
+    /// List of fraction groups.
+    /// </summary>
     public List<FractionModel> Fractions { get; set; } = new();
+    
+    /// <summary>
+    /// List of beams.
+    /// </summary>
     public List<BeamModel> Beams { get; set; } = new();
+    
+    /// <summary>
+    /// List of prescriptions.
+    /// </summary>
     public List<PrescriptionModel> Prescriptions { get; set; } = new();
 }
