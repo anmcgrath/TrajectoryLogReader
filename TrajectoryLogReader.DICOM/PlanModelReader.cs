@@ -17,7 +17,14 @@ public class PlanModelReader
         plan.PatientName = dcm.Dataset.GetSingleValueOrDefault(DicomTag.PatientName, string.Empty);
         plan.PatientID = dcm.Dataset.GetSingleValueOrDefault(DicomTag.PatientID, string.Empty);
         plan.PlanName = dcm.Dataset.GetSingleValueOrDefault(DicomTag.RTPlanLabel, string.Empty);
-
+        plan.SOPInstanceUID = dcm.Dataset.GetSingleValueOrDefault(DicomTag.SOPInstanceUID, string.Empty);
+        plan.SeriesInstanceUID = dcm.Dataset.GetSingleValueOrDefault(DicomTag.SeriesInstanceUID, string.Empty);
+        plan.StudyInstanceUID = dcm.Dataset.GetSingleValueOrDefault(DicomTag.StudyInstanceUID, string.Empty);
+        plan.PlanIntent = dcm.Dataset.GetSingleValueOrDefault(DicomTag.PlanIntent, string.Empty);
+        plan.PlanDate = dcm.Dataset.GetSingleValueOrDefault(DicomTag.RTPlanDate, string.Empty);
+        plan.PlanTime = dcm.Dataset.GetSingleValueOrDefault(DicomTag.RTPlanTime, string.Empty);
+        plan.PlanDescription = dcm.Dataset.GetSingleValueOrDefault(DicomTag.RTPlanDescription, string.Empty);
+        plan.TreatmentSite = dcm.Dataset.GetSingleValueOrDefault(DicomTag.TreatmentSite, string.Empty);
         var beamSequences = dcm.Dataset.GetSequence(DicomTag.BeamSequence);
 
         foreach (var beamSeq in beamSequences)
@@ -25,7 +32,7 @@ public class PlanModelReader
             var beam = new BeamModel();
             beam.BeamName = beamSeq.GetSingleValueOrDefault(DicomTag.BeamName, string.Empty);
             beam.BeamNumber = beamSeq.GetSingleValue<int>(DicomTag.BeamNumber);
-            
+
             var dosimeterUnit = beamSeq.GetSingleValueOrDefault(DicomTag.PrimaryDosimeterUnit, string.Empty);
             if (Enum.TryParse<PrimaryDosimeterUnit>(dosimeterUnit, true, out var pdu))
             {
@@ -37,7 +44,7 @@ public class PlanModelReader
             }
 
             beam.NumberOfControlPoints = beamSeq.GetSingleValue<int>(DicomTag.NumberOfControlPoints);
-            
+
             var radType = beamSeq.GetSingleValueOrDefault(DicomTag.RadiationType, string.Empty);
             if (Enum.TryParse<RadiationType>(radType, true, out var rt))
             {
@@ -129,7 +136,8 @@ public class PlanModelReader
 
             if (beam.PrimaryDosimeterUnit != PrimaryDosimeterUnit.MU)
             {
-                throw new ApplicationException($"Primary dosimeter unit must be MU, found: {beam.PrimaryDosimeterUnit}");
+                throw new ApplicationException(
+                    $"Primary dosimeter unit must be MU, found: {beam.PrimaryDosimeterUnit}");
             }
 
             if (beamSeq.Contains(DicomTag.BeamLimitingDeviceSequence))
