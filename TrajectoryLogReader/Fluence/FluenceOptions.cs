@@ -27,13 +27,6 @@ public class FluenceOptions
     public double GridSizeYInCm { get; set; } = -1;
 
     /// <summary>
-    /// The number of ms between each sample. Default is 20.
-    /// Set to higher for less accurate but faster fluence generation.
-    /// Must be a multiple of the log file sampling rate
-    /// </summary>
-    public int SampleRateInMs { get; set; } = 20;
-
-    /// <summary>
     /// If true, uses a faster approximation (Scanline) algorithm for fluence calculation.
     /// If false (default), uses the exact intersection area calculation.
     /// </summary>

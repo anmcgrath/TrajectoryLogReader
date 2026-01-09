@@ -89,16 +89,18 @@ namespace TrajectoryLogReader.Log
             }
         }
 
-        private FluenceCreator _fluenceCreator;
+        private readonly FluenceCreator _fluenceCreator = new();
 
-        public FluenceCreator FluenceCreator
+        /// <summary>
+        /// Create a <see cref="FieldFluence"/> object for the beam
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="recordType"></param>
+        /// <param name="samplingRateInMs">Determines how often we sample the log file for fluence data. Default is 20 seconds which is every measurement snapshot. This should be a multiple of the log file sampling rate</param>
+        /// <returns></returns>
+        public FieldFluence CreateFluence(FluenceOptions options, RecordType recordType, double samplingRateInMs = 20)
         {
-            get
-            {
-                if (_fluenceCreator == null)
-                    _fluenceCreator = new FluenceCreator(Snapshots, _log);
-                return _fluenceCreator;
-            }
+            return _fluenceCreator.Create(options, recordType, samplingRateInMs, Snapshots);
         }
 
 

@@ -15,5 +15,10 @@
             // between 50 -> 59
             return new LeafInformation((float)(10 + 0.5 + (leafIndex - 50) * 1.0) * 10, 10f);
         }
+
+        public int GetNumberOfLeafPairs()
+        {
+            return 60;
+        }
     }
 }

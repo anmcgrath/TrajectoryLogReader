@@ -4,7 +4,7 @@ namespace TrajectoryLogReader.Log;
 
 public class MeasurementDataCollection : IEnumerable<MeasurementData>
 {
-    private readonly TrajectoryLog _log;
+    internal TrajectoryLog Log { get; }
     private readonly int _startIndex;
     private readonly int _endIndex;
 
@@ -12,28 +12,28 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
 
     internal MeasurementDataCollection(TrajectoryLog log, int startIndex, int endIndex)
     {
-        _log = log;
+        Log = log;
         _startIndex = startIndex;
         _endIndex = endIndex;
     }
 
     public IEnumerator<MeasurementData> GetEnumerator()
     {
-        return new MeasurementDataEnumerator(_log, _startIndex, _endIndex);
+        return new MeasurementDataEnumerator(Log, _startIndex, _endIndex);
     }
 
     public MeasurementData Last()
     {
         if (Count == 0)
             throw new InvalidOperationException();
-        return new MeasurementData(_endIndex, _log);
+        return new MeasurementData(_endIndex, Log);
     }
 
     public MeasurementData First()
     {
         if (Count == 0)
             throw new InvalidOperationException();
-        return new MeasurementData(_startIndex, _log);
+        return new MeasurementData(_startIndex, Log);
     }
 
     public MeasurementData LastOrDefault()

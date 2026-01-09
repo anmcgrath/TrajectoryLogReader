@@ -1,4 +1,5 @@
 using System.Numerics;
+using TrajectoryLogReader.Fluence.Adapters;
 using TrajectoryLogReader.Log;
 using TrajectoryLogReader.Util;
 
@@ -6,18 +7,40 @@ namespace TrajectoryLogReader.Fluence;
 
 public class FluenceCreator
 {
-    private readonly MeasurementDataCollection _data;
-    private readonly TrajectoryLog _log;
-
-    internal FluenceCreator(MeasurementDataCollection data, TrajectoryLog log)
+    internal FluenceCreator()
     {
-        _data = data;
-        _log = log;
     }
 
-    public FieldFluence Create(FluenceOptions options, RecordType recordType)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="options"></param>
+    /// <param name="recordType"></param>
+    /// <param name="samplingRateInMs">
+    ///     The number of ms between each sample. Default is 20.
+    ///     Set to higher for less accurate but faster fluence generation.
+    ///     Must be a multiple of the log file sampling rate
+    /// </param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    internal FieldFluence Create(FluenceOptions options, RecordType recordType, double samplingRateInMs,
+        MeasurementDataCollection data)
     {
-        var maxExtent = CalculateMaxExtentX(recordType);
+        var sampleRate = samplingRateInMs;
+        // ensure time is a multiple of the sampling rate
+        sampleRate = (int)Math.Round((double)sampleRate / data.Log.Header.SamplingIntervalInMS)
+                     * data.Log.Header.SamplingIntervalInMS;
+        // but not zero
+        sampleRate = Math.Max(sampleRate, data.Log.Header.SamplingIntervalInMS);
+
+        var measAdapter = new MeasurementDataCollectionAdapter(data, recordType, sampleRate);
+        return Create(options, measAdapter);
+    }
+
+    public FieldFluence Create(FluenceOptions options, IFieldDataCollection fieldData)
+    {
+        var data = fieldData.ToList();
+        var maxExtent = CalculateMaxExtentX(data);
         var w = options.GridSizeXInCm <= 0 ? maxExtent.X : options.GridSizeXInCm;
         var h = options.GridSizeYInCm <= 0 ? maxExtent.Y : options.GridSizeYInCm;
 
@@ -27,28 +50,13 @@ public class FluenceCreator
             options.Cols,
             options.Rows);
 
-        var time = options.SampleRateInMs;
-        // ensure time is a multiple of the sampling rate
-        time = (int)Math.Round((double)time / _log.Header.SamplingIntervalInMS)
-               * _log.Header.SamplingIntervalInMS;
-        // but not zero
-        time = Math.Max(time, _log.Header.SamplingIntervalInMS);
-
         // Prepare work items
-        var workItems = new List<(MeasurementData s, float deltaMu)>();
-        var iteratorPrevMu = _data.First().MU.GetRecord(recordType);
+        var workItems = new List<(IFieldData s, float deltaMu)>();
 
-        foreach (var s in _data)
+        foreach (var s in data)
         {
-            if (s.TimeInMs % time != 0)
-                continue;
-
-            var currentMu = s.MU.GetRecord(recordType);
-            var deltaMu = currentMu - iteratorPrevMu;
-            iteratorPrevMu = currentMu;
-
-            if (deltaMu > 0)
-                workItems.Add((s, deltaMu));
+            if (s.DeltaMu > 0)
+                workItems.Add((s, s.DeltaMu));
         }
 
         var useApproximate = options.UseApproximateFluence;
@@ -61,18 +69,13 @@ public class FluenceCreator
                 var deltaMu = item.deltaMu;
                 Span<Vector2> corners = stackalloc Vector2[4];
 
-                var x1 = -s.X1.GetRecord(recordType);
-                var y1 = -s.Y1.GetRecord(recordType);
-                var x2 = s.X2.GetRecord(recordType);
-                var y2 = s.Y2.GetRecord(recordType);
-                var coll = Scale.Convert(
-                    _log.Header.AxisScale,
-                    AxisScale.ModifiedIEC61217, Axis.CollRtn,
-                    s.CollRtn.GetRecord(recordType));
-
-                var mlc = _log.MlcModel;
-
-                var leafPositions = recordType == RecordType.ActualPosition ? s.MLC.Actual : s.MLC.Expected;
+                var x1 = -s.X1InCm;
+                var y1 = -s.Y1InCm;
+                var x2 = s.X2InCm;
+                var y2 = s.Y2InCm;
+                var coll = s.CollimatorInDegrees;
+                var mlc = s.Mlc;
+                var leafPositions = s.MlcPositionsInCm;
 
                 var angleRadians = (float)(coll * Math.PI / 180);
 
@@ -83,7 +86,7 @@ public class FluenceCreator
                 var cos = (float)Math.Cos(angleRadians);
 #endif
 
-                for (int i = 0; i < _log.Header.GetNumberOfLeafPairs(); i++)
+                for (int i = 0; i < mlc.GetNumberOfLeafPairs(); i++)
                 {
                     var bankAPos = leafPositions[1, i];
                     var bankBPos = -leafPositions[0, i];
@@ -148,17 +151,17 @@ public class FluenceCreator
         return new FieldFluence(grid);
     }
 
-    private Point CalculateMaxExtentX(RecordType recordType)
+    private Point CalculateMaxExtentX(IEnumerable<IFieldData> fieldData)
     {
         var xExtent = double.MinValue;
         var yExtent = double.MinValue;
-        foreach (var d in _data)
+        foreach (var d in fieldData)
         {
-            var x1 = d.X1.GetRecord(recordType);
-            var y1 = d.Y1.GetRecord(recordType);
-            var x2 = d.X2.GetRecord(recordType);
-            var y2 = d.Y2.GetRecord(recordType);
-            var coll = d.CollRtn.GetRecord(recordType) * Math.PI / 180;
+            var x1 = d.X1InCm;
+            var y1 = d.Y1InCm;
+            var x2 = d.X2InCm;
+            var y2 = d.Y2InCm;
+            var coll = d.CollimatorInDegrees * Math.PI / 180;
 
             // c2 ---Y2-- c1
             //  |         |

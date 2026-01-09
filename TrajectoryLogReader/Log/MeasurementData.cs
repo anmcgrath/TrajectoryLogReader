@@ -1,4 +1,6 @@
-﻿namespace TrajectoryLogReader.Log;
+﻿using TrajectoryLogReader.MLC;
+
+namespace TrajectoryLogReader.Log;
 
 public class MeasurementData
 {
@@ -250,4 +252,6 @@ public class MeasurementData
     {
         return new ScalarRecord(_log, axis, _measIndex);
     }
+
+    public IMLCModel MlcModel => _log.MlcModel;
 }

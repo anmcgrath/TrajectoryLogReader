@@ -63,4 +63,7 @@ public class ScalarRecord
     /// <returns></returns>
     public float ActualInIec() =>
         Scale.ToIec(_log.Header.AxisScale, _axis, Actual);
+
+    public float GetRecordInIec(RecordType recordType) =>
+        Scale.ToIec(_log.Header.AxisScale, _axis, GetRecord(recordType));
 }
