@@ -25,14 +25,38 @@ public class Statistics
         if (axis == Axis.MLC)
             return RootMeanSquareErrorMlcs();
 
-        float sumSq = 0;
-        foreach (var data in _data)
+        var axisDataObj = _log.GetAxisData(axis);
+        if (axisDataObj == null)
+            return 0f;
+
+        var data = axisDataObj.Data;
+        int count = axisDataObj.NumSnapshots;
+        int stride = axisDataObj.SamplesPerSnapshot; // Should be 2 for Scalar axes (Expected, Actual)
+
+        if (stride < 2) return 0f;
+
+        bool isRotational = axis == Axis.GantryRtn || axis == Axis.CollRtn || axis == Axis.CouchRtn;
+        double sumSq = 0;
+
+        for (int i = 0; i < count; i++)
         {
-            var delta = data.GetScalarRecord(axis).Delta;
-            sumSq += delta * delta;
+            int baseIdx = i * stride;
+            // Index 0 is Expected, Index 1 is Actual
+            float expected = data[baseIdx];
+            float actual = data[baseIdx + 1];
+            float diff = actual - expected;
+
+            if (isRotational)
+            {
+                // Handle wrap-around for rotational axes (e.g. 359 vs 1 degree)
+                if (diff < -180) diff += 360;
+                else if (diff >= 180) diff -= 360;
+            }
+
+            sumSq += diff * diff;
         }
 
-        return (float)Math.Sqrt(sumSq / _data.Count);
+        return (float)Math.Sqrt(sumSq / count);
     }
 
     /// <summary>
@@ -45,14 +69,37 @@ public class Statistics
         if (axis == Axis.MLC)
             throw new Exception("Do not use this function for MLC max errors");
 
-        var maxError = 0f;
+        var axisDataObj = _log.GetAxisData(axis);
+        if (axisDataObj == null)
+            return 0f;
 
-        foreach (var data in _data)
+        var data = axisDataObj.Data;
+        int count = axisDataObj.NumSnapshots;
+        int stride = axisDataObj.SamplesPerSnapshot;
+
+        if (stride < 2) return 0f;
+
+        bool isRotational = axis == Axis.GantryRtn || axis == Axis.CollRtn || axis == Axis.CouchRtn;
+        float maxError = 0f;
+        float maxErrorAbs = 0f;
+
+        for (int i = 0; i < count; i++)
         {
-            var delta = data.GetScalarRecord(axis).Delta;
-            if (Math.Abs(delta) > Math.Abs(maxError))
+            int baseIdx = i * stride;
+            float expected = data[baseIdx];
+            float actual = data[baseIdx + 1];
+            float diff = actual - expected;
+
+            if (isRotational)
             {
-                maxError = delta;
+                if (diff < -180) diff += 360;
+                else if (diff >= 180) diff -= 360;
+            }
+
+            if (Math.Abs(diff) > maxErrorAbs)
+            {
+                maxError = diff;
+                maxErrorAbs = Math.Abs(diff);
             }
         }
 
@@ -61,17 +108,36 @@ public class Statistics
 
     private float RootMeanSquareErrorMlcs()
     {
-        float sumSq = 0;
-        foreach (var data in _data)
+        var axisDataObj = _log.GetAxisData(Axis.MLC);
+        if (axisDataObj == null) return 0f;
+
+        var data = axisDataObj.Data;
+        int count = axisDataObj.NumSnapshots;
+        int stride = axisDataObj.SamplesPerSnapshot;
+        int numLeafPairs = _log.Header.GetNumberOfLeafPairs();
+
+        double sumSq = 0;
+
+        for (int i = 0; i < count; i++)
         {
-            for (int leafIndex = 0; leafIndex < _log.Header.GetNumberOfLeafPairs(); leafIndex++)
+            int snapshotStart = i * stride;
+
+            // Skip 4 floats (Carriages)
+            int leafStart = snapshotStart + 4;
+
+            // We can just iterate linearly through the leaf data part of the snapshot
+            int limit = snapshotStart + stride;
+
+            for (int k = leafStart; k < limit; k += 2)
             {
-                var deltaA = data.MLC.Delta(1, leafIndex);
-                var deltaB = data.MLC.Delta(0, leafIndex);
-                sumSq += deltaA * deltaA + deltaB * deltaB;
+                // k is Expected, k+1 is Actual
+                float expected = data[k];
+                float actual = data[k + 1];
+                float diff = actual - expected;
+                sumSq += diff * diff;
             }
         }
 
-        return (float)Math.Sqrt(sumSq / (_log.Header.NumberOfSnapshots * _log.Header.GetNumberOfLeafPairs() * 2));
+        return (float)Math.Sqrt(sumSq / (count * numLeafPairs * 2));
     }
 }
