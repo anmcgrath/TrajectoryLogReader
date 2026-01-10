@@ -108,36 +108,56 @@ public class Statistics
 
     private float RootMeanSquareErrorMlcs()
     {
-        var axisDataObj = _log.GetAxisData(Axis.MLC);
-        if (axisDataObj == null) return 0f;
-
-        var data = axisDataObj.Data;
-        int count = axisDataObj.NumSnapshots;
-        int stride = axisDataObj.SamplesPerSnapshot;
-        int numLeafPairs = _log.Header.GetNumberOfLeafPairs();
-
-        double sumSq = 0;
-
-        for (int i = 0; i < count; i++)
+        float sumSq = 0;
+        foreach (var data in _data)
         {
-            int snapshotStart = i * stride;
-
-            // Skip 4 floats (Carriages)
-            int leafStart = snapshotStart + 4;
-
-            // We can just iterate linearly through the leaf data part of the snapshot
-            int limit = snapshotStart + stride;
-
-            for (int k = leafStart; k < limit; k += 2)
+            for (int leafIndex = 0; leafIndex < _log.Header.GetNumberOfLeafPairs(); leafIndex++)
             {
-                // k is Expected, k+1 is Actual
-                float expected = data[k];
-                float actual = data[k + 1];
-                float diff = actual - expected;
-                sumSq += diff * diff;
+                var deltaA = data.MLC.Delta(1, leafIndex);
+                var deltaB = data.MLC.Delta(0, leafIndex);
+                sumSq += deltaA * deltaA + deltaB * deltaB;
             }
         }
 
-        return (float)Math.Sqrt(sumSq / (count * numLeafPairs * 2));
+        return (float)Math.Sqrt(sumSq / (_log.Header.NumberOfSnapshots * _log.Header.GetNumberOfLeafPairs() * 2));
+    }
+
+    /// <summary>
+    /// Returns the RMS error for a specific MLC leaf.
+    /// </summary>
+    /// <param name="bank">Bank index (0 or 1)</param>
+    /// <param name="leafIndex">Leaf index</param>
+    /// <returns>RMS error</returns>
+    public float RootMeanSquareError(int bank, int leafIndex)
+    {
+        float sumSq = 0;
+        foreach (var data in _data)
+        {
+            var delta = data.MLC.Delta(bank, leafIndex);
+            sumSq += delta * delta;
+        }
+
+        return (float)Math.Sqrt(sumSq / _data.Count);
+    }
+
+    /// <summary>
+    /// Returns the max error for a specific MLC leaf.
+    /// </summary>
+    /// <param name="bank">Bank index (0 or 1)</param>
+    /// <param name="leafIndex">Leaf index</param>
+    /// <returns>Max absolute error</returns>
+    public float MaxError(int bank, int leafIndex)
+    {
+        float maxError = 0f;
+        foreach (var data in _data)
+        {
+            var delta = data.MLC.Delta(bank, leafIndex);
+            if (Math.Abs(delta) > Math.Abs(maxError))
+            {
+                maxError = delta;
+            }
+        }
+
+        return maxError;
     }
 }

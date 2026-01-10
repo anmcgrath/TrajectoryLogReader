@@ -23,7 +23,9 @@ public class StatisticsTests
             AxisScale = AxisScale.MachineScale,
             AxesSampled = new[] { Axis.GantryRtn, Axis.Y1, Axis.MLC }, // Gantry, Y1, MLC
             MlcModel = MLCModel.NDS120, // 60 pairs
-            SamplesPerAxis = new[] { 1, 1, 62 } // 1 for Gantry, 1 for Y1, 62 for MLC (60 + 2 carriages)
+            // MLC Samples: (60 leaves * 2 banks) + 2 carriages = 122 samples.
+            // SamplesPerSnapshot will be 122 * 2 = 244.
+            SamplesPerAxis = new[] { 1, 1, 122 } 
         };
         _log.Header.NumAxesSampled = _log.Header.AxesSampled.Length;
 
@@ -36,10 +38,9 @@ public class StatisticsTests
         var gantryData = new AxisData(NumSnapshots, 2);
         for (int i = 0; i < NumSnapshots; i++)
         {
-            gantryData.Data[i * 2] = i; // Expected
+            gantryData.Data[i * 2] = i;     // Expected
             gantryData.Data[i * 2 + 1] = i + 1; // Actual (Error = 1)
         }
-
         _log.AxisData[0] = gantryData;
 
         // 2. Y1: Alternating error of +2 and -2
@@ -51,27 +52,24 @@ public class StatisticsTests
             y1Data.Data[i * 2] = 10;
             y1Data.Data[i * 2 + 1] = (i % 2 == 0) ? 12 : 8; // Error is +2 or -2
         }
-
         _log.AxisData[1] = y1Data;
 
         // 3. MLC: Only Leaf 0 Bank 0 has error of 0.5, rest 0
-        // MLC Data structure: Carriages (4) + Bank A (60*2) + Bank B (60*2) ? 
-        // Wait, Header says SamplesPerAxis for MLC is "Leaves + Carriages".
-        // SamplesPerSnapshot = SamplesPerAxis * 2 (Exp/Act).
-
-        var mlcData = new AxisData(NumSnapshots, 62 * 2);
+        var mlcSamplesPerSnapshot = 122 * 2; // 244
+        var mlcData = new AxisData(NumSnapshots, mlcSamplesPerSnapshot);
         for (int i = 0; i < NumSnapshots; i++)
         {
             // Set everything to 0
-            Array.Clear(mlcData.Data, i * 124, 124);
-
+            Array.Clear(mlcData.Data, i * mlcSamplesPerSnapshot, mlcSamplesPerSnapshot);
+            
             // Set Leaf 0, Bank 0 error to 0.5
             // Offset for Bank 0, Leaf 0: (0 * 60 * 2 + 0 * 2) + 4 = 4.
-            int offset = i * 124 + 4;
-            mlcData.Data[offset] = 10.0f; // Expected
+            // Index 4: Expected
+            // Index 5: Actual
+            int offset = i * mlcSamplesPerSnapshot + 4;
+            mlcData.Data[offset] = 10.0f;     // Expected
             mlcData.Data[offset + 1] = 10.5f; // Actual (Diff 0.5)
         }
-
         _log.AxisData[2] = mlcData;
     }
 
@@ -119,8 +117,27 @@ public class StatisticsTests
             gantryData.Data[i * 2] = 359;
             gantryData.Data[i * 2 + 1] = 1;
         }
-
+        
         // Error is 2. RMS should be 2.
         _log.Statistics.RootMeanSquareError(Axis.GantryRtn).ShouldBe(2.0f, 0.001f);
+    }
+
+    [Test]
+    public void IndividualMlcLeaf_ReturnsCorrectStatistics()
+    {
+        // Setup: Leaf 0, Bank 0 has constant error of 0.5 (set in Setup)
+        // Leaf 1, Bank 0 has 0 error.
+        
+        // RMS for Leaf 0, Bank 0 should be 0.5
+        _log.Statistics.RootMeanSquareError(0, 0).ShouldBe(0.5f, 0.001f);
+        
+        // Max Error for Leaf 0, Bank 0 should be 0.5
+        _log.Statistics.MaxError(0, 0).ShouldBe(0.5f, 0.001f);
+        
+        // RMS for Leaf 1, Bank 0 should be 0
+        _log.Statistics.RootMeanSquareError(0, 1).ShouldBe(0f, 0.001f);
+        
+        // Max Error for Leaf 1, Bank 0 should be 0
+        _log.Statistics.MaxError(0, 1).ShouldBe(0f, 0.001f);
     }
 }
