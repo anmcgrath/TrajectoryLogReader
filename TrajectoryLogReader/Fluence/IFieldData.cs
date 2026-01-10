@@ -15,22 +15,22 @@ public interface IFieldData
     /// <summary>
     /// X1 position (in cm)
     /// </summary>
-    float X1InCm { get; }
+    float X1InMm { get; }
 
     /// <summary>
     /// Y1 position (in cm)
     /// </summary>
-    float Y1InCm { get; }
+    float Y1InMm { get; }
 
     /// <summary>
     /// X2 position (in cm)
     /// </summary>
-    float X2InCm { get; }
+    float X2InMm { get; }
 
     /// <summary>
     /// Y2 position (in cm)
     /// </summary>
-    float Y2InCm { get; }
+    float Y2InMm { get; }
 
     /// <summary>
     /// Gantry angle in degrees
@@ -43,12 +43,12 @@ public interface IFieldData
     float CollimatorInDegrees { get; }
 
     /// <summary>
-    /// Return the leaf position in (cm) at bank <paramref name="bank"/> and <paramref name="leafIndex"/>
+    /// Return the leaf position (in mm) at bank <paramref name="bank"/> and <paramref name="leafIndex"/>
     /// </summary>
     /// <param name="bank"></param>
     /// <param name="leafIndex"></param>
     /// <returns></returns>
-    float GetLeafPosition(int bank, int leafIndex);
+    float GetLeafPositionInMm(int bank, int leafIndex);
 
     /// <summary>
     /// The amount of MU delivered during this beam snapshot

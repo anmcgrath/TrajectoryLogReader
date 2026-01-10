@@ -15,20 +15,30 @@ public class FluenceOptions
     public int Rows { get; set; } = 100;
 
     /// <summary>
-    /// The total grid size in cm in the x-direction.
+    /// The total grid size (in mm) in the x-direction.
     /// If left as the default, the size will be calculated from the max field size.
     /// </summary>
-    public double GridSizeXInCm { get; set; } = -1;
+    public double Width { get; set; } = -1;
 
     /// <summary>
-    /// The total grid size in cm in the y-direction.
+    /// The total grid size (in mm) in the y-direction.
     /// If left as the default, the size will be calculated from the max field size.
     /// </summary>
-    public double GridSizeYInCm { get; set; } = -1;
+    public double Height { get; set; } = -1;
 
     /// <summary>
     /// If true, uses a faster approximation (Scanline) algorithm for fluence calculation.
     /// If false (default), uses the exact intersection area calculation.
     /// </summary>
     public bool UseApproximateFluence { get; set; } = false;
+
+    public FluenceOptions(int cols, int rows)
+    {
+        Cols = cols;
+        Rows = rows;
+    }
+
+    public FluenceOptions()
+    {
+    }
 }

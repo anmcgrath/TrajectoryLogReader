@@ -7,6 +7,7 @@
         /// Position increases towards the gun and is zero at the machine iso.
         /// </summary>
         public float YInMm { get; }
+
         /// <summary>
         /// The width of the MLC leaf in mm.
         /// </summary>

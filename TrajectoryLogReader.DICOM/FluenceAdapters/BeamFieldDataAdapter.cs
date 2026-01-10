@@ -21,17 +21,17 @@ public class BeamFieldDataAdapter : IFieldData
     }
 
     public IMLCModel Mlc => _beam.Mlc; // TODO create one based on leaf boundaries
-    public float X1InCm => _cp.X1 / 10f;
-    public float Y1InCm => _cp.Y1 / 10f;
-    public float X2InCm => _cp.X2 / 10f;
-    public float Y2InCm => _cp.Y2 / 10f;
+    public float X1InMm => _cp.X1;
+    public float Y1InMm => _cp.Y1;
+    public float X2InMm => _cp.X2;
+    public float Y2InMm => _cp.Y2;
 
     public float GantryInDegrees => _cp.GantryAngle;
     public float CollimatorInDegrees => _cp.CollimatorAngle;
 
-    public float GetLeafPosition(int bank, int leafIndex)
+    public float GetLeafPositionInMm(int bank, int leafIndex)
     {
-        return _cp.MlcData[bank, leafIndex] / 10;
+        return _cp.MlcData[bank, leafIndex];
     }
 
     public float DeltaMu => _deltaMu;

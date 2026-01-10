@@ -11,25 +11,30 @@ using System.Threading.Tasks;
 public class GridF
 {
     /// <summary>
-    /// Total width of the grid in physical units (cm).
+    /// Total width of the grid in physical units (mm).
     /// </summary>
     public double Width { get; }
+
     /// <summary>
-    /// Total height of the grid in physical units (cm).
+    /// Total height of the grid in physical units (mm).
     /// </summary>
     public double Height { get; }
+
     /// <summary>
-    /// Resolution in X direction (width / cols).
+    /// Resolution in X direction (mm / pixel).
     /// </summary>
     public double XRes { get; }
+
     /// <summary>
-    /// Resolution in Y direction (height / rows).
+    /// Resolution in Y direction (mm / pixel).
     /// </summary>
     public double YRes { get; }
+
     /// <summary>
     /// Number of columns.
     /// </summary>
     public int Cols { get; }
+
     /// <summary>
     /// Number of rows.
     /// </summary>
@@ -368,8 +373,8 @@ public class GridF
     /// <summary>
     /// Bilinearly interpolates the grid value at the specified physical coordinates (x, y).
     /// </summary>
-    /// <param name="x">X coordinate in cm.</param>
-    /// <param name="y">Y coordinate in cm.</param>
+    /// <param name="x">X coordinate in mm.</param>
+    /// <param name="y">Y coordinate in mm.</param>
     /// <param name="valIfNotFound">Value to return if coordinates are outside bounds.</param>
     /// <returns>Interpolated value.</returns>
     public float Interpolate(double x, double y, float valIfNotFound = 0)

@@ -50,8 +50,8 @@ public class FluenceCreator
     {
         var data = fieldData.ToList();
         var maxExtent = CalculateMaxExtentX(data);
-        var w = options.GridSizeXInCm <= 0 ? maxExtent.X : options.GridSizeXInCm;
-        var h = options.GridSizeYInCm <= 0 ? maxExtent.Y : options.GridSizeYInCm;
+        var w = options.Width <= 0 ? maxExtent.X : options.Width;
+        var h = options.Height <= 0 ? maxExtent.Y : options.Height;
 
         var grid = new GridF(
             w,
@@ -78,10 +78,10 @@ public class FluenceCreator
                 var deltaMu = item.deltaMu;
                 Span<Vector2> corners = stackalloc Vector2[4];
 
-                var x1 = s.X1InCm;
-                var y1 = s.Y1InCm;
-                var x2 = s.X2InCm;
-                var y2 = s.Y2InCm;
+                var x1 = s.X1InMm;
+                var y1 = s.Y1InMm;
+                var x2 = s.X2InMm;
+                var y2 = s.Y2InMm;
                 var coll = s.CollimatorInDegrees;
                 var mlc = s.Mlc;
 
@@ -96,8 +96,8 @@ public class FluenceCreator
 
                 for (int i = 0; i < mlc.GetNumberOfLeafPairs(); i++)
                 {
-                    var bankAPos = s.GetLeafPosition(1, i);
-                    var bankBPos = s.GetLeafPosition(0, i);
+                    var bankAPos = s.GetLeafPositionInMm(1, i);
+                    var bankBPos = s.GetLeafPositionInMm(0, i);
 
                     if (bankBPos < x1 && bankAPos < x1)
                         continue;
@@ -110,28 +110,29 @@ public class FluenceCreator
 
                     var leafInfo = mlc.GetLeafInformation(i);
 
-                    // Working in CM
-                    var leafWidthCm = leafInfo.WidthInMm / 10f;
-                    var leafCenterYCm = leafInfo.YInMm / 10f;
-                    var yMinCm = leafCenterYCm - leafWidthCm / 2f;
-                    var yMaxCm = leafCenterYCm + leafWidthCm / 2f;
+                    // Working in Mm
+                    var leafWidthMm = leafInfo.WidthInMm;
+                    var leafCenterYMm = leafInfo.YInMm;
+                    var yMinMm = leafCenterYMm - leafWidthMm / 2f;
+                    var yMaxMm = leafCenterYMm + leafWidthMm / 2f;
 
                     // Constrain to jaw positions
-                    if (yMinCm < y1)
-                        yMinCm = y1;
-                    if (yMaxCm < y1)
-                        yMaxCm = y1;
-                    if (yMinCm > y2)
-                        yMinCm = y2;
-                    if (yMaxCm > y2)
-                        yMaxCm = y2;
+                    if (yMinMm < y1)
+                        yMinMm = y1;
+                    if (yMaxMm < y1)
+                        yMaxMm = y1;
+                    if (yMinMm > y2)
+                        yMinMm = y2;
+                    if (yMaxMm > y2)
+                        yMaxMm = y2;
 
-                    if (Math.Abs(yMinCm - yMaxCm) < 0.0001)
+                    // both outside y jaw
+                    if (Math.Abs(yMinMm - yMaxMm) < 0.0001)
                         continue;
 
                     var width = bankAPos - bankBPos;
                     var xCenter = bankBPos + width / 2f;
-                    var yCenter = leafCenterYCm;
+                    var yCenter = leafCenterYMm;
 
                     // Rotate the center of the leaf around (0,0) to account for collimator rotation
                     var xRot = xCenter * cos - yCenter * sin;
@@ -140,7 +141,7 @@ public class FluenceCreator
                     RotatedRect.GetRotatedRectAndBounds(
                         new Vector2(xRot, yRot),
                         width,
-                        leafWidthCm,
+                        leafWidthMm,
                         cos, sin, corners, out var bounds);
 
                     localGrid.DrawData(corners, bounds, deltaMu, useApproximate);
@@ -165,10 +166,10 @@ public class FluenceCreator
         var yExtent = double.MinValue;
         foreach (var d in fieldData)
         {
-            var x1 = d.X1InCm;
-            var y1 = d.Y1InCm;
-            var x2 = d.X2InCm;
-            var y2 = d.Y2InCm;
+            var x1 = d.X1InMm;
+            var y1 = d.Y1InMm;
+            var x2 = d.X2InMm;
+            var y2 = d.Y2InMm;
             var coll = d.CollimatorInDegrees * Math.PI / 180;
 
             // c2 ---Y2-- c1

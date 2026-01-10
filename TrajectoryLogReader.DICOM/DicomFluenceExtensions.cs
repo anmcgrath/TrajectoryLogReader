@@ -22,8 +22,8 @@ public static class DicomFluenceExtensions
     public static void SaveToDicom(this FieldFluence fluence, string fileName, string patientName, string patientId)
     {
         var fluenceGrid = fluence.Grid.Data;
-        var spacingX = fluence.Grid.XRes * 10;
-        var spacingY = fluence.Grid.YRes * 10;
+        var spacingX = fluence.Grid.XRes;
+        var spacingY = fluence.Grid.YRes;
         int rows = fluence.Grid.Rows;
         int cols = fluence.Grid.Cols;
 

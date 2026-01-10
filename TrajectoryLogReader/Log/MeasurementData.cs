@@ -29,7 +29,7 @@ public class MeasurementData
     private ScalarRecord _colRtn;
 
     /// <summary>
-    /// Collimator rotation angle.
+    /// Collimator rotation angle (in degrees)
     /// </summary>
     public ScalarRecord CollRtn
     {
@@ -43,7 +43,7 @@ public class MeasurementData
     private ScalarRecord _gantryRtn;
 
     /// <summary>
-    /// Gantry rotation angle.
+    /// Gantry rotation angle (in degrees)
     /// </summary>
     public ScalarRecord GantryRtn
     {
@@ -57,7 +57,7 @@ public class MeasurementData
     private ScalarRecord _y1;
 
     /// <summary>
-    /// Y1 jaw position.
+    /// Y1 jaw position (in cm)
     /// </summary>
     public ScalarRecord Y1
     {
@@ -71,7 +71,7 @@ public class MeasurementData
     private ScalarRecord _y2;
 
     /// <summary>
-    /// Y2 jaw position.
+    /// Y2 jaw position (in cm)
     /// </summary>
     public ScalarRecord Y2
     {
@@ -85,7 +85,7 @@ public class MeasurementData
     private ScalarRecord _x1;
 
     /// <summary>
-    /// X1 jaw position.
+    /// X1 jaw position (in cm)
     /// </summary>
     public ScalarRecord X1
     {
@@ -99,7 +99,7 @@ public class MeasurementData
     private ScalarRecord _x2;
 
     /// <summary>
-    /// X2 jaw position.
+    /// X2 jaw position (in cm)
     /// </summary>
     public ScalarRecord X2
     {
@@ -113,7 +113,7 @@ public class MeasurementData
     private ScalarRecord _couchVrt;
 
     /// <summary>
-    /// Couch vertical position.
+    /// Couch vertical position (in cm)
     /// </summary>
     public ScalarRecord CouchVrt
     {
@@ -127,7 +127,7 @@ public class MeasurementData
     private ScalarRecord _couchLng;
 
     /// <summary>
-    /// Couch longitudinal position.
+    /// Couch longitudinal position (in cm)
     /// </summary>
     public ScalarRecord CouchLng
     {
@@ -141,7 +141,7 @@ public class MeasurementData
     private ScalarRecord _couchLat;
 
     /// <summary>
-    /// Couch lateral position.
+    /// Couch lateral position (in cm)
     /// </summary>
     public ScalarRecord CouchLat
     {
@@ -155,7 +155,7 @@ public class MeasurementData
     private ScalarRecord _couchRtn;
 
     /// <summary>
-    /// Couch rotation angle.
+    /// Couch rotation angle (in degrees)
     /// </summary>
     public ScalarRecord CouchRtn
     {
@@ -169,7 +169,7 @@ public class MeasurementData
     private ScalarRecord _couchPitch;
 
     /// <summary>
-    /// Couch pitch angle.
+    /// Couch pitch angle (in degrees).
     /// </summary>
     public ScalarRecord CouchPitch
     {
@@ -183,7 +183,7 @@ public class MeasurementData
     private ScalarRecord _couchRoll;
 
     /// <summary>
-    /// Couch roll angle.
+    /// Couch roll angle (in degrees).
     /// </summary>
     public ScalarRecord CouchRoll
     {
@@ -309,7 +309,7 @@ public class MeasurementData
     private MLCRecord _mlc;
 
     /// <summary>
-    /// MLC leaf positions.
+    /// MLC leaf positions (in cm)
     /// </summary>
     public MLCRecord MLC
     {
