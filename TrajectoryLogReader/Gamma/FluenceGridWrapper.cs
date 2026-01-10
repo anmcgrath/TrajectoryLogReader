@@ -31,9 +31,9 @@ internal class FluenceGridWrapper : IGrid<float>
     public double GetY(int row) => _grid.GetY(row) * 10;
 
     public bool Contains(double x, double y) => _grid.Bounds.Contains(x / 10, y / 10);
-    public float[] Flatten() => _grid.Data.Cast<float>().ToArray();
+    public float[] Flatten() => _grid.Data.ToArray();
 
-    public float[,] Data => _grid.Data;
+    public float[] Data => _grid.Data;
     public IEnumerable<double> GetX() => Enumerable.Range(0, _grid.Cols).Select(GetX);
     public IEnumerable<double> GetY() => Enumerable.Range(0, _grid.Rows).Select(GetY);
 }

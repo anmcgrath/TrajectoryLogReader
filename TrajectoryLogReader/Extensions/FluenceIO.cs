@@ -16,12 +16,14 @@ public static class FluenceIO
     public static void SaveToTsv(this FieldFluence fluence, string fileName)
     {
         var sb = new StringBuilder();
+        var cols = fluence.Grid.Cols;
         for (int i = 0; i < fluence.Grid.Rows; i++)
         {
-            for (int j = 0; j < fluence.Grid.Cols; j++)
+            int rowOffset = (fluence.Grid.Rows - 1 - i) * cols;
+            for (int j = 0; j < cols; j++)
             {
-                sb.Append(fluence.Grid.Data[fluence.Grid.Rows - 1 - i, j]);
-                if (j != fluence.Grid.Cols - 1)
+                sb.Append(fluence.Grid.Data[rowOffset + j]);
+                if (j != cols - 1)
                     sb.Append("\t");
             }
 
@@ -63,13 +65,15 @@ public static class FluenceIO
 
         sb.AppendLine($"0;" + string.Join("\t", xCoords));
 
+        var cols = fluence.Grid.Cols;
         for (int i = 0; i < fluence.Grid.Rows; i++)
         {
             sb.Append($"{(10 * y0 - 10 * fluence.Grid.YRes * i):N3}\t");
-            for (int j = 0; j < fluence.Grid.Cols; j++)
+            int rowOffset = (fluence.Grid.Rows - 1 - i) * cols;
+            for (int j = 0; j < cols; j++)
             {
-                sb.Append($"{(fluence.Grid.Data[fluence.Grid.Rows - 1 - i, j]):N3}");
-                if (j != fluence.Grid.Cols - 1)
+                sb.Append($"{(fluence.Grid.Data[rowOffset + j]):N3}");
+                if (j != cols - 1)
                     sb.Append("\t");
             }
 

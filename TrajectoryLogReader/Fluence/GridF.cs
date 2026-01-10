@@ -41,9 +41,21 @@ public class GridF
     public Rect Bounds { get; }
 
     /// <summary>
-    /// Access data with Data[yIndex, xIndex] where Data[0,0] is bottom LHS
+    /// Access data with flat index [row * Cols + col].
     /// </summary>
-    public float[,] Data { get; }
+    public float[] Data { get; }
+
+    /// <summary>
+    /// Gets or sets the data value at the specified row and column.
+    /// </summary>
+    /// <param name="row">The row index.</param>
+    /// <param name="col">The column index.</param>
+    /// <returns>The data value.</returns>
+    public float this[int row, int col]
+    {
+        get => Data[row * Cols + col];
+        set => Data[row * Cols + col] = value;
+    }
 
     public GridF(double width, double height, int cols, int rows)
     {
@@ -53,7 +65,7 @@ public class GridF
         Rows = rows;
         XRes = width / cols;
         YRes = height / rows;
-        Data = new float[rows, cols];
+        Data = new float[rows * cols];
         Bounds = new Rect() { X = -width / 2, Y = -height / 2, Width = width, Height = height };
     }
 
@@ -78,7 +90,7 @@ public class GridF
     /// </summary>
     public float GetData(int col, int row)
     {
-        return Data[row, col];
+        return this[row, col];
     }
 
     /// <summary>
@@ -89,7 +101,7 @@ public class GridF
         if (col < 0 || col >= Cols || row < 0 || row >= Rows)
             return;
 
-        Data[row, col] = value;
+        this[row, col] = value;
     }
 
 
@@ -135,11 +147,24 @@ public class GridF
             throw new ArgumentException("Grid dimensions must match");
 
         // Parallelize the merge
+        // With flat array, we can just loop through the whole array
+        var length = Data.Length;
+        
+        // Simd optimization could be used here but Parallel.For is simple enough for now
+        // Partitioning by chunks is better for cache than row by row if rows are small,
+        // but rows are usually decent size.
+        // Actually, just a simple parallel loop over the flat array is cleaner.
+        
+        // Let's stick to row-based parallelism to match previous logic logic structure 
+        // but operate on flat segments.
+        
         Parallel.For(0, Rows, row =>
         {
-            for (int col = 0; col < Cols; col++)
+            int offset = row * Cols;
+            int end = offset + Cols;
+            for (int i = offset; i < end; i++)
             {
-                Data[row, col] += other.Data[row, col];
+                Data[i] += other.Data[i];
             }
         });
     }
@@ -191,6 +216,7 @@ public class GridF
             int c0 = Math.Max(0, colStart);
             int c1 = Math.Min(Cols - 1, colEnd);
 
+            int rowOffset = y * Cols;
             for (int x = c0; x <= c1; x++)
             {
                 // Calculate coverage
@@ -205,7 +231,7 @@ public class GridF
 
                 if (coverage > 0)
                 {
-                    Data[y, x] += value * coverage;
+                    Data[rowOffset + x] += value * coverage;
                 }
             }
         });
@@ -241,6 +267,7 @@ public class GridF
             int startCol = Math.Max(0, (int)Math.Floor(minX));
             int endCol = Math.Min(Cols - 1, (int)Math.Ceiling(maxX));
 
+            int rowOffset = row * Cols;
             for (int col = startCol; col <= endCol; col++)
             {
                 // Pixel bounds in Grid Space are simply (col, row, col+1, row+1)
@@ -252,11 +279,11 @@ public class GridF
                 {
                     if (areaIntersection >= areaPixel - 1e-9)
                     {
-                        Data[row, col] += value;
+                        Data[rowOffset + col] += value;
                     }
                     else
                     {
-                        Data[row, col] +=
+                        Data[rowOffset + col] +=
                             value * areaIntersection; // areaIntersection is fraction since pixel area is 1
                     }
                 }
@@ -327,9 +354,10 @@ public class GridF
         for (int row = 0; row < Rows; row++)
         {
             var line = new StringBuilder();
+            int rowOffset = row * Cols;
             for (int col = 0; col < Cols; col++)
             {
-                line.Append(GetData(col, row));
+                line.Append(Data[rowOffset + col]);
                 if (col != Cols - 1)
                     line.Append($"\t");
             }
@@ -371,10 +399,14 @@ public class GridF
         var y1 = GetY(yi1);
         var y2 = GetY(yi2);
 
-        var fX1Y1 = Data[yi1, xi1];
-        var fX1Y2 = Data[yi2, xi1];
-        var fX2Y1 = Data[yi1, xi2];
-        var fX2Y2 = Data[yi2, xi2];
+        // Optimization: Pre-calculate row offsets
+        int row1Offset = yi1 * Cols;
+        int row2Offset = yi2 * Cols;
+
+        var fX1Y1 = Data[row1Offset + xi1];
+        var fX1Y2 = Data[row2Offset + xi1];
+        var fX2Y1 = Data[row1Offset + xi2];
+        var fX2Y2 = Data[row2Offset + xi2];
 
         return InterpXy(x, y, x1, x2, fX1Y1, fX2Y1, fX1Y2, fX2Y2, y1, y2);
     }

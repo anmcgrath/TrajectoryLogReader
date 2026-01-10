@@ -1,3 +1,5 @@
+using TrajectoryLogReader.Fluence;
+
 namespace TrajectoryLogReader.Gamma;
 
 /// <summary>
@@ -15,48 +17,35 @@ public class GammaResult2D
     /// </summary>
     public double FracPass { get; }
 
-    private readonly List<double> _x;
-    private readonly List<double> _y;
-
     /// <summary>
-    /// X coordinates of the gamma map.
+    /// The 2D gamma map data grid.
     /// </summary>
-    public IReadOnlyCollection<double> X => _x;
+    public GridF Grid { get; }
 
-    /// <summary>
-    /// Y coordinates of the gamma map.
-    /// </summary>
-    public IReadOnlyCollection<double> Y => _y;
-
-    private float[,] GammaMap { get; }
-
-    public GammaResult2D(GammaParameters2D parameters, double fracPass, List<double> x, List<double> y,
-        float[,] gammaMap)
+    public GammaResult2D(GammaParameters2D parameters, double fracPass, GridF grid)
     {
         Parameters = parameters;
         FracPass = fracPass;
-        _x = x;
-        _y = y;
-        GammaMap = gammaMap;
+        Grid = grid;
     }
 
     /// <summary>
     /// Calculates the median gamma value.
     /// </summary>
-    public float Median() => GammaMap.Cast<float>().Where(x => x >= 0).Median();
+    public float Median() => Grid.Data.Cast<float>().Where(x => x >= 0).Median();
 
     /// <summary>
-    /// The 2D gamma map data.
+    /// The 2D gamma map data (flattened).
     /// </summary>
-    public float[,] Data => GammaMap;
+    public float[] Data => Grid.Data;
 
     /// <summary>
     /// Gets the X coordinates.
     /// </summary>
-    public IEnumerable<double> GetX() => X;
+    public IEnumerable<double> GetX() => Enumerable.Range(0, Grid.Cols).Select(Grid.GetX);
 
     /// <summary>
     /// Gets the Y coordinates.
     /// </summary>
-    public IEnumerable<double> GetY() => Y;
+    public IEnumerable<double> GetY() => Enumerable.Range(0, Grid.Rows).Select(Grid.GetY);
 }

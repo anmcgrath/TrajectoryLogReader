@@ -25,7 +25,8 @@ public class GammaTests
         {
             for (int j = 0; j < g1.Cols; j++)
             {
-                res.Data[i, j].ShouldBe((float)diff, 0.001);
+                // GammaResult2D.Data is now flat
+                res.Data[i * g1.Cols + j].ShouldBe((float)diff, 0.001);
             }
         }
     }
@@ -36,7 +37,7 @@ public class GammaTests
         {
             for (int j = 0; j < grid.Cols; j++)
             {
-                grid.Data[i, j] = data;
+                grid.SetData(j, i, data);
             }
         }
     }

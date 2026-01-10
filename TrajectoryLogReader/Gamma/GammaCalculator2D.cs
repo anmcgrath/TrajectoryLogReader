@@ -62,9 +62,7 @@ public class GammaCalculator2D
 
         var offsets = GetOffsets(xSearchRes, ySearchRes, searchRadMm);
 
-        var gammaMap = new float[compared.Rows, compared.Cols];
-        var xGamma = Enumerable.Range(0, compared.Cols).Select(i => compared.XMin + i * compared.XRes).ToList();
-        var yGamma = Enumerable.Range(0, compared.Rows).Select(i => compared.YMin + i * compared.YRes).ToList();
+        var gammaGrid = new GridF(compared.XMax - compared.XMin, compared.YMax - compared.YMin, compared.Cols, compared.Rows);
 
         var maxRefDose = Math.Max(compared.Max(), reference.Max());
         var threshDose = compared.Max() * (parameters.ThresholdPercent / 100);
@@ -76,12 +74,13 @@ public class GammaCalculator2D
 
         for (int yi = 0; yi < compared.Rows; yi++)
         {
+            int rowOffset = yi * compared.Cols;
             for (int xi = 0; xi < compared.Cols; xi++)
             {
                 var x = compared.GetX(xi);
                 var y = compared.GetY(yi);
 
-                gammaMap[yi, xi] = -1;
+                gammaGrid.Data[rowOffset + xi] = -1;
 
                 if (!compared.Contains(x, y))
                     continue;
@@ -123,11 +122,11 @@ public class GammaCalculator2D
                     failedPoints.Add(new(x, y, Math.Sqrt(minGammaSquared)));
                 }
 
-                gammaMap[yi, xi] = (float)Math.Sqrt(minGammaSquared);
+                gammaGrid.Data[rowOffset + xi] = (float)Math.Sqrt(minGammaSquared);
             }
         }
 
-        return new GammaResult2D(parameters, (double)numPass / ptsTotal, xGamma, yGamma, gammaMap);
+        return new GammaResult2D(parameters, (double)numPass / ptsTotal, gammaGrid);
     }
 
     /// <summary>

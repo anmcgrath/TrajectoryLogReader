@@ -39,10 +39,11 @@ public static class DicomFluenceExtensions
         ushort[] pixelData = new ushort[rows * cols];
         for (int i = 0; i < rows; i++)
         {
+            int rowOffset = i * cols;
             for (int j = 0; j < cols; j++)
             {
                 // SV = (Value - Intercept) / Slope
-                pixelData[i * cols + j] = (ushort)((fluenceGrid[i, j] - rescaleIntercept) / rescaleSlope);
+                pixelData[rowOffset + j] = (ushort)((fluenceGrid[rowOffset + j] - rescaleIntercept) / rescaleSlope);
             }
         }
 
