@@ -10,8 +10,14 @@ public class FieldFluence
     /// </summary>
     public GridF Grid { get; }
 
-    internal FieldFluence(GridF grid)
+    /// <summary>
+    /// The options used to generate the fluence
+    /// </summary>
+    public FluenceOptions Options { get; }
+
+    internal FieldFluence(GridF grid, FluenceOptions options)
     {
         Grid = grid;
+        Options = options;
     }
 }

@@ -156,7 +156,7 @@ public class FluenceCreator
                 }
             });
 
-        return new FieldFluence(grid);
+        return new FieldFluence(grid, options);
     }
 
     private Point CalculateMaxExtentX(IEnumerable<IFieldData> fieldData)
