@@ -32,12 +32,7 @@ public class GammaResult2D
     /// <summary>
     /// Calculates the median gamma value.
     /// </summary>
-    public float Median() => Grid.Data.Cast<float>().Where(x => x >= 0).Median();
-
-    /// <summary>
-    /// The 2D gamma map data (flattened).
-    /// </summary>
-    public float[] Data => Grid.Data;
+    public float Median() => Grid.Data.Where(x => x >= 0).Median();
 
     /// <summary>
     /// Gets the X coordinates.

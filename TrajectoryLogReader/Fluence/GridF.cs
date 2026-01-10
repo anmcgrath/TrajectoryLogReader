@@ -146,27 +146,24 @@ public class GridF
         if (other.Cols != Cols || other.Rows != Rows)
             throw new ArgumentException("Grid dimensions must match");
 
-        // Parallelize the merge
-        // With flat array, we can just loop through the whole array
-        var length = Data.Length;
-        
-        // Simd optimization could be used here but Parallel.For is simple enough for now
-        // Partitioning by chunks is better for cache than row by row if rows are small,
-        // but rows are usually decent size.
-        // Actually, just a simple parallel loop over the flat array is cleaner.
-        
-        // Let's stick to row-based parallelism to match previous logic logic structure 
-        // but operate on flat segments.
-        
-        Parallel.For(0, Rows, row =>
+        int count = Data.Length;
+        int vectorSize = Vector<float>.Count;
+        int i = 0;
+
+        // Process in SIMD chunks
+        while (i <= count - vectorSize)
         {
-            int offset = row * Cols;
-            int end = offset + Cols;
-            for (int i = offset; i < end; i++)
-            {
-                Data[i] += other.Data[i];
-            }
-        });
+            var v1 = new Vector<float>(Data, i);
+            var v2 = new Vector<float>(other.Data, i);
+            (v1 + v2).CopyTo(Data, i);
+            i += vectorSize;
+        }
+
+        // Process remaining elements
+        for (; i < count; i++)
+        {
+            Data[i] += other.Data[i];
+        }
     }
 
     internal void DrawData(Span<Vector2> corners, AABB bounds, float value, bool useApproximate)

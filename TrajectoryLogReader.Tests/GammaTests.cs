@@ -26,7 +26,7 @@ public class GammaTests
             for (int j = 0; j < g1.Cols; j++)
             {
                 // GammaResult2D.Data is now flat
-                res.Data[i * g1.Cols + j].ShouldBe((float)diff, 0.001);
+                res.Grid.Data[i * g1.Cols + j].ShouldBe((float)diff, 0.001);
             }
         }
     }

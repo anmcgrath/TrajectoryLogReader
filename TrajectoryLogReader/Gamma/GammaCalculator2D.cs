@@ -62,7 +62,8 @@ public class GammaCalculator2D
 
         var offsets = GetOffsets(xSearchRes, ySearchRes, searchRadMm);
 
-        var gammaGrid = new GridF(compared.XMax - compared.XMin, compared.YMax - compared.YMin, compared.Cols, compared.Rows);
+        var gammaGrid = new GridF(compared.XMax - compared.XMin, compared.YMax - compared.YMin, compared.Cols,
+            compared.Rows);
 
         var maxRefDose = Math.Max(compared.Max(), reference.Max());
         var threshDose = compared.Max() * (parameters.ThresholdPercent / 100);
