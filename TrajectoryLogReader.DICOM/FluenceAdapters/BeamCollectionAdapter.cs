@@ -30,25 +30,40 @@ public class BeamCollectionAdapter : IFieldDataCollection
 
     public IEnumerable<IFieldData> GetFieldData()
     {
+        if (_beam.NumberOfControlPoints == 0)
+            yield break;
+
         float prevMu = 0;
-        for (int i = 0; i < _beam.NumberOfControlPoints - 1; i++)
+        var cpFrac = 0d;
+        var maxIndex = _beam.NumberOfControlPoints - 1;
+
+        // Loop until we reach the end of the trajectory
+        while (cpFrac < maxIndex)
         {
-            double cpFrac = i;
-            var cp = _beam.ControlPoints[i];
-            var cp1 = _beam.ControlPoints[i + 1];
-            while (cpFrac < i + 1)
-            {
-                var cpInterp = ControlPointInterpolator.Interpolate(cp, cp1, cpFrac);
-                var mu = cpInterp.CumulativeMetersetWeight * _beam.MU;
-                yield return new BeamFieldDataAdapter(cpInterp, mu - prevMu, _beam);
-                prevMu = mu;
-                cpFrac += _cpDelta;
-            }
+            int index = (int)cpFrac;
+            
+            // Ensure we don't go out of bounds (though while loop should prevent this)
+            if (index >= maxIndex)
+                break;
+
+            var cp0 = _beam.ControlPoints[index];
+            var cp1 = _beam.ControlPoints[index + 1];
+
+            var cpInterp = ControlPointInterpolator.Interpolate(cp0, cp1, cpFrac);
+            var mu = cpInterp.CumulativeMetersetWeight * _beam.MU;
+            
+            yield return new BeamFieldDataAdapter(cpInterp, mu - prevMu, _beam);
+            
+            prevMu = mu;
+            cpFrac += _cpDelta;
         }
 
-        // include the last control point
-        var cpLast = _beam.ControlPoints[_beam.NumberOfControlPoints - 1];
+        // Include the final control point to ensure we account for the total dose
+        var cpLast = _beam.ControlPoints[maxIndex];
         var muLast = cpLast.CumulativeMetersetWeight * _beam.MU;
+        
+        // Only yield if there is remaining MU or if it's the only point (to show static fields correctly)
+        // However, for consistency, we always yield the final state to reach the total MU.
         yield return new BeamFieldDataAdapter(cpLast, muLast - prevMu, _beam);
     }
 

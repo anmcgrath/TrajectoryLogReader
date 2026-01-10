@@ -19,6 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\TrajectoryLogReader.DICOM\TrajectoryLogReader.DICOM.csproj" />
       <ProjectReference Include="..\TrajectoryLogReader\TrajectoryLogReader.csproj" />
     </ItemGroup>
 

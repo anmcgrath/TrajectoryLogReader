@@ -100,7 +100,7 @@ public class PlanModelReader
             beam.PrimaryDosimeterUnit = PrimaryDosimeterUnit.Unknown;
         }
 
-        beam.NumberOfControlPoints = beamSeq.GetSingleValue<int>(DicomTag.NumberOfControlPoints);
+        var nControlPoints = beamSeq.GetSingleValue<int>(DicomTag.NumberOfControlPoints);
 
         var radType = beamSeq.GetSingleValueOrDefault(DicomTag.RadiationType, string.Empty);
         if (Enum.TryParse<RadiationType>(radType, true, out var rt))

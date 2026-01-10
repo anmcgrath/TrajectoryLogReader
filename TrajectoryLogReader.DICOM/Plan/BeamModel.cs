@@ -7,7 +7,7 @@ public class BeamModel
     public string BeamName { get; set; }
     public int BeamNumber { get; set; }
     public PrimaryDosimeterUnit PrimaryDosimeterUnit { get; set; }
-    public int NumberOfControlPoints { get; set; }
+    public int NumberOfControlPoints => ControlPoints.Count;
     public float Energy { get; set; }
     public RadiationType RadiationType { get; set; }
     public BeamType BeamType { get; set; }
