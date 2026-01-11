@@ -67,7 +67,7 @@ public class Statistics
     public float MaxError(Axis axis)
     {
         if (axis == Axis.MLC)
-            throw new Exception("Do not use this function for MLC max errors");
+            return MaxErrorMlcs();
 
         var axisDataObj = _log.GetAxisData(axis);
         if (axisDataObj == null)
@@ -100,6 +100,34 @@ public class Statistics
             {
                 maxError = diff;
                 maxErrorAbs = Math.Abs(diff);
+            }
+        }
+
+        return maxError;
+    }
+
+    private float MaxErrorMlcs()
+    {
+        float maxError = 0f;
+        float maxErrorAbs = 0f;
+
+        foreach (var data in _data)
+        {
+            for (int leafIndex = 0; leafIndex < _log.Header.GetNumberOfLeafPairs(); leafIndex++)
+            {
+                var deltaA = data.MLC.Delta(1, leafIndex);
+                var deltaB = data.MLC.Delta(0, leafIndex);
+                if (Math.Abs(deltaA) > maxErrorAbs)
+                {
+                    maxErrorAbs = Math.Abs(deltaA);
+                    maxError = deltaA;
+                }
+
+                if (Math.Abs(deltaB) > maxErrorAbs)
+                {
+                    maxErrorAbs = Math.Abs(deltaB);
+                    maxError = deltaB;
+                }
             }
         }
 
