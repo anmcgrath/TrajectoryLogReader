@@ -65,17 +65,17 @@ namespace TrajectoryLogReader.Log
             }
         }
 
-        private MeasurementDataCollection _snapshots;
+        private SnapshotCollection _snapshots;
 
         /// <summary>
         /// A collection of measurement snapshots specific to this sub-beam.
         /// </summary>
-        public MeasurementDataCollection Snapshots
+        public SnapshotCollection Snapshots
         {
             get
             {
                 if (_snapshots == null)
-                    _snapshots = new MeasurementDataCollection(_log, StartIndex, EndIndex);
+                    _snapshots = new SnapshotCollection(_log, StartIndex, EndIndex);
                 return _snapshots;
             }
         }

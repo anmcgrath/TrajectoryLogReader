@@ -52,7 +52,7 @@ public class MLCRecord
     /// <returns></returns>
     public float GetDelta(int bankIndex, int leafIndex)
     {
-        return GetActual(leafIndex, bankIndex) - GetExpected(leafIndex, bankIndex);
+        return GetActual(bankIndex, leafIndex) - GetExpected(bankIndex, leafIndex);
     }
 
     /// <summary>

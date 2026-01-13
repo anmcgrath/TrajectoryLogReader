@@ -5,9 +5,9 @@ namespace TrajectoryLogReader.Log;
 /// <summary>
 /// Represents a single snapshot of measurement data at a specific time point.
 /// </summary>
-public class MeasurementData
+public class Snapshot
 {
-    internal MeasurementData(int measIndex, TrajectoryLog log)
+    internal Snapshot(int measIndex, TrajectoryLog log)
     {
         _measIndex = measIndex;
         _log = log;

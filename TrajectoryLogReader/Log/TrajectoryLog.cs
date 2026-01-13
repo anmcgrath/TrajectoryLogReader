@@ -41,17 +41,17 @@ namespace TrajectoryLogReader.Log
         /// </summary>
         public double TotalTimeInMs => Header.SamplingIntervalInMS * Header.NumberOfSnapshots;
 
-        private MeasurementDataCollection _snapshots;
+        private SnapshotCollection _snapshots;
 
         /// <summary>
         /// A collection of all measurement snapshots in the log.
         /// </summary>
-        public MeasurementDataCollection Snapshots
+        public SnapshotCollection Snapshots
         {
             get
             {
                 if (_snapshots == null)
-                    _snapshots = new MeasurementDataCollection(this, 0, Header.NumberOfSnapshots - 1);
+                    _snapshots = new SnapshotCollection(this, 0, Header.NumberOfSnapshots - 1);
                 return _snapshots;
             }
         }

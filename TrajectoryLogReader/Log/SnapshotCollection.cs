@@ -5,7 +5,7 @@ namespace TrajectoryLogReader.Log;
 /// <summary>
 /// Represents a collection of measurement data snapshots from a trajectory log.
 /// </summary>
-public class MeasurementDataCollection : IEnumerable<MeasurementData>
+public class SnapshotCollection : IEnumerable<Snapshot>
 {
     internal TrajectoryLog Log { get; }
     private readonly int _startIndex;
@@ -16,7 +16,7 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
     /// </summary>
     public int Count => _endIndex < 0 ? 0 : (_endIndex - _startIndex + 1);
 
-    internal MeasurementDataCollection(TrajectoryLog log, int startIndex, int endIndex)
+    internal SnapshotCollection(TrajectoryLog log, int startIndex, int endIndex)
     {
         Log = log;
         _startIndex = startIndex;
@@ -27,7 +27,7 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
     /// Returns an enumerator that iterates through the collection.
     /// </summary>
     /// <returns>An enumerator for the collection.</returns>
-    public IEnumerator<MeasurementData> GetEnumerator()
+    public IEnumerator<Snapshot> GetEnumerator()
     {
         return new MeasurementDataEnumerator(Log, _startIndex, _endIndex);
     }
@@ -37,11 +37,11 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
     /// </summary>
     /// <returns>The last snapshot.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the collection is empty.</exception>
-    public MeasurementData Last()
+    public Snapshot Last()
     {
         if (Count == 0)
             throw new InvalidOperationException();
-        return new MeasurementData(_endIndex, Log);
+        return new Snapshot(_endIndex, Log);
     }
 
     /// <summary>
@@ -49,18 +49,18 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
     /// </summary>
     /// <returns>The first snapshot.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the collection is empty.</exception>
-    public MeasurementData First()
+    public Snapshot First()
     {
         if (Count == 0)
             throw new InvalidOperationException();
-        return new MeasurementData(_startIndex, Log);
+        return new Snapshot(_startIndex, Log);
     }
 
     /// <summary>
     /// Returns the last measurement data snapshot, or null if the collection is empty.
     /// </summary>
     /// <returns>The last snapshot or null.</returns>
-    public MeasurementData LastOrDefault()
+    public Snapshot LastOrDefault()
     {
         return Count == 0 ? null : Last();
     }
@@ -69,7 +69,7 @@ public class MeasurementDataCollection : IEnumerable<MeasurementData>
     /// Returns the first measurement data snapshot, or null if the collection is empty.
     /// </summary>
     /// <returns>The first snapshot or null.</returns>
-    public MeasurementData FirstOrDefault()
+    public Snapshot FirstOrDefault()
     {
         return Count == 0 ? null : First();
     }

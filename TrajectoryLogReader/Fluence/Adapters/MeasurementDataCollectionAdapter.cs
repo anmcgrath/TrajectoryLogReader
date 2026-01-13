@@ -6,11 +6,11 @@ namespace TrajectoryLogReader.Fluence.Adapters;
 
 internal class MeasurementDataCollectionAdapter : IFieldDataCollection
 {
-    private readonly MeasurementDataCollection _dataCollection;
+    private readonly SnapshotCollection _dataCollection;
     private readonly RecordType _recordType;
     private readonly double _sampleRate;
 
-    public MeasurementDataCollectionAdapter(MeasurementDataCollection dataCollection,
+    public MeasurementDataCollectionAdapter(SnapshotCollection dataCollection,
         RecordType recordType, double sampleRate)
     {
         _dataCollection = dataCollection;
@@ -31,7 +31,7 @@ internal class MeasurementDataCollectionAdapter : IFieldDataCollection
             if (d.TimeInMs % _sampleRate != 0)
                 continue;
 
-            yield return new MeasurementDataAdapter(d, _recordType, prevMu);
+            yield return new SnapshotDataAdapter(d, _recordType, prevMu);
             prevMu = d.MU.GetRecord(_recordType);
         }
     }

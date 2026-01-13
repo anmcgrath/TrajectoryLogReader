@@ -6,10 +6,10 @@ namespace TrajectoryLogReader.LogStatistics;
 
 public class Statistics
 {
-    private readonly MeasurementDataCollection _data;
+    private readonly SnapshotCollection _data;
     private readonly TrajectoryLog _log;
 
-    internal Statistics(MeasurementDataCollection data, TrajectoryLog log)
+    internal Statistics(SnapshotCollection data, TrajectoryLog log)
     {
         _data = data;
         _log = log;

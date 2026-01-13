@@ -4,13 +4,13 @@ using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Fluence.Adapters;
 
-internal class MeasurementDataAdapter : IFieldData
+internal class SnapshotDataAdapter : IFieldData
 {
-    private MeasurementData _data;
+    private Snapshot _data;
     private RecordType _recordType;
     private readonly float _prevMu;
 
-    public MeasurementDataAdapter(MeasurementData data, RecordType recordType, float prevMu)
+    public SnapshotDataAdapter(Snapshot data, RecordType recordType, float prevMu)
     {
         _data = data;
         _recordType = recordType;

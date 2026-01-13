@@ -27,7 +27,7 @@ public class FluenceCreator
     /// <param name="data">The measurement data.</param>
     /// <returns>A <see cref="FieldFluence"/> object.</returns>
     internal FieldFluence Create(FluenceOptions options, RecordType recordType, double samplingRateInMs,
-        MeasurementDataCollection data)
+        SnapshotCollection data)
     {
         var sampleRate = samplingRateInMs;
         // ensure time is a multiple of the sampling rate

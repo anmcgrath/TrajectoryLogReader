@@ -2,7 +2,7 @@
 
 namespace TrajectoryLogReader.Log;
 
-internal class MeasurementDataEnumerator : IEnumerator<MeasurementData>
+internal class MeasurementDataEnumerator : IEnumerator<Snapshot>
 {
     private readonly TrajectoryLog _log;
     private readonly int _startIndex;
@@ -28,7 +28,7 @@ internal class MeasurementDataEnumerator : IEnumerator<MeasurementData>
         _measurementIndex = _startIndex - 1;
     }
 
-    public MeasurementData Current => new MeasurementData(_measurementIndex, _log);
+    public Snapshot Current => new Snapshot(_measurementIndex, _log);
 
     object IEnumerator.Current => Current;
 
