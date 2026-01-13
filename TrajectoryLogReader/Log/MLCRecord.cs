@@ -32,10 +32,8 @@ public class MLCRecord
     /// <param name="leafIndex">The index of the leaf.</param>
     /// <param name="bankIndex">The index of the bank (0 or 1).</param>
     /// <returns>The expected position in cm.</returns>
-    public float GetExpected(int leafIndex, int bankIndex)
-    {
-        return _log.GetMlcPosition(_measIndex, RecordType.ExpectedPosition, leafIndex, bankIndex);
-    }
+    public float GetExpected(int bankIndex, int leafIndex) =>
+        GetRecord(bankIndex, leafIndex, RecordType.ExpectedPosition);
 
     /// <summary>
     /// Gets the actual position of a specific leaf.
@@ -43,10 +41,8 @@ public class MLCRecord
     /// <param name="leafIndex">The index of the leaf.</param>
     /// <param name="bankIndex">The index of the bank (0 or 1).</param>
     /// <returns>The actual position in cm.</returns>
-    public float GetActual(int leafIndex, int bankIndex)
-    {
-        return _log.GetMlcPosition(_measIndex, RecordType.ActualPosition, leafIndex, bankIndex);
-    }
+    public float GetActual(int bankIndex, int leafIndex) =>
+        GetRecord(bankIndex, leafIndex, RecordType.ActualPosition);
 
     /// <summary>
     /// Returns the difference (actual - expected) for the leaf at <paramref name="leafIndex"/> and bank <paramref name="bankIndex"/>
@@ -54,7 +50,7 @@ public class MLCRecord
     /// <param name="bankIndex"></param>
     /// <param name="leafIndex"></param>
     /// <returns></returns>
-    public float Delta(int bankIndex, int leafIndex)
+    public float GetDelta(int bankIndex, int leafIndex)
     {
         return GetActual(leafIndex, bankIndex) - GetExpected(leafIndex, bankIndex);
     }
@@ -68,10 +64,7 @@ public class MLCRecord
     /// <returns>The position.</returns>
     public float GetRecord(int bankIndex, int leafIndex, RecordType recordType)
     {
-        if (recordType == RecordType.ActualPosition)
-            return _log.GetMlcPosition(_measIndex, RecordType.ActualPosition, leafIndex, bankIndex);
-        else
-            return _log.GetMlcPosition(_measIndex, RecordType.ExpectedPosition, leafIndex, bankIndex);
+        return _log.GetMlcPosition(_measIndex, recordType, leafIndex, bankIndex);
     }
 
     /// <summary>
@@ -84,5 +77,43 @@ public class MLCRecord
     public float GetRecordInIec(int bankIndex, int leafIndex, RecordType recordType)
     {
         return Scale.MlcToIec(_log.Header.AxisScale, bankIndex, GetRecord(bankIndex, leafIndex, recordType));
+    }
+
+    /// <summary>
+    /// Returns the actual leaf speed (with direction in IEC coord system)
+    /// </summary>
+    /// <param name="bankIndex"></param>
+    /// <param name="leafIndex"></param>
+    /// <returns></returns>
+    public float GetActualSpeedIec(int bankIndex, int leafIndex) =>
+        GetSpeedIec(bankIndex, leafIndex, RecordType.ActualPosition);
+
+    /// <summary>
+    /// Returns the expected leaf speed (with direction in IEC coord system)
+    /// </summary>
+    /// <param name="bankIndex"></param>
+    /// <param name="leafIndex"></param>
+    /// <returns></returns>
+    public float GetExpectedSpeedIec(int bankIndex, int leafIndex) =>
+        GetSpeedIec(bankIndex, leafIndex, RecordType.ExpectedPosition);
+
+    /// <summary>
+    /// Returns the leaf speed (with direction in IEC coords)
+    /// </summary>
+    /// <param name="bankIndex"></param>
+    /// <param name="leafIndex"></param>
+    /// <param name="recordType"></param>
+    /// <returns></returns>
+    public float GetSpeedIec(int bankIndex, int leafIndex, RecordType recordType)
+    {
+        if (_measIndex == 0)
+            return 0;
+
+        var p0 = Scale.MlcToIec(_log.Header.AxisScale, bankIndex,
+            _log.GetMlcPosition(_measIndex - 1, recordType, leafIndex, bankIndex));
+        var p1 = Scale.MlcToIec(_log.Header.AxisScale, bankIndex,
+            _log.GetMlcPosition(_measIndex, recordType, leafIndex, bankIndex));
+
+        return (p1 - p0) / _log.Header.SamplingIntervalInMS;
     }
 }

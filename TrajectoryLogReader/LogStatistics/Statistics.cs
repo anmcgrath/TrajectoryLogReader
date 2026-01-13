@@ -1,3 +1,4 @@
+using TrajectoryLogReader.Extensions;
 using TrajectoryLogReader.Log;
 using TrajectoryLogReader.Util;
 
@@ -31,6 +32,9 @@ public class Statistics
 
         var data = axisDataObj.Data;
         int count = axisDataObj.NumSnapshots;
+        if (count == 0)
+            return 0;
+
         int stride = axisDataObj.SamplesPerSnapshot; // Should be 2 for Scalar axes (Expected, Actual)
 
         if (stride < 2) return 0f;
@@ -115,8 +119,8 @@ public class Statistics
         {
             for (int leafIndex = 0; leafIndex < _log.Header.GetNumberOfLeafPairs(); leafIndex++)
             {
-                var deltaA = data.MLC.Delta(1, leafIndex);
-                var deltaB = data.MLC.Delta(0, leafIndex);
+                var deltaA = data.MLC.GetDelta(1, leafIndex);
+                var deltaB = data.MLC.GetDelta(0, leafIndex);
                 if (Math.Abs(deltaA) > maxErrorAbs)
                 {
                     maxErrorAbs = Math.Abs(deltaA);
@@ -141,8 +145,8 @@ public class Statistics
         {
             for (int leafIndex = 0; leafIndex < _log.Header.GetNumberOfLeafPairs(); leafIndex++)
             {
-                var deltaA = data.MLC.Delta(1, leafIndex);
-                var deltaB = data.MLC.Delta(0, leafIndex);
+                var deltaA = data.MLC.GetDelta(1, leafIndex);
+                var deltaB = data.MLC.GetDelta(0, leafIndex);
                 sumSq += deltaA * deltaA + deltaB * deltaB;
             }
         }
@@ -161,7 +165,7 @@ public class Statistics
         float sumSq = 0;
         foreach (var data in _data)
         {
-            var delta = data.MLC.Delta(bank, leafIndex);
+            var delta = data.MLC.GetDelta(bank, leafIndex);
             sumSq += delta * delta;
         }
 
@@ -179,7 +183,7 @@ public class Statistics
         float maxError = 0f;
         foreach (var data in _data)
         {
-            var delta = data.MLC.Delta(bank, leafIndex);
+            var delta = data.MLC.GetDelta(bank, leafIndex);
             if (Math.Abs(delta) > Math.Abs(maxError))
             {
                 maxError = delta;
@@ -187,5 +191,30 @@ public class Statistics
         }
 
         return maxError;
+    }
+
+    /// <summary>
+    /// Creates an histogram of errors for <paramref name="axis"/>
+    /// </summary>
+    /// <param name="axis"></param>
+    /// <param name="nBins">The number of bins in the histogram</param>
+    /// <returns></returns>
+    public Histogram ErrorHistogram(Axis axis, int nBins = 20)
+    {
+        return Histogram.FromData(_data.Select(x => x.GetScalarRecord(axis).Delta)
+            .ToArray(), nBins);
+    }
+
+    /// <summary>
+    /// Creates an histogram of single MLC errors for leaf <paramref name="leafIndex"/> on bank <paramref name="bankIndex"/>
+    /// </summary>
+    /// <param name="bankIndex"></param>
+    /// <param name="leafIndex"></param>
+    /// <param name="nBins">The number of bins in the histogram</param>
+    /// <returns></returns>
+    public Histogram ErrorHistogram(int bankIndex, int leafIndex, int nBins = 20)
+    {
+        return Histogram.FromData(_data.Select(x => x.MLC.GetDelta(leafIndex, bankIndex))
+            .ToArray(), nBins);
     }
 }

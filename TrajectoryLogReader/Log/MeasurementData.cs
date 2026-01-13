@@ -327,6 +327,9 @@ public class MeasurementData
     /// <returns>The scalar record for the axis.</returns>
     public ScalarRecord GetScalarRecord(Axis axis)
     {
+        if (axis == Axis.MLC)
+            throw new Exception($"Cannot get scalar record for MLC. Use MLC to get MLC data.");
+
         return new ScalarRecord(_log, axis, _measIndex);
     }
 
