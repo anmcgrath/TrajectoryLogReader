@@ -1,4 +1,4 @@
-using TrajectoryLogReader.Log;
+using TrajectoryLogReader.LogStatistics;
 
 namespace TrajectoryLogReader.Log.Axes
 {
@@ -8,5 +8,9 @@ namespace TrajectoryLogReader.Log.Axes
         IEnumerable<float> Actual();
         IEnumerable<float> Deltas();
         IAxisAccessor WithScale(AxisScale scale);
+
+        float RootMeanSquareError();
+        float MaxError();
+        Histogram ErrorHistogram(int nBins = 20);
     }
 }

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using TrajectoryLogReader.LogStatistics;
 using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Log.Axes
@@ -66,6 +68,44 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
+        public IAxisAccessor WithScale(AxisScale scale)
+        {
+            return new AxisAccessor(_log, _axis, _startIndex, _endIndex, scale);
+        }
+
+        public float RootMeanSquareError()
+        {
+            double sumSq = 0;
+            int count = 0;
+            foreach (var diff in Deltas())
+            {
+                sumSq += diff * diff;
+                count++;
+            }
+            return count == 0 ? 0 : (float)Math.Sqrt(sumSq / count);
+        }
+
+        public float MaxError()
+        {
+            float maxError = 0f;
+            float maxErrorAbs = 0f;
+
+            foreach (var diff in Deltas())
+            {
+                if (Math.Abs(diff) > maxErrorAbs)
+                {
+                    maxError = diff;
+                    maxErrorAbs = Math.Abs(diff);
+                }
+            }
+            return maxError;
+        }
+
+        public Histogram ErrorHistogram(int nBins = 20)
+        {
+            return Histogram.FromData(Deltas().ToArray(), nBins);
+        }
+
         private float Normalize(float value, float period)
         {
             if (value > period / 2) return value - period;
@@ -87,11 +127,6 @@ namespace TrajectoryLogReader.Log.Axes
             return axis == Axis.CouchVrt || 
                    axis == Axis.CouchLng || 
                    axis == Axis.CouchLat;
-        }
-
-        public IAxisAccessor WithScale(AxisScale scale)
-        {
-            return new AxisAccessor(_log, _axis, _startIndex, _endIndex, scale);
         }
     }
 }

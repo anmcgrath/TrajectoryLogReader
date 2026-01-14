@@ -28,7 +28,8 @@ namespace TrajectoryLogReader.Tests.Axes
             };
             _log.Header.NumAxesSampled = _log.Header.AxesSampled.Length;
             _log.AxisData = new AxisData[_log.Header.NumAxesSampled];
-            
+
+            // 1. Gantry
             var gantryData = new AxisData(NumSnapshots, 2);
             for (int i = 0; i < NumSnapshots; i++)
             {
@@ -36,7 +37,8 @@ namespace TrajectoryLogReader.Tests.Axes
                 gantryData.Data[i * 2 + 1] = i * 10 + 1; // Actual: 1, 11, 21...
             }
             _log.AxisData[0] = gantryData;
-            
+
+            // 2. Y1
             var y1Data = new AxisData(NumSnapshots, 2);
              for (int i = 0; i < NumSnapshots; i++)
             {
@@ -44,10 +46,12 @@ namespace TrajectoryLogReader.Tests.Axes
                 y1Data.Data[i * 2 + 1] = 5.5f;
             }
             _log.AxisData[1] = y1Data;
-            
+
+            // 3. MLC
             var mlcSamplesPerSnapshot = 122 * 2;
             var mlcData = new AxisData(NumSnapshots, mlcSamplesPerSnapshot);
-
+            // Moving leaf: Bank 0, Leaf 0.
+            // Static leaf: Bank 0, Leaf 1.
             for (int i = 0; i < NumSnapshots; i++)
             {
                 // Bank 0, Leaf 0 (Index 4 + 0)
@@ -92,49 +96,6 @@ namespace TrajectoryLogReader.Tests.Axes
         }
 
         [Test]
-        public void Gantry_Deltas_HandlesWrapAround()
-        {
-            // Update Gantry data to have wrap around
-            var gantryData = _log.GetAxisData(Axis.GantryRtn);
-            // Exp: 359, Act: 1 (Machine Scale). 
-            // In Machine Scale (CW), 359 -> 0 -> 1 is +2 degrees.
-            
-            gantryData.Data[0] = 359;
-            gantryData.Data[1] = 1;
-            
-            var delta = _log.Axes.Gantry.Deltas().First();
-            delta.ShouldBe(2);
-        }
-
-        [Test]
-        public void Couch_Deltas_HandlesOffsetWrap()
-        {
-            // Case: Expected 100, Actual 0.1. 
-            // Diff = 0.1 - 100 = -99.9.
-            // With wrap 100, -99.9 + 100 = 0.1.
-            
-            var couchData = _log.GetAxisData(Axis.Y1); // Y1 is index 1, but we need a Couch Axis.
-            
-            var log = new TrajectoryLog();
-            log.Header = new Header
-            {
-                SamplingIntervalInMS = 20,
-                NumberOfSnapshots = 1,
-                AxisScale = AxisScale.MachineScale,
-                AxesSampled = new[] { Axis.CouchLat },
-                SamplesPerAxis = new[] { 1 }
-            };
-            log.Header.NumAxesSampled = 1;
-            log.AxisData = new AxisData[1];
-            log.AxisData[0] = new AxisData(1, 2);
-            log.AxisData[0].Data[0] = 100.0f; // Exp
-            log.AxisData[0].Data[1] = 0.1f;   // Act
-            
-            var delta = log.Axes.CouchLat.Deltas().First();
-            delta.ShouldBe(0.1f, 0.001f);
-        }
-
-        [Test]
         public void Gantry_WithScale_ConvertsValues()
         {
             // MachineScale is 0..360 usually.
@@ -166,10 +127,58 @@ namespace TrajectoryLogReader.Tests.Axes
             var moving = _log.Axes.MovingMLCs.ToList();
             // We set Leaf 0 Bank 0 to move. Leaf 1 Bank 0 is static.
             // Others are 0 (static).
+            // So only 1 leaf should be in moving list?
             
             moving.Count.ShouldBe(1);
             moving[0].LeafIndex.ShouldBe(0);
             moving[0].Bank.ShouldBe(0);
+        }
+
+        [Test]
+        public void Gantry_Deltas_HandlesWrapAround()
+        {
+            // Update Gantry data to have wrap around
+            var gantryData = _log.GetAxisData(Axis.GantryRtn);
+            // Exp: 359, Act: 1 (Machine Scale). 
+            // In Machine Scale (CW), 359 -> 0 -> 1 is +2 degrees.
+            
+            gantryData.Data[0] = 359;
+            gantryData.Data[1] = 1;
+            
+            var delta = _log.Axes.Gantry.Deltas().First();
+            delta.ShouldBe(2);
+        }
+
+        [Test]
+        public void Couch_Deltas_HandlesOffsetWrap()
+        {
+            // Case: Expected 100, Actual 0.1. 
+            // Diff = 0.1 - 100 = -99.9.
+            // With wrap 100, -99.9 + 100 = 0.1.
+            
+            var couchData = _log.GetAxisData(Axis.Y1); // Y1 is index 1, but we need a Couch Axis.
+            // Setup uses [Gantry, Y1, MLC]. 
+            // I need to add a Couch Axis to setup or mock it.
+            // I'll re-initialize the log for this test locally or just modify Setup?
+            // Easier to modify Setup to include CouchLat.
+            
+            var log = new TrajectoryLog();
+            log.Header = new Header
+            {
+                SamplingIntervalInMS = 20,
+                NumberOfSnapshots = 1,
+                AxisScale = AxisScale.MachineScale,
+                AxesSampled = new[] { Axis.CouchLat },
+                SamplesPerAxis = new[] { 1 }
+            };
+            log.Header.NumAxesSampled = 1;
+            log.AxisData = new AxisData[1];
+            log.AxisData[0] = new AxisData(1, 2);
+            log.AxisData[0].Data[0] = 100.0f; // Exp
+            log.AxisData[0].Data[1] = 0.1f;   // Act
+            
+            var delta = log.Axes.CouchLat.Deltas().First();
+            delta.ShouldBe(0.1f, 0.001f);
         }
     }
 }
