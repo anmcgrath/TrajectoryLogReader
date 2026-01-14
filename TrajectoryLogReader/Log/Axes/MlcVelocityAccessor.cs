@@ -37,18 +37,18 @@ namespace TrajectoryLogReader.Log.Axes
         public float RootMeanSquareError()
         {
             if (!_velocityLookup.Any()) return 0f;
-            return Statistics.CalculateRootMeanSquareError(_velocityLookup.Values.SelectMany(l => l.DeltaValues));
+            return Statistics.CalculateRootMeanSquareError(_velocityLookup.Values.SelectMany(l => l.ErrorValues));
         }
 
         public float MaxError()
         {
             if (!_velocityLookup.Any()) return 0f;
-            return Statistics.CalculateMaxError(_velocityLookup.Values.SelectMany(l => l.DeltaValues));
+            return Statistics.CalculateMaxError(_velocityLookup.Values.SelectMany(l => l.ErrorValues));
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            var allDeltas = _velocityLookup.Values.SelectMany(l => l.DeltaValues).ToArray();
+            var allDeltas = _velocityLookup.Values.SelectMany(l => l.ErrorValues).ToArray();
             return Histogram.FromData(allDeltas, nBins);
         }
     }

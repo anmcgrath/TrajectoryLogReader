@@ -38,7 +38,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         public IEnumerable<float> ActualValues => CalculateVelocity(_inner.ActualValues);
 
-        public IEnumerable<float> DeltaValues
+        public IEnumerable<float> ErrorValues
         {
             get
             {
@@ -60,17 +60,17 @@ namespace TrajectoryLogReader.Log.Axes
 
         public float RootMeanSquareError()
         {
-            return Statistics.CalculateRootMeanSquareError(DeltaValues);
+            return Statistics.CalculateRootMeanSquareError(ErrorValues);
         }
 
         public float MaxError()
         {
-            return Statistics.CalculateMaxError(DeltaValues);
+            return Statistics.CalculateMaxError(ErrorValues);
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            return Histogram.FromData(DeltaValues.ToArray(), nBins);
+            return Histogram.FromData(ErrorValues.ToArray(), nBins);
         }
     }
 }

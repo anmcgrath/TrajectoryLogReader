@@ -93,7 +93,7 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void Gantry_Deltas_ReturnsCorrectValues()
         {
-            var deltas = _log.Axes.Gantry.DeltaValues.ToList();
+            var deltas = _log.Axes.Gantry.ErrorValues.ToList();
             deltas.Count.ShouldBe(NumSnapshots);
             // Actual - Expected = 1
             deltas.All(d => Math.Abs(d - 1) < 0.001f).ShouldBeTrue();
@@ -160,7 +160,7 @@ namespace TrajectoryLogReader.Tests.Axes
             gantryData.Data[0] = 359;
             gantryData.Data[1] = 1;
 
-            var delta = _log.Axes.Gantry.DeltaValues.First();
+            var delta = _log.Axes.Gantry.ErrorValues.First();
             delta.ShouldBe(2);
         }
 
@@ -192,7 +192,7 @@ namespace TrajectoryLogReader.Tests.Axes
             log.AxisData[0].Data[0] = 100.0f; // Exp
             log.AxisData[0].Data[1] = 0.1f; // Act
 
-            var delta = log.Axes.CouchLat.DeltaValues.First();
+            var delta = log.Axes.CouchLat.ErrorValues.First();
             delta.ShouldBe(0.1f, 0.001f);
         }
 

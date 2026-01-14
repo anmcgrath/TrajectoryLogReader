@@ -41,7 +41,7 @@ public class ScalarRecord
     /// <summary>
     /// Actual - Expected
     /// </summary>
-    public float Delta => Scale.Delta(_log.Header.AxisScale, Expected, _log.Header.AxisScale, Actual, _axis);
+    public float Error => Scale.Delta(_log.Header.AxisScale, Expected, _log.Header.AxisScale, Actual, _axis);
 
     /// <summary>
     /// Returns the expected value in the coord system/scale <paramref name="axisScale"/>

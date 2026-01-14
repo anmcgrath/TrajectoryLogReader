@@ -75,22 +75,22 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
-        private float[]? _deltas;
+        private float[]? _errors;
 
-        public IEnumerable<float> DeltaValues
+        public IEnumerable<float> ErrorValues
         {
             get
             {
-                if (_deltas == null)
+                if (_errors == null)
                 {
-                    _deltas = GetDeltas().ToArray();
+                    _errors = GetErrors().ToArray();
                 }
 
-                return _deltas;
+                return _errors;
             }
         }
 
-        private IEnumerable<float> GetDeltas()
+        private IEnumerable<float> GetErrors()
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
@@ -111,17 +111,17 @@ namespace TrajectoryLogReader.Log.Axes
 
         public float RootMeanSquareError()
         {
-            return Statistics.CalculateRootMeanSquareError(DeltaValues);
+            return Statistics.CalculateRootMeanSquareError(ErrorValues);
         }
 
         public float MaxError()
         {
-            return Statistics.CalculateMaxError(DeltaValues);
+            return Statistics.CalculateMaxError(ErrorValues);
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            return Histogram.FromData(DeltaValues.ToArray(), nBins);
+            return Histogram.FromData(ErrorValues.ToArray(), nBins);
         }
 
         public IAxisAccessor GetVelocity()
