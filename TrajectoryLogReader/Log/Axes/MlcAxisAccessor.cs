@@ -37,6 +37,8 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
+        public MlcVelocityAccessor Velocity => new MlcVelocityAccessor(_leafLookup.Values);
+
         public float RootMeanSquareError()
         {
             if (!_leafLookup.Any()) return 0f;

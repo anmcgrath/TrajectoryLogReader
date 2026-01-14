@@ -80,5 +80,10 @@ namespace TrajectoryLogReader.Log.Axes
         {
             return Histogram.FromData(Deltas().ToArray(), nBins);
         }
+
+        public IAxisAccessor GetVelocity()
+        {
+            return new VelocityAxisAccessor(this, _log.Header.SamplingIntervalInMS);
+        }
     }
 }

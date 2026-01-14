@@ -18,7 +18,7 @@ namespace TrajectoryLogReader.Log.Axes
         public IAxisAccessor CouchRtn => new AxisAccessor(_log, Axis.CouchRtn, _startIndex, _endIndex);
         public IAxisAccessor CouchPitch => new AxisAccessor(_log, Axis.CouchPitch, _startIndex, _endIndex);
         public IAxisAccessor CouchRoll => new AxisAccessor(_log, Axis.CouchRoll, _startIndex, _endIndex);
-        
+
         public IAxisAccessor X1 => new AxisAccessor(_log, Axis.X1, _startIndex, _endIndex);
         public IAxisAccessor X2 => new AxisAccessor(_log, Axis.X2, _startIndex, _endIndex);
         public IAxisAccessor Y1 => new AxisAccessor(_log, Axis.Y1, _startIndex, _endIndex);
@@ -28,15 +28,32 @@ namespace TrajectoryLogReader.Log.Axes
         public IAxisAccessor BeamHold => new AxisAccessor(_log, Axis.BeamHold, _startIndex, _endIndex);
         public IAxisAccessor ControlPoint => new AxisAccessor(_log, Axis.ControlPoint, _startIndex, _endIndex);
 
+        /// <summary>
+        /// Represents the X jaw field size 
+        /// </summary>
+        public IAxisAccessor JawsX => new CombinedAxisAccessor(
+            X2.WithScale(AxisScale.ModifiedIEC61217),
+            X1.WithScale(AxisScale.ModifiedIEC61217),
+            (x2, x1) => x1 + x2);
+
+        /// <summary>
+        /// Represents the Y jaw field size
+        /// </summary>
+        public IAxisAccessor JawsY => new CombinedAxisAccessor(
+            Y2.WithScale(AxisScale.ModifiedIEC61217),
+            Y1.WithScale(AxisScale.ModifiedIEC61217),
+            (y2, y1) => y1 + y2);
+
         public IAxisAccessor GetAxis(Axis axis)
         {
             if (axis == Axis.MLC)
                 throw new ArgumentException("Use Mlc property for MLC axis access", nameof(axis));
-            
+
             return new AxisAccessor(_log, axis, _startIndex, _endIndex);
         }
 
         private MlcAxisAccessor _mlc;
+
         public MlcAxisAccessor Mlc
         {
             get
@@ -45,6 +62,7 @@ namespace TrajectoryLogReader.Log.Axes
                 {
                     _mlc = CreateAllMlcAccessor();
                 }
+
                 return _mlc;
             }
         }
@@ -56,7 +74,7 @@ namespace TrajectoryLogReader.Log.Axes
         {
             var moving = new List<MlcLeafAxisAccessor>();
             var numLeaves = _log.Header.GetNumberOfLeafPairs();
-            
+
             for (int bank = 0; bank < 2; bank++)
             {
                 for (int leaf = 0; leaf < numLeaves; leaf++)
@@ -67,6 +85,7 @@ namespace TrajectoryLogReader.Log.Axes
                     }
                 }
             }
+
             return new MlcAxisAccessor(_log, moving);
         }
 
@@ -81,7 +100,7 @@ namespace TrajectoryLogReader.Log.Axes
         {
             var leaves = new List<MlcLeafAxisAccessor>();
             var numLeaves = _log.Header.GetNumberOfLeafPairs();
-            
+
             for (int bank = 0; bank < 2; bank++)
             {
                 for (int leaf = 0; leaf < numLeaves; leaf++)
@@ -89,6 +108,7 @@ namespace TrajectoryLogReader.Log.Axes
                     leaves.Add(new MlcLeafAxisAccessor(_log, (Bank)bank, leaf, _startIndex, _endIndex));
                 }
             }
+
             return new MlcAxisAccessor(_log, leaves);
         }
 
@@ -102,13 +122,14 @@ namespace TrajectoryLogReader.Log.Axes
             if (_endIndex < _startIndex) return false;
 
             float firstVal = _log.GetMlcPosition(_startIndex, RecordType.ExpectedPosition, leaf, bank);
-            
+
             for (int i = _startIndex + 1; i <= _endIndex; i++)
             {
                 float val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, leaf, bank);
                 if (Math.Abs(val - firstVal) > threshold)
                     return true;
             }
+
             return false;
         }
     }

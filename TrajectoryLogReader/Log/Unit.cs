@@ -10,6 +10,9 @@ namespace TrajectoryLogReader.Log
         Centimeters,
         MU,
         Percent,
-        Dimensionless
+        Dimensionless,
+        CentimetersPerSecond,
+        DegreesPerSecond,
+        MUPerSecond
     }
 }

@@ -97,18 +97,20 @@ namespace TrajectoryLogReader.Log.Axes
 
         private bool IsRotational(Axis axis)
         {
-            return axis == Axis.GantryRtn || 
-                   axis == Axis.CollRtn || 
-                   axis == Axis.CouchRtn || 
-                   axis == Axis.CouchPitch || 
+            return axis == Axis.GantryRtn ||
+                   axis == Axis.CollRtn ||
+                   axis == Axis.CouchRtn ||
+                   axis == Axis.CouchPitch ||
                    axis == Axis.CouchRoll;
         }
 
         private bool IsCouch(Axis axis)
         {
-            return axis == Axis.CouchVrt || 
-                   axis == Axis.CouchLng || 
+            return axis == Axis.CouchVrt ||
+                   axis == Axis.CouchLng ||
                    axis == Axis.CouchLat;
         }
+
+        public VelocityAxisAccessor Velocity => new VelocityAxisAccessor(this, _log.Header.SamplingIntervalInMS);
     }
 }
