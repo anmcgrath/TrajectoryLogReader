@@ -30,6 +30,21 @@ public static class Scale
     }
 
     /// <summary>
+    /// Converts an MLC value from one scale to another.
+    /// </summary>
+    public static float ConvertMlc(AxisScale from, AxisScale to, int bank, float value)
+    {
+        if (_converters.TryGetValue(from, out var fromConverter))
+        {
+            var iec = fromConverter.MlcPositionToIec(bank, value);
+            if (_converters.TryGetValue(to, out var toConverter))
+                return toConverter.MlcPositionFromIec(bank, iec);
+        }
+
+        throw new Exception($"Cannot convert MLC from {from} to {to}");
+    }
+
+    /// <summary>
     /// Converts a value to IEC scale.
     /// </summary>
     public static float ToIec(AxisScale from, Axis axis, float value)

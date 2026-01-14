@@ -1,4 +1,5 @@
 ﻿using TrajectoryLogReader.Fluence;
+using TrajectoryLogReader.Log.Axes;
 using TrajectoryLogReader.Log.Snapshots;
 using TrajectoryLogReader.LogStatistics;
 
@@ -35,6 +36,13 @@ namespace TrajectoryLogReader.Log
         /// The name of the sub-beam.
         /// </summary>
         public string Name { get; internal set; }
+
+        private LogAxes _axes;
+
+        /// <summary>
+        /// Accessor for axis data restricted to this sub-beam.
+        /// </summary>
+        public LogAxes Axes => _axes ??= new LogAxes(_log, StartIndex, EndIndex);
 
         private int _startIndex = -1;
 

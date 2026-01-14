@@ -1,4 +1,5 @@
 ﻿using TrajectoryLogReader.Fluence;
+using TrajectoryLogReader.Log.Axes;
 using TrajectoryLogReader.Log.Snapshots;
 using TrajectoryLogReader.LogStatistics;
 using TrajectoryLogReader.MLC;
@@ -41,6 +42,13 @@ namespace TrajectoryLogReader.Log
         /// The total time (in ms) of the trajectory log recording.
         /// </summary>
         public double TotalTimeInMs => Header.SamplingIntervalInMS * Header.NumberOfSnapshots;
+
+        private LogAxes _axes;
+
+        /// <summary>
+        /// Accessor for axis data.
+        /// </summary>
+        public LogAxes Axes => _axes ??= new LogAxes(this, 0, Header.NumberOfSnapshots - 1);
 
         private SnapshotCollection _snapshots;
 

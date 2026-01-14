@@ -1,0 +1,86 @@
+using System;
+using System.Collections.Generic;
+
+namespace TrajectoryLogReader.Log.Axes
+{
+    public class LogAxes
+    {
+        private readonly TrajectoryLog _log;
+        private readonly int _startIndex;
+        private readonly int _endIndex;
+
+        public IAxisAccessor Gantry => new AxisAccessor(_log, Axis.GantryRtn, _startIndex, _endIndex);
+        public IAxisAccessor Collimator => new AxisAccessor(_log, Axis.CollRtn, _startIndex, _endIndex);
+        public IAxisAccessor CouchVrt => new AxisAccessor(_log, Axis.CouchVrt, _startIndex, _endIndex);
+        public IAxisAccessor CouchLng => new AxisAccessor(_log, Axis.CouchLng, _startIndex, _endIndex);
+        public IAxisAccessor CouchLat => new AxisAccessor(_log, Axis.CouchLat, _startIndex, _endIndex);
+        public IAxisAccessor CouchRtn => new AxisAccessor(_log, Axis.CouchRtn, _startIndex, _endIndex);
+        public IAxisAccessor CouchPitch => new AxisAccessor(_log, Axis.CouchPitch, _startIndex, _endIndex);
+        public IAxisAccessor CouchRoll => new AxisAccessor(_log, Axis.CouchRoll, _startIndex, _endIndex);
+        
+        public IAxisAccessor X1 => new AxisAccessor(_log, Axis.X1, _startIndex, _endIndex);
+        public IAxisAccessor X2 => new AxisAccessor(_log, Axis.X2, _startIndex, _endIndex);
+        public IAxisAccessor Y1 => new AxisAccessor(_log, Axis.Y1, _startIndex, _endIndex);
+        public IAxisAccessor Y2 => new AxisAccessor(_log, Axis.Y2, _startIndex, _endIndex);
+
+        public IAxisAccessor MU => new AxisAccessor(_log, Axis.MU, _startIndex, _endIndex);
+        public IAxisAccessor BeamHold => new AxisAccessor(_log, Axis.BeamHold, _startIndex, _endIndex);
+        public IAxisAccessor ControlPoint => new AxisAccessor(_log, Axis.ControlPoint, _startIndex, _endIndex);
+
+        public MlcAxisAccessor Mlc(int bank, int leafIndex) 
+            => new MlcAxisAccessor(_log, bank, leafIndex, _startIndex, _endIndex);
+
+        private IEnumerable<MlcAxisAccessor> _movingMlcs;
+        public IEnumerable<MlcAxisAccessor> MovingMLCs
+        {
+            get
+            {
+                if (_movingMlcs == null)
+                {
+                    _movingMlcs = FindMovingMlcs();
+                }
+                return _movingMlcs;
+            }
+        }
+
+        internal LogAxes(TrajectoryLog log, int startIndex, int endIndex)
+        {
+            _log = log;
+            _startIndex = startIndex;
+            _endIndex = endIndex;
+        }
+
+        private IEnumerable<MlcAxisAccessor> FindMovingMlcs()
+        {
+            var moving = new List<MlcAxisAccessor>();
+            var numLeaves = _log.Header.GetNumberOfLeafPairs();
+            
+            for (int bank = 0; bank < 2; bank++)
+            {
+                for (int leaf = 0; leaf < numLeaves; leaf++)
+                {
+                    if (IsLeafMoving(bank, leaf))
+                    {
+                        moving.Add(new MlcAxisAccessor(_log, bank, leaf, _startIndex, _endIndex));
+                    }
+                }
+            }
+            return moving;
+        }
+
+        private bool IsLeafMoving(int bank, int leaf)
+        {
+            if (_endIndex < _startIndex) return false;
+
+            float firstVal = _log.GetMlcPosition(_startIndex, RecordType.ExpectedPosition, leaf, bank);
+            
+            for (int i = _startIndex + 1; i <= _endIndex; i++)
+            {
+                float val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, leaf, bank);
+                if (Math.Abs(val - firstVal) > 0.001f)
+                    return true;
+            }
+            return false;
+        }
+    }
+}
