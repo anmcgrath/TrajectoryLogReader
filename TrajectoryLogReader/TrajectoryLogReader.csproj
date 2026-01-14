@@ -28,4 +28,10 @@
         <PackageReference Include="System.Memory" Version="4.5.5"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <None Include="..\LICENSE">
+        <Link>LICENSE</Link>
+      </None>
+    </ItemGroup>
+
 </Project>
