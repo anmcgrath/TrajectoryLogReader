@@ -26,19 +26,20 @@ public class Statistics
     /// <param name="min">The minimum of the bin axis value. If the binned axis value is outside the range, data won't be aggregated</param>
     /// <param name="max">The maximum of the bin axis value. If the binned axis value is outside the range, data won't be aggregated</param>
     /// <param name="binSize"></param>
-    /// <param name="aggregator">The aggregate function, defaults to sum.</param>
+    /// <param name="aggregator">The aggregate function, defaults to sum. Inputs are currentValue, binned axis value and count of values included</param>
     /// <returns></returns>
     public BinnedData BinByAxis(Func<Snapshot, float> valueSelector, Axis binAxis, RecordType binRecordType, float min,
-        float max, float binSize, Func<float, float, float>? aggregator = null)
+        float max, float binSize, Func<AggregateArgs, float>? aggregator = null)
     {
         if (aggregator == null)
-            aggregator = (aggregate, val) => (aggregate + val);
+            aggregator = args => (args.CurrentAggregateValue + args.DataValue);
 
         var range = max - min;
         int nBins = (int)(range / binSize) + 1;
         var values = new float[nBins];
         var binStarts = Enumerable.Range(0, nBins).Select(x => x * binSize + min).ToArray();
 
+        int aggregateCount = 0;
         foreach (var snapshot in _data)
         {
             var binData = snapshot.GetScalarRecord(binAxis).GetRecordInIec(binRecordType);
@@ -48,10 +49,44 @@ public class Statistics
             if (index < 0) index = 0;
             else if (index >= nBins) index = nBins - 1;
 
-            values[index] = aggregator(values[index], data);
+            values[index] = aggregator(new AggregateArgs(values[index], data, aggregateCount));
+            aggregateCount++;
         }
 
         return new BinnedData(values, binStarts);
+    }
+
+    /// <summary>
+    /// Bins snapshot data by another axis. E.g calculate error in MLC position by gantry angle size etc. Note that binned data is in the IEC scale
+    /// </summary>
+    /// <param name="valueSelector"></param>
+    /// <param name="binAxis">The axis to bin on e.g gantry angle</param>
+    /// <param name="binRecordType">The record type to bin on</param>
+    /// <param name="min">The minimum of the bin axis value. If the binned axis value is outside the range, data won't be aggregated</param>
+    /// <param name="max">The maximum of the bin axis value. If the binned axis value is outside the range, data won't be aggregated</param>
+    /// <param name="binSize"></param>
+    /// <param name="functionType">The aggregate function to use</param>
+    /// <returns></returns>
+    public BinnedData BinByAxis(Func<Snapshot, float> valueSelector, Axis binAxis, RecordType binRecordType, float min,
+        float max, float binSize, AggregateFunction functionType)
+    {
+        return BinByAxis(valueSelector, binAxis, binRecordType, min, max, binSize, GetAggregateFunction(functionType));
+    }
+
+    internal static Func<AggregateArgs, float> GetAggregateFunction(AggregateFunction functionType)
+    {
+        Func<AggregateArgs, float> fn = functionType switch
+        {
+            AggregateFunction.Sum => args => args.CurrentAggregateValue + args.DataValue,
+            AggregateFunction.Count => args => args.CurrentAggregateValue + 1,
+            AggregateFunction.Average => args => args.CurrentAggregateValue +
+                                                 (args.DataValue - args.CurrentAggregateValue) /
+                                                 (args.AggregateCounts + 1),
+            AggregateFunction.Min => args => Math.Min(args.CurrentAggregateValue, args.DataValue),
+            AggregateFunction.Max => args => Math.Max(args.CurrentAggregateValue, args.DataValue),
+            _ => throw new ArgumentOutOfRangeException(nameof(functionType), functionType, null)
+        };
+        return fn;
     }
 
     /// <summary>
