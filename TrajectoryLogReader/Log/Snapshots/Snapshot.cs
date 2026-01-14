@@ -1,6 +1,6 @@
 ﻿using TrajectoryLogReader.MLC;
 
-namespace TrajectoryLogReader.Log;
+namespace TrajectoryLogReader.Log.Snapshots;
 
 /// <summary>
 /// Represents a single snapshot of measurement data at a specific time point.

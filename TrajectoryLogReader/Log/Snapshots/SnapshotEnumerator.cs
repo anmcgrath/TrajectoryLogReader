@@ -1,15 +1,15 @@
 ﻿using System.Collections;
 
-namespace TrajectoryLogReader.Log;
+namespace TrajectoryLogReader.Log.Snapshots;
 
-internal class MeasurementDataEnumerator : IEnumerator<Snapshot>
+internal class SnapshotEnumerator : IEnumerator<Snapshot>
 {
     private readonly TrajectoryLog _log;
     private readonly int _startIndex;
     private readonly int _endIndex;
     private int _measurementIndex;
 
-    internal MeasurementDataEnumerator(TrajectoryLog log, int startIndex, int endIndex)
+    internal SnapshotEnumerator(TrajectoryLog log, int startIndex, int endIndex)
     {
         _measurementIndex = startIndex - 1;
         _log = log;

@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace TrajectoryLogReader.Log;
+namespace TrajectoryLogReader.Log.Snapshots;
 
 /// <summary>
 /// Represents a collection of measurement data snapshots from a trajectory log.
@@ -29,7 +29,7 @@ public class SnapshotCollection : IEnumerable<Snapshot>
     /// <returns>An enumerator for the collection.</returns>
     public IEnumerator<Snapshot> GetEnumerator()
     {
-        return new MeasurementDataEnumerator(Log, _startIndex, _endIndex);
+        return new SnapshotEnumerator(Log, _startIndex, _endIndex);
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using System.Collections;
 using TrajectoryLogReader.Log;
+using TrajectoryLogReader.Log.Snapshots;
 using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.Fluence.Adapters;

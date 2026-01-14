@@ -16,7 +16,7 @@
         /// <summary>
         /// Number of samples per snapshot (Stride).
         /// </summary>
-        public int SamplesPerSnapshot { get; internal set; }
+        internal int SamplesPerSnapshot { get; set; }
 
         internal AxisData(int numberOfSnapshots, int samplesPerSnapshot)
         {

@@ -1,4 +1,5 @@
 using TrajectoryLogReader.Log;
+using TrajectoryLogReader.Log.Snapshots;
 using TrajectoryLogReader.MLC;
 using TrajectoryLogReader.Util;
 

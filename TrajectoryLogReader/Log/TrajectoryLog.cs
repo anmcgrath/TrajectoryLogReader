@@ -1,4 +1,5 @@
 ﻿using TrajectoryLogReader.Fluence;
+using TrajectoryLogReader.Log.Snapshots;
 using TrajectoryLogReader.LogStatistics;
 using TrajectoryLogReader.MLC;
 

@@ -1,5 +1,6 @@
 using TrajectoryLogReader.Extensions;
 using TrajectoryLogReader.Log;
+using TrajectoryLogReader.Log.Snapshots;
 using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.LogStatistics;

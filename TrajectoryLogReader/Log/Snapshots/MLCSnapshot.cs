@@ -1,6 +1,6 @@
 ﻿using TrajectoryLogReader.Util;
 
-namespace TrajectoryLogReader.Log;
+namespace TrajectoryLogReader.Log.Snapshots;
 
 /// <summary>
 /// Represents the MLC leaf positions at a specific measurement point.
