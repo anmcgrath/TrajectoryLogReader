@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TrajectoryLogReader.LogStatistics;
@@ -6,96 +7,49 @@ using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Log.Axes
 {
-    public class MlcAxisAccessor : IAxisAccessor
+    public class MlcAxisAccessor : IEnumerable<MlcLeafAxisAccessor>
     {
+        private readonly List<MlcLeafAxisAccessor> _leaves;
         private readonly TrajectoryLog _log;
-        private readonly int _bank;
-        private readonly int _leafIndex;
-        private readonly int _startIndex;
-        private readonly int _endIndex;
-        private readonly AxisScale _targetScale;
 
-        public int Bank => _bank;
-        public int LeafIndex => _leafIndex;
-
-        internal MlcAxisAccessor(TrajectoryLog log, int bank, int leafIndex, int startIndex, int endIndex, AxisScale? targetScale = null)
+        internal MlcAxisAccessor(TrajectoryLog log, IEnumerable<MlcLeafAxisAccessor> leaves)
         {
             _log = log;
-            _bank = bank;
-            _leafIndex = leafIndex;
-            _startIndex = startIndex;
-            _endIndex = endIndex;
-            _targetScale = targetScale ?? _log.Header.AxisScale;
+            _leaves = leaves.ToList();
         }
 
-        public IEnumerable<float> Expected()
+        public IEnumerator<MlcLeafAxisAccessor> GetEnumerator()
         {
-            for (int i = _startIndex; i <= _endIndex; i++)
-            {
-                var val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, _bank);
-                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bank, val);
-            }
+            return _leaves.GetEnumerator();
         }
 
-        public IEnumerable<float> Actual()
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            for (int i = _startIndex; i <= _endIndex; i++)
-            {
-                var val = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, _bank);
-                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bank, val);
-            }
+            return GetEnumerator();
         }
 
-        public IEnumerable<float> Deltas()
+        public MlcLeafAxisAccessor? GetLeaf(int bank, int leafIndex)
         {
-            for (int i = _startIndex; i <= _endIndex; i++)
-            {
-                var exp = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, _bank);
-                var act = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, _bank);
-
-                var expConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bank, exp);
-                var actConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bank, act);
-
-                yield return actConv - expConv;
-            }
-        }
-
-        public IAxisAccessor WithScale(AxisScale scale)
-        {
-            return new MlcAxisAccessor(_log, _bank, _leafIndex, _startIndex, _endIndex, scale);
+            return _leaves.FirstOrDefault(l => l.Bank == bank && l.LeafIndex == leafIndex);
         }
 
         public float RootMeanSquareError()
         {
-            double sumSq = 0;
-            int count = 0;
-            foreach (var diff in Deltas())
-            {
-                sumSq += diff * diff;
-                count++;
-            }
-            return count == 0 ? 0 : (float)Math.Sqrt(sumSq / count);
+            if (!_leaves.Any()) return 0f;
+            return Statistics.CalculateRootMeanSquareError(_leaves.SelectMany(l => l.Deltas()));
         }
 
         public float MaxError()
         {
-            float maxError = 0f;
-            float maxErrorAbs = 0f;
-
-            foreach (var diff in Deltas())
-            {
-                if (Math.Abs(diff) > maxErrorAbs)
-                {
-                    maxError = diff;
-                    maxErrorAbs = Math.Abs(diff);
-                }
-            }
-            return maxError;
+            if (!_leaves.Any()) return 0f;
+            return Statistics.CalculateMaxError(_leaves.SelectMany(l => l.Deltas()));
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            return Histogram.FromData(Deltas().ToArray(), nBins);
+            // Collect all deltas from all leaves
+            var allDeltas = _leaves.SelectMany(l => l.Deltas()).ToArray();
+            return Histogram.FromData(allDeltas, nBins);
         }
     }
 }

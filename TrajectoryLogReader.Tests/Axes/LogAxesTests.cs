@@ -115,7 +115,8 @@ namespace TrajectoryLogReader.Tests.Axes
         public void Mlc_SpecificLeaf_ReturnsCorrectValues()
         {
             // Bank 0, Leaf 0
-            var leaf = _log.Axes.Mlc(0, 0);
+            var leaf = _log.Axes.Mlc.GetLeaf(0, 0);
+            leaf.ShouldNotBeNull();
             var exp = leaf.Expected().ToList();
             exp[0].ShouldBe(0f); // 0 * 0.1
             exp[1].ShouldBe(0.1f); // 1 * 0.1
@@ -124,7 +125,7 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void MovingMLCs_ReturnsOnlyMovingLeaves()
         {
-            var moving = _log.Axes.MovingMLCs.ToList();
+            var moving = _log.Axes.MovingMlc.ToList();
             // We set Leaf 0 Bank 0 to move. Leaf 1 Bank 0 is static.
             // Others are 0 (static).
             // So only 1 leaf should be in moving list?

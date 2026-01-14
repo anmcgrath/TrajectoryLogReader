@@ -75,13 +75,13 @@ namespace TrajectoryLogReader.Tests.Axes
         public void Mlc_RootMeanSquareError_ReturnsCorrectValue()
         {
             // Error is constant 0.5
-            _log.Axes.Mlc(0, 0).RootMeanSquareError().ShouldBe(0.5f, 0.001f);
+            _log.Axes.Mlc.GetLeaf(0, 0).RootMeanSquareError().ShouldBe(0.5f, 0.001f);
         }
 
         [Test]
         public void Mlc_MaxError_ReturnsCorrectValue()
         {
-            _log.Axes.Mlc(0, 0).MaxError().ShouldBe(0.5f, 0.001f);
+            _log.Axes.Mlc.GetLeaf(0, 0).MaxError().ShouldBe(0.5f, 0.001f);
         }
     }
 }

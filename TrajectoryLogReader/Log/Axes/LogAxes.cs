@@ -27,19 +27,29 @@ namespace TrajectoryLogReader.Log.Axes
         public IAxisAccessor BeamHold => new AxisAccessor(_log, Axis.BeamHold, _startIndex, _endIndex);
         public IAxisAccessor ControlPoint => new AxisAccessor(_log, Axis.ControlPoint, _startIndex, _endIndex);
 
-        public MlcAxisAccessor Mlc(int bank, int leafIndex) 
-            => new MlcAxisAccessor(_log, bank, leafIndex, _startIndex, _endIndex);
-
-        private IEnumerable<MlcAxisAccessor> _movingMlcs;
-        public IEnumerable<MlcAxisAccessor> MovingMLCs
+        private MlcAxisAccessor _mlc;
+        public MlcAxisAccessor Mlc
         {
             get
             {
-                if (_movingMlcs == null)
+                if (_mlc == null)
                 {
-                    _movingMlcs = FindMovingMlcs();
+                    _mlc = CreateAllMlcAccessor();
                 }
-                return _movingMlcs;
+                return _mlc;
+            }
+        }
+
+        private MlcAxisAccessor _movingMlc;
+        public MlcAxisAccessor MovingMlc
+        {
+            get
+            {
+                if (_movingMlc == null)
+                {
+                    _movingMlc = FindMovingMlcs();
+                }
+                return _movingMlc;
             }
         }
 
@@ -50,9 +60,24 @@ namespace TrajectoryLogReader.Log.Axes
             _endIndex = endIndex;
         }
 
-        private IEnumerable<MlcAxisAccessor> FindMovingMlcs()
+        private MlcAxisAccessor CreateAllMlcAccessor()
         {
-            var moving = new List<MlcAxisAccessor>();
+            var leaves = new List<MlcLeafAxisAccessor>();
+            var numLeaves = _log.Header.GetNumberOfLeafPairs();
+            
+            for (int bank = 0; bank < 2; bank++)
+            {
+                for (int leaf = 0; leaf < numLeaves; leaf++)
+                {
+                    leaves.Add(new MlcLeafAxisAccessor(_log, bank, leaf, _startIndex, _endIndex));
+                }
+            }
+            return new MlcAxisAccessor(_log, leaves);
+        }
+
+        private MlcAxisAccessor FindMovingMlcs()
+        {
+            var moving = new List<MlcLeafAxisAccessor>();
             var numLeaves = _log.Header.GetNumberOfLeafPairs();
             
             for (int bank = 0; bank < 2; bank++)
@@ -61,11 +86,11 @@ namespace TrajectoryLogReader.Log.Axes
                 {
                     if (IsLeafMoving(bank, leaf))
                     {
-                        moving.Add(new MlcAxisAccessor(_log, bank, leaf, _startIndex, _endIndex));
+                        moving.Add(new MlcLeafAxisAccessor(_log, bank, leaf, _startIndex, _endIndex));
                     }
                 }
             }
-            return moving;
+            return new MlcAxisAccessor(_log, moving);
         }
 
         private bool IsLeafMoving(int bank, int leaf)

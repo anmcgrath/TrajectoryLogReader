@@ -75,30 +75,12 @@ namespace TrajectoryLogReader.Log.Axes
 
         public float RootMeanSquareError()
         {
-            double sumSq = 0;
-            int count = 0;
-            foreach (var diff in Deltas())
-            {
-                sumSq += diff * diff;
-                count++;
-            }
-            return count == 0 ? 0 : (float)Math.Sqrt(sumSq / count);
+            return Statistics.CalculateRootMeanSquareError(Deltas());
         }
 
         public float MaxError()
         {
-            float maxError = 0f;
-            float maxErrorAbs = 0f;
-
-            foreach (var diff in Deltas())
-            {
-                if (Math.Abs(diff) > maxErrorAbs)
-                {
-                    maxError = diff;
-                    maxErrorAbs = Math.Abs(diff);
-                }
-            }
-            return maxError;
+            return Statistics.CalculateMaxError(Deltas());
         }
 
         public Histogram ErrorHistogram(int nBins = 20)

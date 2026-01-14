@@ -272,4 +272,38 @@ public class Statistics
 
         return BinByAxis(DeltaMuSelector, Axis.GantryRtn, recordType, 0, 360, gantryBinSize);
     }
+
+    /// <summary>
+    /// Calculates the Root Mean Square Error from a sequence of deltas.
+    /// </summary>
+    public static float CalculateRootMeanSquareError(IEnumerable<float> deltas)
+    {
+        double sumSq = 0;
+        int count = 0;
+        foreach (var diff in deltas)
+        {
+            sumSq += diff * diff;
+            count++;
+        }
+        return count == 0 ? 0 : (float)Math.Sqrt(sumSq / count);
+    }
+
+    /// <summary>
+    /// Calculates the Max Error (signed value with largest magnitude) from a sequence of deltas.
+    /// </summary>
+    public static float CalculateMaxError(IEnumerable<float> deltas)
+    {
+        float maxError = 0f;
+        float maxErrorAbs = 0f;
+
+        foreach (var diff in deltas)
+        {
+            if (Math.Abs(diff) > maxErrorAbs)
+            {
+                maxError = diff;
+                maxErrorAbs = Math.Abs(diff);
+            }
+        }
+        return maxError;
+    }
 }
