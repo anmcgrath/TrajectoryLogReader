@@ -3,22 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using TrajectoryLogReader.LogStatistics;
 using TrajectoryLogReader.Util;
+using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.Log.Axes
 {
     public class MlcLeafAxisAccessor : IAxisAccessor
     {
         private readonly TrajectoryLog _log;
-        private readonly int _bank;
+        private readonly Bank _bank;
         private readonly int _leafIndex;
         private readonly int _startIndex;
         private readonly int _endIndex;
         private readonly AxisScale _targetScale;
 
-        public int Bank => _bank;
+        public Bank Bank => _bank;
         public int LeafIndex => _leafIndex;
 
-        internal MlcLeafAxisAccessor(TrajectoryLog log, int bank, int leafIndex, int startIndex, int endIndex, AxisScale? targetScale = null)
+        internal MlcLeafAxisAccessor(TrajectoryLog log, Bank bank, int leafIndex, int startIndex, int endIndex, AxisScale? targetScale = null)
         {
             _log = log;
             _bank = bank;
@@ -32,8 +33,8 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, _bank);
-                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bank, val);
+                var val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, (int)_bank);
+                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bank, val);
             }
         }
 
@@ -41,8 +42,8 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var val = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, _bank);
-                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bank, val);
+                var val = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, (int)_bank);
+                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bank, val);
             }
         }
 
@@ -50,11 +51,11 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var exp = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, _bank);
-                var act = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, _bank);
+                var exp = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, (int)_bank);
+                var act = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, (int)_bank);
 
-                var expConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bank, exp);
-                var actConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bank, act);
+                var expConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bank, exp);
+                var actConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bank, act);
 
                 yield return actConv - expConv;
             }

@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Shouldly;
 using TrajectoryLogReader.Log;
 using TrajectoryLogReader.Log.Axes;
+using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.Tests.Axes
 {
@@ -114,8 +115,8 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void Mlc_SpecificLeaf_ReturnsCorrectValues()
         {
-            // Bank 0, Leaf 0
-            var leaf = _log.Axes.Mlc.GetLeaf(0, 0);
+            // Bank 0 (B), Leaf 0
+            var leaf = _log.Axes.Mlc[Bank.B, 0];
             leaf.ShouldNotBeNull();
             var exp = leaf.Expected().ToList();
             exp[0].ShouldBe(0f); // 0 * 0.1
@@ -132,7 +133,17 @@ namespace TrajectoryLogReader.Tests.Axes
             
             moving.Count.ShouldBe(1);
             moving[0].LeafIndex.ShouldBe(0);
-            moving[0].Bank.ShouldBe(0);
+            moving[0].Bank.ShouldBe(Bank.B);
+        }
+
+        [Test]
+        public void MovingMLCs_WithHighThreshold_ReturnsEmpty()
+        {
+            // Leaf 0 moves by 0.1 per snapshot (total 1.0).
+            // If threshold is 2.0, it shouldn't be moving.
+            
+            var moving = _log.Axes.GetMovingMlc(2.0f).ToList();
+            moving.Count.ShouldBe(0);
         }
 
         [Test]
@@ -180,6 +191,19 @@ namespace TrajectoryLogReader.Tests.Axes
             
             var delta = log.Axes.CouchLat.Deltas().First();
             delta.ShouldBe(0.1f, 0.001f);
+        }
+        [Test]
+        public void GetAxis_ReturnsCorrectAccessor()
+        {
+            var accessor = _log.Axes.GetAxis(Axis.GantryRtn);
+            accessor.ShouldNotBeNull();
+            accessor.Expected().Count().ShouldBe(NumSnapshots);
+        }
+
+        [Test]
+        public void GetAxis_ThrowsForMLC()
+        {
+            Should.Throw<ArgumentException>(() => _log.Axes.GetAxis(Axis.MLC));
         }
     }
 }
