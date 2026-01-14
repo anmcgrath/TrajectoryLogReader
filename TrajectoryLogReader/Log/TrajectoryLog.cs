@@ -65,7 +65,7 @@ namespace TrajectoryLogReader.Log
             }
         }
 
-        private Statistics _statistics;
+        private Statistics? _statistics;
 
         /// <summary>
         /// Calculated statistics for the entire log.

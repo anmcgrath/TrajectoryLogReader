@@ -168,7 +168,5 @@ public class StatisticsTests
         var result = _log.Statistics.GetMuPerGantryAngle(2, RecordType.ExpectedPosition);
         result.Values[0].ShouldBe(2.0f, 0.001f);
         result.Values[1].ShouldBe(4.0f, 0.001f);
-
-        TrajectoryLog log;
     }
 }
