@@ -13,6 +13,11 @@ namespace TrajectoryLogReader.Log.Axes
         private readonly int _endIndex;
         private readonly AxisScale _targetScale;
 
+        /// <summary>
+        /// The time (in ms) for this data
+        /// </summary>
+        public int TimeInMs => (_endIndex - _startIndex) * _log.Header.SamplingIntervalInMS;
+
         public AxisAccessor(TrajectoryLog log, Axis axis, int startIndex, int endIndex, AxisScale? targetScale = null)
         {
             _log = log;
@@ -23,6 +28,7 @@ namespace TrajectoryLogReader.Log.Axes
         }
 
         private float[]? _expected;
+
         public IEnumerable<float> Expected
         {
             get
@@ -31,6 +37,7 @@ namespace TrajectoryLogReader.Log.Axes
                 {
                     _expected = GetExpected().ToArray();
                 }
+
                 return _expected;
             }
         }
@@ -45,6 +52,7 @@ namespace TrajectoryLogReader.Log.Axes
         }
 
         private float[]? _actual;
+
         public IEnumerable<float> Actual
         {
             get
@@ -53,6 +61,7 @@ namespace TrajectoryLogReader.Log.Axes
                 {
                     _actual = GetActual().ToArray();
                 }
+
                 return _actual;
             }
         }
@@ -67,6 +76,7 @@ namespace TrajectoryLogReader.Log.Axes
         }
 
         private float[]? _deltas;
+
         public IEnumerable<float> Deltas
         {
             get
@@ -75,6 +85,7 @@ namespace TrajectoryLogReader.Log.Axes
                 {
                     _deltas = GetDeltas().ToArray();
                 }
+
                 return _deltas;
             }
         }

@@ -9,6 +9,7 @@ namespace TrajectoryLogReader.Log.Axes
     {
         private readonly IAxisAccessor _inner;
         private readonly double _samplingIntervalSeconds;
+        public int TimeInMs => _inner.TimeInMs;
 
         public VelocityAxisAccessor(IAxisAccessor inner, double samplingIntervalMs)
         {
@@ -22,7 +23,7 @@ namespace TrajectoryLogReader.Log.Axes
             if (!e.MoveNext()) yield break;
 
             float prev = e.Current;
-            
+
             yield return 0f;
 
             while (e.MoveNext())

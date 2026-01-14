@@ -11,6 +11,7 @@ namespace TrajectoryLogReader.Log.Axes
         private readonly int _startIndex;
         private readonly int _endIndex;
         private readonly AxisScale _targetScale;
+        public int TimeInMs => (_endIndex - _startIndex) * _log.Header.SamplingIntervalInMS;
 
         public int BankIndex => _bankIndex;
         public int LeafIndex => _leafIndex;
@@ -45,8 +46,8 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, (int)_bankIndex);
-                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bankIndex, val);
+                var val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, _bankIndex);
+                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bankIndex, val);
             }
         }
 
@@ -69,8 +70,8 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var val = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, (int)_bankIndex);
-                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bankIndex, val);
+                var val = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, _bankIndex);
+                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bankIndex, val);
             }
         }
 
@@ -93,11 +94,11 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var exp = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, (int)_bankIndex);
-                var act = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, (int)_bankIndex);
+                var exp = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, _bankIndex);
+                var act = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, _bankIndex);
 
-                var expConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bankIndex, exp);
-                var actConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bankIndex, act);
+                var expConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bankIndex, exp);
+                var actConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, _bankIndex, act);
 
                 yield return actConv - expConv;
             }

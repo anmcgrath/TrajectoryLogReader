@@ -10,6 +10,7 @@ namespace TrajectoryLogReader.Log.Axes
         private readonly IAxisAccessor _axis1;
         private readonly IAxisAccessor _axis2;
         private readonly Func<float, float, float> _combiner;
+        public int TimeInMs => _axis1.TimeInMs;
 
         public CombinedAxisAccessor(IAxisAccessor axis1, IAxisAccessor axis2, Func<float, float, float> combiner)
         {
