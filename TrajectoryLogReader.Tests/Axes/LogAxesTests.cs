@@ -129,7 +129,7 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void MovingMLCs_ReturnsOnlyMovingLeaves()
         {
-            var moving = _log.Axes.MovingMlc.ToList();
+            var moving = _log.Axes.MovingMlc.Leaves.ToList();
             // We set Leaf 0 Bank 0 to move. Leaf 1 Bank 0 is static.
             // Others are 0 (static).
             // So only 1 leaf should be in moving list?
@@ -145,7 +145,7 @@ namespace TrajectoryLogReader.Tests.Axes
             // Leaf 0 moves by 0.1 per snapshot (total 1.0).
             // If threshold is 2.0, it shouldn't be moving.
 
-            var moving = _log.Axes.GetMovingMlc(2.0f).ToList();
+            var moving = _log.Axes.GetMovingMlc(2.0f).Leaves.ToList();
             moving.Count.ShouldBe(0);
         }
 

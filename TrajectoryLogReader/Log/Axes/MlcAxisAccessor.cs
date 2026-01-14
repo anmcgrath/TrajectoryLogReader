@@ -7,25 +7,17 @@ using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.Log.Axes
 {
-    public class MlcAxisAccessor : IEnumerable<MlcLeafAxisAccessor>
+    public class MlcAxisAccessor
     {
         private readonly Dictionary<(int, int), MlcLeafAxisAccessor> _leafLookup;
         private readonly TrajectoryLog _log;
+
+        public IEnumerable<MlcLeafAxisAccessor> Leaves => _leafLookup.Values;
 
         internal MlcAxisAccessor(TrajectoryLog log, IEnumerable<MlcLeafAxisAccessor> leaves)
         {
             _log = log;
             _leafLookup = leaves.ToDictionary(l => (l.BankIndex, l.LeafIndex));
-        }
-
-        public IEnumerator<MlcLeafAxisAccessor> GetEnumerator()
-        {
-            return _leafLookup.Values.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
 
         public MlcLeafAxisAccessor? GetLeaf(int bankIndex, int leafIndex)
