@@ -306,12 +306,12 @@ public class Snapshot
         }
     }
 
-    private MLCRecord _mlc;
+    private MLCSnapshot _mlc;
 
     /// <summary>
     /// MLC leaf positions (in cm)
     /// </summary>
-    public MLCRecord MLC
+    public MLCSnapshot MLC
     {
         get
         {

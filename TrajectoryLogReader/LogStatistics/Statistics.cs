@@ -214,7 +214,7 @@ public class Statistics
     /// <returns></returns>
     public Histogram ErrorHistogram(int bankIndex, int leafIndex, int nBins = 20)
     {
-        return Histogram.FromData(_data.Select(x => x.MLC.GetDelta(leafIndex, bankIndex))
+        return Histogram.FromData(_data.Select(x => x.MLC.GetDelta(bankIndex, leafIndex))
             .ToArray(), nBins);
     }
 

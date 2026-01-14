@@ -5,12 +5,12 @@ namespace TrajectoryLogReader.Log;
 /// <summary>
 /// Represents the MLC leaf positions at a specific measurement point.
 /// </summary>
-public class MLCRecord
+public class MLCSnapshot
 {
     private readonly int _measIndex;
     private readonly TrajectoryLog _log;
 
-    internal MLCRecord(TrajectoryLog log, int measIndex)
+    internal MLCSnapshot(TrajectoryLog log, int measIndex)
     {
         _measIndex = measIndex;
         _log = log;
