@@ -20,12 +20,12 @@ public class StatisticsTests
         {
             SamplingIntervalInMS = 20,
             NumberOfSnapshots = NumSnapshots,
-            AxisScale = AxisScale.MachineScale,
-            AxesSampled = new[] { Axis.GantryRtn, Axis.Y1, Axis.MLC }, // Gantry, Y1, MLC
+            AxisScale = AxisScale.ModifiedIEC61217,
+            AxesSampled = new[] { Axis.GantryRtn, Axis.Y1, Axis.MLC, Axis.MU }, // Gantry, Y1, MLC, MU
             MlcModel = MLCModel.NDS120, // 60 pairs
             // MLC Samples: (60 leaves * 2 banks) + 2 carriages = 122 samples.
             // SamplesPerSnapshot will be 122 * 2 = 244.
-            SamplesPerAxis = new[] { 1, 1, 122 }
+            SamplesPerAxis = new[] { 1, 1, 122, 1 }
         };
         _log.Header.NumAxesSampled = _log.Header.AxesSampled.Length;
 
@@ -74,6 +74,18 @@ public class StatisticsTests
         }
 
         _log.AxisData[2] = mlcData;
+
+        // 4. MU: Cumulative 2 MU per snapshot
+        // Expected: 0, 2, 4...
+        // Actual: 0, 2, 4... (No error)
+        var muData = new AxisData(NumSnapshots, 2);
+        for (int i = 0; i < NumSnapshots; i++)
+        {
+            muData.Data[i * 2] = i * 2; // Expected
+            muData.Data[i * 2 + 1] = i * 2; // Actual
+        }
+
+        _log.AxisData[3] = muData;
     }
 
     [Test]
@@ -134,7 +146,27 @@ public class StatisticsTests
         // RMS for Leaf 1, Bank 0 should be 0
         _log.Statistics.RootMeanSquareError(0, 1).ShouldBe(0f, 0.001f);
 
-        // Max Error for Leaf 1, Bank 0 should be 0
+        // Max Error for Leaf 1, Bank 0 should be 0.5 (Wait, test said 0.5 for leaf 0, 0 for leaf 1)
         _log.Statistics.MaxError(0, 1).ShouldBe(0f, 0.001f);
+    }
+
+    [Test]
+    public void BinByAxis_BinsValuesCorrectly()
+    {
+        var result = _log.Statistics.BinByAxis(
+            s => s.Y1.Expected,
+            Axis.GantryRtn,
+            RecordType.ExpectedPosition,
+            0, 10, 2);
+        result.Values[0].ShouldBe(20);
+        result.Values[1].ShouldBe(20);
+    }
+
+    [Test]
+    public void GetMuPerGantryAngle_ReturnsCorrectMuDistribution()
+    {
+        var result = _log.Statistics.GetMuPerGantryAngle(2, RecordType.ExpectedPosition);
+        result.Values[0].ShouldBe(2.0f, 0.001f);
+        result.Values[1].ShouldBe(4.0f, 0.001f);
     }
 }

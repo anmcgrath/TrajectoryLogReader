@@ -217,4 +217,58 @@ public class Statistics
         return Histogram.FromData(_data.Select(x => x.MLC.GetDelta(leafIndex, bankIndex))
             .ToArray(), nBins);
     }
+
+    /// <summary>
+    /// Bins snapshot data by another axis. E.g calculate error in MLC position by gantry angle size etc. Note that binned data is in the IEC scale
+    /// </summary>
+    /// <param name="valueSelector"></param>
+    /// <param name="binAxis">The axis to bin on e.g gantry angle</param>
+    /// <param name="binRecordType">The record type to bin on</param>
+    /// <param name="min">The minimum of the bin axis value. If the binned axis value is outside the range, data won't be aggregated</param>
+    /// <param name="max">The maximum of the bin axis value. If the binned axis value is outside the range, data won't be aggregated</param>
+    /// <param name="binSize"></param>
+    /// <param name="aggregator">The aggregate function, defaults to sum.</param>
+    /// <returns></returns>
+    public BinnedData BinByAxis(Func<Snapshot, float> valueSelector, Axis binAxis, RecordType binRecordType, float min,
+        float max, float binSize, Func<float, float, float>? aggregator = null)
+    {
+        if (aggregator == null)
+            aggregator = (aggregate, val) => (aggregate + val);
+
+        var range = max - min;
+        int nBins = (int)(range / binSize) + 1;
+        var values = new float[nBins];
+        var binStarts = Enumerable.Range(0, nBins).Select(x => x * binSize + min).ToArray();
+
+        foreach (var snapshot in _data)
+        {
+            var binData = snapshot.GetScalarRecord(binAxis).GetRecordInIec(binRecordType);
+            var data = valueSelector(snapshot);
+            int index = (int)((binData - min) / binSize);
+
+            if (index < 0) index = 0;
+            else if (index >= nBins) index = nBins - 1;
+
+            values[index] = aggregator(values[index], data);
+        }
+
+        return new BinnedData(values, binStarts);
+    }
+
+    /// <summary>
+    /// Returns the total MU delivered per gantry angle for the data collection.
+    /// </summary>
+    /// <param name="gantryBinSize"></param>
+    /// <returns></returns>
+    public BinnedData GetMuPerGantryAngle(float gantryBinSize, RecordType recordType = RecordType.ActualPosition)
+    {
+        float DeltaMuSelector(Snapshot s)
+        {
+            var previous = s.Previous();
+            var prevMu = previous?.MU.GetRecord(recordType) ?? 0f;
+            return s.MU.GetRecord(recordType) - prevMu;
+        }
+
+        return BinByAxis(DeltaMuSelector, Axis.GantryRtn, recordType, 0, 360, gantryBinSize);
+    }
 }

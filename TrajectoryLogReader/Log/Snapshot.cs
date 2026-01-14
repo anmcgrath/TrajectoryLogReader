@@ -334,6 +334,28 @@ public class Snapshot
     }
 
     /// <summary>
+    /// Returns the next snapshot. Null if this is the first
+    /// </summary>
+    /// <returns></returns>
+    public Snapshot? Previous()
+    {
+        if (_measIndex == 0)
+            return null;
+        return new Snapshot(_measIndex - 1, _log);
+    }
+
+    /// <summary>
+    /// Returns the next snapshot. Null if this is the last.
+    /// </summary>
+    /// <returns></returns>
+    public Snapshot? Next()
+    {
+        if (_measIndex == _log.Header.NumberOfSnapshots - 1)
+            return null;
+        return new Snapshot(_measIndex + 1, _log);
+    }
+
+    /// <summary>
     /// The MLC model used.
     /// </summary>
     public IMLCModel MlcModel => _log.MlcModel;

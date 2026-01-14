@@ -10,6 +10,7 @@
         <RepositoryUrl>https://github.com/anmcgrath/TrajectoryLogReader</RepositoryUrl>
         <Version>2.0.0-alpha.2</Version>
         <PackageReadmeFile>readme.md</PackageReadmeFile>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <PropertyGroup>
