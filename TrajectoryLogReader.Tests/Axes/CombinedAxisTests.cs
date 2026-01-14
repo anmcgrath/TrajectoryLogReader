@@ -40,7 +40,7 @@ namespace TrajectoryLogReader.Tests.Axes
             log.AxisData[1].Data[1] = 10.0f; // Act
             
             var jawsX = log.Axes.JawsX;
-            var val = jawsX.Expected().First();
+            var val = jawsX.Expected.First();
             
             // X1 (Machine 10) -> IEC -10.
             // X2 (Machine 10) -> IEC 10.

@@ -9,13 +9,13 @@ namespace TrajectoryLogReader.Log.Axes
 {
     public class MlcAxisAccessor : IEnumerable<MlcLeafAxisAccessor>
     {
-        private readonly Dictionary<(Bank, int), MlcLeafAxisAccessor> _leafLookup;
+        private readonly Dictionary<(int, int), MlcLeafAxisAccessor> _leafLookup;
         private readonly TrajectoryLog _log;
 
         internal MlcAxisAccessor(TrajectoryLog log, IEnumerable<MlcLeafAxisAccessor> leaves)
         {
             _log = log;
-            _leafLookup = leaves.ToDictionary(l => (l.Bank, l.LeafIndex));
+            _leafLookup = leaves.ToDictionary(l => (l.BankIndex, l.LeafIndex));
         }
 
         public IEnumerator<MlcLeafAxisAccessor> GetEnumerator()
@@ -28,13 +28,11 @@ namespace TrajectoryLogReader.Log.Axes
             return GetEnumerator();
         }
 
-        public MlcLeafAxisAccessor? this[Bank bank, int leafIndex]
+        public MlcLeafAxisAccessor? GetLeaf(int bankIndex, int leafIndex)
         {
-            get
-            {
-                _leafLookup.TryGetValue((bank, leafIndex), out var leaf);
+            if (_leafLookup.TryGetValue((bankIndex, leafIndex), out var leaf))
                 return leaf;
-            }
+            return null;
         }
 
         public MlcVelocityAccessor Velocity => new MlcVelocityAccessor(_leafLookup.Values);
@@ -42,19 +40,19 @@ namespace TrajectoryLogReader.Log.Axes
         public float RootMeanSquareError()
         {
             if (!_leafLookup.Any()) return 0f;
-            return Statistics.CalculateRootMeanSquareError(_leafLookup.Values.SelectMany(l => l.Deltas()));
+            return Statistics.CalculateRootMeanSquareError(_leafLookup.Values.SelectMany(l => l.Deltas));
         }
 
         public float MaxError()
         {
             if (!_leafLookup.Any()) return 0f;
-            return Statistics.CalculateMaxError(_leafLookup.Values.SelectMany(l => l.Deltas()));
+            return Statistics.CalculateMaxError(_leafLookup.Values.SelectMany(l => l.Deltas));
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
             // Collect all deltas from all leaves
-            var allDeltas = _leafLookup.Values.SelectMany(l => l.Deltas()).ToArray();
+            var allDeltas = _leafLookup.Values.SelectMany(l => l.Deltas).ToArray();
             return Histogram.FromData(allDeltas, nBins);
         }
     }

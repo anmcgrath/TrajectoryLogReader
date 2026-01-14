@@ -33,25 +33,22 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
-        public IEnumerable<float> Expected()
-        {
-            return CalculateVelocity(_inner.Expected());
-        }
+        public IEnumerable<float> Expected => CalculateVelocity(_inner.Expected);
 
-        public IEnumerable<float> Actual()
-        {
-            return CalculateVelocity(_inner.Actual());
-        }
+        public IEnumerable<float> Actual => CalculateVelocity(_inner.Actual);
 
-        public IEnumerable<float> Deltas()
+        public IEnumerable<float> Deltas
         {
-            // Velocity Delta = ActualVelocity - ExpectedVelocity
-            using var exp = Expected().GetEnumerator();
-            using var act = Actual().GetEnumerator();
-
-            while (exp.MoveNext() && act.MoveNext())
+            get
             {
-                yield return act.Current - exp.Current;
+                // Velocity Delta = ActualVelocity - ExpectedVelocity
+                using var exp = Expected.GetEnumerator();
+                using var act = Actual.GetEnumerator();
+
+                while (exp.MoveNext() && act.MoveNext())
+                {
+                    yield return act.Current - exp.Current;
+                }
             }
         }
 
@@ -62,17 +59,17 @@ namespace TrajectoryLogReader.Log.Axes
 
         public float RootMeanSquareError()
         {
-            return Statistics.CalculateRootMeanSquareError(Deltas());
+            return Statistics.CalculateRootMeanSquareError(Deltas);
         }
 
         public float MaxError()
         {
-            return Statistics.CalculateMaxError(Deltas());
+            return Statistics.CalculateMaxError(Deltas);
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            return Histogram.FromData(Deltas().ToArray(), nBins);
+            return Histogram.FromData(Deltas.ToArray(), nBins);
         }
     }
 }

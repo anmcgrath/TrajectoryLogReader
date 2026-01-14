@@ -53,8 +53,8 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void Leaf_Velocity_CalculatesCorrectSpeed()
         {
-            var leaf = _log.Axes.Mlc[Bank.B, 0];
-            var velocity = leaf.GetVelocity().Expected().ToList();
+            var leaf = _log.Axes.Mlc.GetLeaf(Bank.B, 0);
+            var velocity = leaf.GetVelocity().Expected.ToList();
 
             velocity.Count.ShouldBe(3);
             velocity[0].ShouldBe(0f); // First point is 0
@@ -63,15 +63,16 @@ namespace TrajectoryLogReader.Tests.Axes
         }
 
         [Test]
-        public void MlcVelocity_AggregatesCorrectly()
+        public void MlcVelocity_AggregatesCorrectly_NoError()
         {
-            // All leaves except [B, 0] are 0.
-            // [B, 0] has max velocity 5.
-
             var maxVel = _log.Axes.Mlc.Velocity.MaxError();
-            // Delta Velocity: Act - Exp
             maxVel.ShouldBe(0f, 0.001f);
+        }
 
+        [Test]
+        public void MlcVelocity_AggregatesCorrectly_WithError()
+        {
+            // Introduce error BEFORE accessing the property
             var mlcData = _log.AxisData[0];
             mlcData.Data[122 * 2 * 2 + 5] = 0.21f;
 

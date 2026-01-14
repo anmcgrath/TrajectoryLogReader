@@ -60,7 +60,7 @@ public class SnapshotCollection : IEnumerable<Snapshot>
     /// Returns the last measurement data snapshot, or null if the collection is empty.
     /// </summary>
     /// <returns>The last snapshot or null.</returns>
-    public Snapshot LastOrDefault()
+    public Snapshot? LastOrDefault()
     {
         return Count == 0 ? null : Last();
     }
@@ -69,7 +69,7 @@ public class SnapshotCollection : IEnumerable<Snapshot>
     /// Returns the first measurement data snapshot, or null if the collection is empty.
     /// </summary>
     /// <returns>The first snapshot or null.</returns>
-    public Snapshot FirstOrDefault()
+    public Snapshot? FirstOrDefault()
     {
         return Count == 0 ? null : First();
     }

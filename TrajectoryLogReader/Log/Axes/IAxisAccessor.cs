@@ -4,9 +4,9 @@ namespace TrajectoryLogReader.Log.Axes
 {
     public interface IAxisAccessor
     {
-        IEnumerable<float> Expected();
-        IEnumerable<float> Actual();
-        IEnumerable<float> Deltas();
+        IEnumerable<float> Expected { get; }
+        IEnumerable<float> Actual { get; }
+        IEnumerable<float> Deltas { get; }
         IAxisAccessor WithScale(AxisScale scale);
 
         float RootMeanSquareError();

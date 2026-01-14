@@ -35,16 +35,12 @@ namespace TrajectoryLogReader.Log
         /// <summary>
         /// The name of the sub-beam.
         /// </summary>
-        public string Name { get; internal set; }
-
-        private LogAxes _axes;
+        public string Name { get; internal set; } = string.Empty;
 
         /// <summary>
         /// Accessor for axis data restricted to this sub-beam.
         /// </summary>
-        public LogAxes Axes => _axes ??= new LogAxes(_log, StartIndex, EndIndex);
-
-        private int _startIndex = -1;
+        public LogAxes Axes => field ??= new LogAxes(_log, StartIndex, EndIndex);
 
         /// <summary>
         /// The index of the snapshot in the log-file that corresponds to the start of this beam
@@ -53,13 +49,11 @@ namespace TrajectoryLogReader.Log
         {
             get
             {
-                if (_startIndex < 0)
-                    _startIndex = CalculateStartIndex();
-                return _startIndex;
+                if (field < 0)
+                    field = CalculateStartIndex();
+                return field;
             }
-        }
-
-        private int _endIndex = -1;
+        } = -1;
 
         /// <summary>
         /// The index of the snapshot in the log-file that corresponds to the end of this beam
@@ -68,13 +62,11 @@ namespace TrajectoryLogReader.Log
         {
             get
             {
-                if (_endIndex < 0)
-                    _endIndex = CalculateEndIndex();
-                return _endIndex;
+                if (field < 0)
+                    field = CalculateEndIndex();
+                return field;
             }
-        }
-
-        private SnapshotCollection _snapshots;
+        } = -1;
 
         /// <summary>
         /// A collection of measurement snapshots specific to this sub-beam.
@@ -83,13 +75,10 @@ namespace TrajectoryLogReader.Log
         {
             get
             {
-                if (_snapshots == null)
-                    _snapshots = new SnapshotCollection(_log, StartIndex, EndIndex);
-                return _snapshots;
+                field ??= new SnapshotCollection(_log, StartIndex, EndIndex);
+                return field;
             }
         }
-
-        private Statistics _statistics;
 
         /// <summary>
         /// Calculated statistics for this sub-beam.
@@ -98,9 +87,8 @@ namespace TrajectoryLogReader.Log
         {
             get
             {
-                if (_statistics == null)
-                    _statistics = new Statistics(Snapshots, _log);
-                return _statistics;
+                field ??= new Statistics(Snapshots, _log);
+                return field;
             }
         }
 

@@ -22,7 +22,20 @@ namespace TrajectoryLogReader.Log.Axes
             _targetScale = targetScale ?? _log.Header.AxisScale;
         }
 
-        public IEnumerable<float> Expected()
+        private float[]? _expected;
+        public IEnumerable<float> Expected
+        {
+            get
+            {
+                if (_expected == null)
+                {
+                    _expected = GetExpected().ToArray();
+                }
+                return _expected;
+            }
+        }
+
+        private IEnumerable<float> GetExpected()
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
@@ -31,7 +44,20 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
-        public IEnumerable<float> Actual()
+        private float[]? _actual;
+        public IEnumerable<float> Actual
+        {
+            get
+            {
+                if (_actual == null)
+                {
+                    _actual = GetActual().ToArray();
+                }
+                return _actual;
+            }
+        }
+
+        private IEnumerable<float> GetActual()
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
@@ -40,7 +66,20 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
-        public IEnumerable<float> Deltas()
+        private float[]? _deltas;
+        public IEnumerable<float> Deltas
+        {
+            get
+            {
+                if (_deltas == null)
+                {
+                    _deltas = GetDeltas().ToArray();
+                }
+                return _deltas;
+            }
+        }
+
+        private IEnumerable<float> GetDeltas()
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
@@ -75,17 +114,17 @@ namespace TrajectoryLogReader.Log.Axes
 
         public float RootMeanSquareError()
         {
-            return Statistics.CalculateRootMeanSquareError(Deltas());
+            return Statistics.CalculateRootMeanSquareError(Deltas);
         }
 
         public float MaxError()
         {
-            return Statistics.CalculateMaxError(Deltas());
+            return Statistics.CalculateMaxError(Deltas);
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            return Histogram.FromData(Deltas().ToArray(), nBins);
+            return Histogram.FromData(Deltas.ToArray(), nBins);
         }
 
         private float Normalize(float value, float period)

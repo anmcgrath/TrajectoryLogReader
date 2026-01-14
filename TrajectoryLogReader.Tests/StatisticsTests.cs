@@ -89,68 +89,6 @@ public class StatisticsTests
     }
 
     [Test]
-    public void RootMeanSquareError_ScalarAxis_ReturnsCorrectRMS()
-    {
-        // Gantry: Error is always 1. RMS = Sqrt(Sum(1^2)/N) = Sqrt(N/N) = 1.
-        _log.Statistics.RootMeanSquareError(Axis.GantryRtn).ShouldBe(1.0f, 0.001f);
-
-        // Y1: Error is +2 or -2. Sq error is 4. RMS = Sqrt(Sum(4)/N) = Sqrt(4N/N) = 2.
-        _log.Statistics.RootMeanSquareError(Axis.Y1).ShouldBe(2.0f, 0.001f);
-    }
-
-    [Test]
-    public void MaxError_ScalarAxis_ReturnsMaxAbsoluteError()
-    {
-        // Gantry: Max error is 1.
-        _log.Statistics.MaxError(Axis.GantryRtn).ShouldBe(1.0f, 0.001f);
-
-        Math.Abs(_log.Statistics.MaxError(Axis.Y1)).ShouldBe(2.0f, 0.001f);
-    }
-
-    [Test]
-    public void RootMeanSquareError_MLC_ReturnsCorrectRMS()
-    {
-        var expectedRms = Math.Sqrt(2.5 / (10 * 120));
-        _log.Statistics.RootMeanSquareError(Axis.MLC).ShouldBe((float)expectedRms, 0.0001f);
-    }
-
-    [Test]
-    public void RootMeanSquareError_RotationalAxis_HandlesWrapAround()
-    {
-        // Gantry with wrap around
-        // Exp: 359, Act: 1 -> Diff should be 2, not -358.
-        var gantryData = _log.GetAxisData(Axis.GantryRtn);
-        // Reset data
-        for (int i = 0; i < NumSnapshots; i++)
-        {
-            gantryData.Data[i * 2] = 359;
-            gantryData.Data[i * 2 + 1] = 1;
-        }
-
-        // Error is 2. RMS should be 2.
-        _log.Statistics.RootMeanSquareError(Axis.GantryRtn).ShouldBe(2.0f, 0.001f);
-    }
-
-    [Test]
-    public void IndividualMlcLeaf_ReturnsCorrectStatistics()
-    {
-        // Setup: Leaf 0, Bank 0 has constant error of 0.5 (set in Setup)
-        // Leaf 1, Bank 0 has 0 error.
-
-        // RMS for Leaf 0, Bank 0 should be 0.5
-        _log.Statistics.RootMeanSquareError(0, 0).ShouldBe(0.5f, 0.001f);
-
-        // Max Error for Leaf 0, Bank 0 should be 0.5
-        _log.Statistics.MaxError(0, 0).ShouldBe(0.5f, 0.001f);
-
-        // RMS for Leaf 1, Bank 0 should be 0
-        _log.Statistics.RootMeanSquareError(0, 1).ShouldBe(0f, 0.001f);
-
-        // Max Error for Leaf 1, Bank 0 should be 0.5 (Wait, test said 0.5 for leaf 0, 0 for leaf 1)
-        _log.Statistics.MaxError(0, 1).ShouldBe(0f, 0.001f);
-    }
-
-    [Test]
     public void BinByAxis_BinsValuesCorrectly()
     {
         var result = _log.Statistics.BinByAxis(

@@ -43,14 +43,10 @@ namespace TrajectoryLogReader.Log
         /// </summary>
         public double TotalTimeInMs => Header.SamplingIntervalInMS * Header.NumberOfSnapshots;
 
-        private LogAxes _axes;
-
         /// <summary>
         /// Accessor for axis data.
         /// </summary>
-        public LogAxes Axes => _axes ??= new LogAxes(this, 0, Header.NumberOfSnapshots - 1);
-
-        private SnapshotCollection _snapshots;
+        public LogAxes Axes => field ??= new LogAxes(this, 0, Header.NumberOfSnapshots - 1);
 
         /// <summary>
         /// A collection of all measurement snapshots in the log.
@@ -59,9 +55,9 @@ namespace TrajectoryLogReader.Log
         {
             get
             {
-                if (_snapshots == null)
-                    _snapshots = new SnapshotCollection(this, 0, Header.NumberOfSnapshots - 1);
-                return _snapshots;
+                if (field == null)
+                    field = new SnapshotCollection(this, 0, Header.NumberOfSnapshots - 1);
+                return field;
             }
         }
 

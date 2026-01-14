@@ -26,8 +26,6 @@ public class Snapshot
     /// </summary>
     public int TimeInMs => _log.Header.SamplingIntervalInMS * _measIndex;
 
-    private ScalarRecord _colRtn;
-
     /// <summary>
     /// Collimator rotation angle (in degrees)
     /// </summary>
@@ -35,12 +33,10 @@ public class Snapshot
     {
         get
         {
-            _colRtn ??= new(_log, Axis.CollRtn, _measIndex);
-            return _colRtn;
+            field ??= new(_log, Axis.CollRtn, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _gantryRtn;
 
     /// <summary>
     /// Gantry rotation angle (in degrees)
@@ -49,12 +45,10 @@ public class Snapshot
     {
         get
         {
-            _gantryRtn ??= new(_log, Axis.GantryRtn, _measIndex);
-            return _gantryRtn;
+            field ??= new(_log, Axis.GantryRtn, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _y1;
 
     /// <summary>
     /// Y1 jaw position (in cm)
@@ -63,12 +57,10 @@ public class Snapshot
     {
         get
         {
-            _y1 ??= new(_log, Axis.Y1, _measIndex);
-            return _y1;
+            field ??= new(_log, Axis.Y1, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _y2;
 
     /// <summary>
     /// Y2 jaw position (in cm)
@@ -77,12 +69,10 @@ public class Snapshot
     {
         get
         {
-            _y2 ??= new(_log, Axis.Y2, _measIndex);
-            return _y2;
+            field ??= new(_log, Axis.Y2, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _x1;
 
     /// <summary>
     /// X1 jaw position (in cm)
@@ -91,12 +81,10 @@ public class Snapshot
     {
         get
         {
-            _x1 ??= new(_log, Axis.X1, _measIndex);
-            return _x1;
+            field ??= new(_log, Axis.X1, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _x2;
 
     /// <summary>
     /// X2 jaw position (in cm)
@@ -105,12 +93,10 @@ public class Snapshot
     {
         get
         {
-            _x2 ??= new(_log, Axis.X2, _measIndex);
-            return _x2;
+            field ??= new(_log, Axis.X2, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _couchVrt;
 
     /// <summary>
     /// Couch vertical position (in cm)
@@ -119,12 +105,10 @@ public class Snapshot
     {
         get
         {
-            _couchVrt ??= new(_log, Axis.CouchVrt, _measIndex);
-            return (_couchVrt);
+            field ??= new(_log, Axis.CouchVrt, _measIndex);
+            return (field);
         }
     }
-
-    private ScalarRecord _couchLng;
 
     /// <summary>
     /// Couch longitudinal position (in cm)
@@ -133,12 +117,10 @@ public class Snapshot
     {
         get
         {
-            _couchLng ??= new(_log, Axis.CouchLng, _measIndex);
-            return _couchLng;
+            field ??= new(_log, Axis.CouchLng, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _couchLat;
 
     /// <summary>
     /// Couch lateral position (in cm)
@@ -147,12 +129,10 @@ public class Snapshot
     {
         get
         {
-            _couchLat ??= new(_log, Axis.CouchLat, _measIndex);
-            return _couchLat;
+            field ??= new(_log, Axis.CouchLat, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _couchRtn;
 
     /// <summary>
     /// Couch rotation angle (in degrees)
@@ -161,12 +141,10 @@ public class Snapshot
     {
         get
         {
-            _couchRtn ??= new(_log, Axis.CouchRtn, _measIndex);
-            return _couchRtn;
+            field ??= new(_log, Axis.CouchRtn, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _couchPitch;
 
     /// <summary>
     /// Couch pitch angle (in degrees).
@@ -175,12 +153,10 @@ public class Snapshot
     {
         get
         {
-            _couchPitch ??= new(_log, Axis.CouchPitch, _measIndex);
-            return _couchPitch;
+            field ??= new(_log, Axis.CouchPitch, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _couchRoll;
 
     /// <summary>
     /// Couch roll angle (in degrees).
@@ -189,12 +165,10 @@ public class Snapshot
     {
         get
         {
-            _couchRoll ??= new(_log, Axis.CouchRoll, _measIndex);
-            return _couchRoll;
+            field ??= new(_log, Axis.CouchRoll, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _mu;
 
     /// <summary>
     /// Monitor units delivered.
@@ -203,12 +177,10 @@ public class Snapshot
     {
         get
         {
-            _mu ??= new(_log, Axis.MU, _measIndex);
-            return _mu;
+            field ??= new(_log, Axis.MU, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _beamHold;
 
     /// <summary>
     /// Beam hold status.
@@ -217,12 +189,10 @@ public class Snapshot
     {
         get
         {
-            _beamHold ??= new(_log, Axis.BeamHold, _measIndex);
-            return _beamHold;
+            field ??= new(_log, Axis.BeamHold, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _controlPoint;
 
     /// <summary>
     /// Current control point index.
@@ -231,12 +201,10 @@ public class Snapshot
     {
         get
         {
-            _controlPoint ??= new(_log, Axis.ControlPoint, _measIndex);
-            return _controlPoint;
+            field ??= new(_log, Axis.ControlPoint, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _targetPosition;
 
     /// <summary>
     /// Target position.
@@ -245,12 +213,10 @@ public class Snapshot
     {
         get
         {
-            _targetPosition ??= new(_log, Axis.TargetPosition, _measIndex);
-            return _targetPosition;
+            field ??= new(_log, Axis.TargetPosition, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _trackingTarget;
 
     /// <summary>
     /// Tracking target position.
@@ -259,12 +225,10 @@ public class Snapshot
     {
         get
         {
-            _trackingTarget ??= new(_log, Axis.TrackingTarget, _measIndex);
-            return _trackingTarget;
+            field ??= new(_log, Axis.TrackingTarget, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _trackingPhase;
 
     /// <summary>
     /// Tracking phase.
@@ -273,12 +237,10 @@ public class Snapshot
     {
         get
         {
-            _trackingPhase ??= new(_log, Axis.TrackingPhase, _measIndex);
-            return _trackingPhase;
+            field ??= new(_log, Axis.TrackingPhase, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _trackingBase;
 
     /// <summary>
     /// Tracking base position.
@@ -287,12 +249,10 @@ public class Snapshot
     {
         get
         {
-            _trackingBase ??= new(_log, Axis.TrackingBase, _measIndex);
-            return _trackingBase;
+            field ??= new(_log, Axis.TrackingBase, _measIndex);
+            return field;
         }
     }
-
-    private ScalarRecord _trackingConformityIndex;
 
     /// <summary>
     /// Tracking conformity index.
@@ -301,12 +261,10 @@ public class Snapshot
     {
         get
         {
-            _trackingConformityIndex ??= new(_log, Axis.TrackingConformityIndex, _measIndex);
-            return _trackingConformityIndex;
+            field ??= new(_log, Axis.TrackingConformityIndex, _measIndex);
+            return field;
         }
     }
-
-    private MLCSnapshot _mlc;
 
     /// <summary>
     /// MLC leaf positions (in cm)
@@ -315,8 +273,8 @@ public class Snapshot
     {
         get
         {
-            _mlc ??= new(_log, _measIndex);
-            return _mlc;
+            field ??= new(_log, _measIndex);
+            return field;
         }
     }
 

@@ -6,40 +6,49 @@
         /// Log-file version
         /// </summary>
         public double Version { get; internal set; }
+
         /// <summary>
         /// Sampling interval in milliseconds (typically 20ms).
         /// </summary>
         public int SamplingIntervalInMS { get; internal set; }
+
         /// <summary>
         /// Total number of <seealso cref="Axis"/> that exist in the file.
         /// </summary>
         public int NumAxesSampled { get; internal set; }
+
         /// <summary>
         /// The axes sampled.
         /// </summary>
         public Axis[] AxesSampled { get; internal set; }
+
         /// <summary>
         /// Number of samples per axis. Each entry in the array corresponds to one of the axes.
         /// For most axes it is 1, for MLCs it is the number of leaves and carriages.
         /// </summary>
         public int[] SamplesPerAxis { get; internal set; }
+
         /// <summary>
         /// Machine scale recorded in the log file
         /// </summary>
         public AxisScale AxisScale { get; internal set; }
+
         /// <summary>
         /// The number of sub-beams in the log.
         /// </summary>
         public int NumberOfSubBeams { get; internal set; }
+
         /// <summary>
         /// If the beam delivery exceeds the max number of snapshots (20 mins) the system stops recording.
         /// This is true if that was the case.
         /// </summary>
         public bool IsTruncated { get; internal set; }
+
         /// <summary>
         /// Number of snapshots recorded in the log file.
         /// </summary>
         public int NumberOfSnapshots { get; internal set; }
+
         /// <summary>
         /// The MLC model of the machine generating the log file.
         /// </summary>

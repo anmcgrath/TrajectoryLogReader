@@ -8,12 +8,12 @@ namespace TrajectoryLogReader.Log.Axes
 {
     public class MlcVelocityAccessor : IEnumerable<IAxisAccessor>
     {
-        private readonly Dictionary<(Bank, int), IAxisAccessor> _velocityLookup;
+        private readonly Dictionary<(int, int), IAxisAccessor> _velocityLookup;
 
         internal MlcVelocityAccessor(IEnumerable<MlcLeafAxisAccessor> leaves)
         {
             _velocityLookup = leaves.ToDictionary(
-                l => (l.Bank, l.LeafIndex), 
+                l => (l.BankIndex, l.LeafIndex),
                 l => l.GetVelocity());
         }
 
@@ -27,30 +27,28 @@ namespace TrajectoryLogReader.Log.Axes
             return GetEnumerator();
         }
 
-        public IAxisAccessor? this[Bank bank, int leafIndex]
+        public IAxisAccessor? GetLeaf(int bankIndex, int leafIndex)
         {
-            get
-            {
-                _velocityLookup.TryGetValue((bank, leafIndex), out var v);
-                return v;
-            }
+            if (_velocityLookup.TryGetValue((bankIndex, leafIndex), out var leaf))
+                return leaf;
+            return null;
         }
 
         public float RootMeanSquareError()
         {
             if (!_velocityLookup.Any()) return 0f;
-            return Statistics.CalculateRootMeanSquareError(_velocityLookup.Values.SelectMany(l => l.Deltas()));
+            return Statistics.CalculateRootMeanSquareError(_velocityLookup.Values.SelectMany(l => l.Deltas));
         }
 
         public float MaxError()
         {
             if (!_velocityLookup.Any()) return 0f;
-            return Statistics.CalculateMaxError(_velocityLookup.Values.SelectMany(l => l.Deltas()));
+            return Statistics.CalculateMaxError(_velocityLookup.Values.SelectMany(l => l.Deltas));
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            var allDeltas = _velocityLookup.Values.SelectMany(l => l.Deltas()).ToArray();
+            var allDeltas = _velocityLookup.Values.SelectMany(l => l.Deltas).ToArray();
             return Histogram.FromData(allDeltas, nBins);
         }
     }

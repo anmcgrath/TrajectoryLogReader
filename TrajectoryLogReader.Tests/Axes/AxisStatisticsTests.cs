@@ -36,6 +36,7 @@ namespace TrajectoryLogReader.Tests.Axes
                 gantryData.Data[i * 2] = i * 10; // Expected
                 gantryData.Data[i * 2 + 1] = i * 10 + 2; // Actual, Error = 2
             }
+
             _log.AxisData[0] = gantryData;
 
             // 2. MLC
@@ -48,6 +49,7 @@ namespace TrajectoryLogReader.Tests.Axes
                 mlcData.Data[offset] = 0; // Expected
                 mlcData.Data[offset + 1] = 0.5f; // Actual
             }
+
             _log.AxisData[1] = mlcData;
         }
 
@@ -76,13 +78,13 @@ namespace TrajectoryLogReader.Tests.Axes
         public void Mlc_RootMeanSquareError_ReturnsCorrectValue()
         {
             // Error is constant 0.5
-            _log.Axes.Mlc[Bank.B, 0].RootMeanSquareError().ShouldBe(0.5f, 0.001f);
+            _log.Axes.Mlc.GetLeaf(Bank.B, 0)!.RootMeanSquareError().ShouldBe(0.5f, 0.001f);
         }
 
         [Test]
         public void Mlc_MaxError_ReturnsCorrectValue()
         {
-            _log.Axes.Mlc[Bank.B, 0].MaxError().ShouldBe(0.5f, 0.001f);
+            _log.Axes.Mlc.GetLeaf(Bank.B, 0).MaxError().ShouldBe(0.5f, 0.001f);
         }
     }
 }

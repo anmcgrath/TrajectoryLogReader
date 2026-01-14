@@ -18,36 +18,45 @@ namespace TrajectoryLogReader.Log.Axes
             _combiner = combiner;
         }
 
-        public IEnumerable<float> Expected()
+        public IEnumerable<float> Expected
         {
-            using var e1 = _axis1.Expected().GetEnumerator();
-            using var e2 = _axis2.Expected().GetEnumerator();
-
-            while (e1.MoveNext() && e2.MoveNext())
+            get
             {
-                yield return _combiner(e1.Current, e2.Current);
+                using var e1 = _axis1.Expected.GetEnumerator();
+                using var e2 = _axis2.Expected.GetEnumerator();
+
+                while (e1.MoveNext() && e2.MoveNext())
+                {
+                    yield return _combiner(e1.Current, e2.Current);
+                }
             }
         }
 
-        public IEnumerable<float> Actual()
+        public IEnumerable<float> Actual
         {
-            using var e1 = _axis1.Actual().GetEnumerator();
-            using var e2 = _axis2.Actual().GetEnumerator();
-
-            while (e1.MoveNext() && e2.MoveNext())
+            get
             {
-                yield return _combiner(e1.Current, e2.Current);
+                using var e1 = _axis1.Actual.GetEnumerator();
+                using var e2 = _axis2.Actual.GetEnumerator();
+
+                while (e1.MoveNext() && e2.MoveNext())
+                {
+                    yield return _combiner(e1.Current, e2.Current);
+                }
             }
         }
 
-        public IEnumerable<float> Deltas()
+        public IEnumerable<float> Deltas
         {
-            using var e1 = _axis1.Deltas().GetEnumerator();
-            using var e2 = _axis2.Deltas().GetEnumerator();
-
-            while (e1.MoveNext() && e2.MoveNext())
+            get
             {
-                yield return _combiner(e1.Current, e2.Current);
+                using var e1 = _axis1.Deltas.GetEnumerator();
+                using var e2 = _axis2.Deltas.GetEnumerator();
+
+                while (e1.MoveNext() && e2.MoveNext())
+                {
+                    yield return _combiner(e1.Current, e2.Current);
+                }
             }
         }
 
@@ -58,17 +67,17 @@ namespace TrajectoryLogReader.Log.Axes
 
         public float RootMeanSquareError()
         {
-            return Statistics.CalculateRootMeanSquareError(Deltas());
+            return Statistics.CalculateRootMeanSquareError(Deltas);
         }
 
         public float MaxError()
         {
-            return Statistics.CalculateMaxError(Deltas());
+            return Statistics.CalculateMaxError(Deltas);
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            return Histogram.FromData(Deltas().ToArray(), nBins);
+            return Histogram.FromData(Deltas.ToArray(), nBins);
         }
     }
 }

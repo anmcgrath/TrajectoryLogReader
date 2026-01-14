@@ -1,61 +1,103 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using TrajectoryLogReader.LogStatistics;
 using TrajectoryLogReader.Util;
-using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.Log.Axes
 {
     public class MlcLeafAxisAccessor : IAxisAccessor
     {
         private readonly TrajectoryLog _log;
-        private readonly Bank _bank;
+        private readonly int _bankIndex;
         private readonly int _leafIndex;
         private readonly int _startIndex;
         private readonly int _endIndex;
         private readonly AxisScale _targetScale;
 
-        public Bank Bank => _bank;
+        public int BankIndex => _bankIndex;
         public int LeafIndex => _leafIndex;
 
-        internal MlcLeafAxisAccessor(TrajectoryLog log, Bank bank, int leafIndex, int startIndex, int endIndex, AxisScale? targetScale = null)
+        internal MlcLeafAxisAccessor(TrajectoryLog log, int bankIndex, int leafIndex, int startIndex, int endIndex,
+            AxisScale? targetScale = null)
         {
             _log = log;
-            _bank = bank;
+            _bankIndex = bankIndex;
             _leafIndex = leafIndex;
             _startIndex = startIndex;
             _endIndex = endIndex;
             _targetScale = targetScale ?? _log.Header.AxisScale;
         }
 
-        public IEnumerable<float> Expected()
+        private float[]? _expected;
+
+        public IEnumerable<float> Expected
         {
-            for (int i = _startIndex; i <= _endIndex; i++)
+            get
             {
-                var val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, (int)_bank);
-                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bank, val);
+                if (_expected == null)
+                {
+                    _expected = GetExpected().ToArray();
+                }
+
+                return _expected;
             }
         }
 
-        public IEnumerable<float> Actual()
+        private IEnumerable<float> GetExpected()
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var val = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, (int)_bank);
-                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bank, val);
+                var val = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, (int)_bankIndex);
+                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bankIndex, val);
             }
         }
 
-        public IEnumerable<float> Deltas()
+        private float[]? _actual;
+
+        public IEnumerable<float> Actual
+        {
+            get
+            {
+                if (_actual == null)
+                {
+                    _actual = GetActual().ToArray();
+                }
+
+                return _actual;
+            }
+        }
+
+        private IEnumerable<float> GetActual()
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var exp = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, (int)_bank);
-                var act = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, (int)_bank);
+                var val = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, (int)_bankIndex);
+                yield return Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bankIndex, val);
+            }
+        }
 
-                var expConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bank, exp);
-                var actConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bank, act);
+        private float[]? _deltas;
+
+        public IEnumerable<float> Deltas
+        {
+            get
+            {
+                if (_deltas == null)
+                {
+                    _deltas = GetDeltas().ToArray();
+                }
+
+                return _deltas;
+            }
+        }
+
+        private IEnumerable<float> GetDeltas()
+        {
+            for (int i = _startIndex; i <= _endIndex; i++)
+            {
+                var exp = _log.GetMlcPosition(i, RecordType.ExpectedPosition, _leafIndex, (int)_bankIndex);
+                var act = _log.GetMlcPosition(i, RecordType.ActualPosition, _leafIndex, (int)_bankIndex);
+
+                var expConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bankIndex, exp);
+                var actConv = Scale.ConvertMlc(_log.Header.AxisScale, _targetScale, (int)_bankIndex, act);
 
                 yield return actConv - expConv;
             }
@@ -63,22 +105,22 @@ namespace TrajectoryLogReader.Log.Axes
 
         public IAxisAccessor WithScale(AxisScale scale)
         {
-            return new MlcLeafAxisAccessor(_log, _bank, _leafIndex, _startIndex, _endIndex, scale);
+            return new MlcLeafAxisAccessor(_log, _bankIndex, _leafIndex, _startIndex, _endIndex, scale);
         }
 
         public float RootMeanSquareError()
         {
-            return Statistics.CalculateRootMeanSquareError(Deltas());
+            return Statistics.CalculateRootMeanSquareError(Deltas);
         }
 
         public float MaxError()
         {
-            return Statistics.CalculateMaxError(Deltas());
+            return Statistics.CalculateMaxError(Deltas);
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            return Histogram.FromData(Deltas().ToArray(), nBins);
+            return Histogram.FromData(Deltas.ToArray(), nBins);
         }
 
         public IAxisAccessor GetVelocity()
