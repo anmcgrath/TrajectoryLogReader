@@ -7,17 +7,17 @@ namespace TrajectoryLogReader.Log.Axes
         /// <summary>
         /// The expected values of this axis
         /// </summary>
-        IEnumerable<float> Expected { get; }
+        IEnumerable<float> ExpectedValues { get; }
 
         /// <summary>
         /// The actual values recorded for this axis
         /// </summary>
-        IEnumerable<float> Actual { get; }
+        IEnumerable<float> ActualValues { get; }
 
         /// <summary>
         /// The difference (Actual - Expected) for this axis.
         /// </summary>
-        IEnumerable<float> Deltas { get; }
+        IEnumerable<float> DeltaValues { get; }
 
         /// <summary>
         /// Create a new axis accessor with results in the scale specified

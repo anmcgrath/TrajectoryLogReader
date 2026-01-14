@@ -29,7 +29,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _expected;
 
-        public IEnumerable<float> Expected
+        public IEnumerable<float> ExpectedValues
         {
             get
             {
@@ -53,7 +53,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _actual;
 
-        public IEnumerable<float> Actual
+        public IEnumerable<float> ActualValues
         {
             get
             {
@@ -77,7 +77,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _deltas;
 
-        public IEnumerable<float> Deltas
+        public IEnumerable<float> DeltaValues
         {
             get
             {
@@ -125,17 +125,17 @@ namespace TrajectoryLogReader.Log.Axes
 
         public float RootMeanSquareError()
         {
-            return Statistics.CalculateRootMeanSquareError(Deltas);
+            return Statistics.CalculateRootMeanSquareError(DeltaValues);
         }
 
         public float MaxError()
         {
-            return Statistics.CalculateMaxError(Deltas);
+            return Statistics.CalculateMaxError(DeltaValues);
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
-            return Histogram.FromData(Deltas.ToArray(), nBins);
+            return Histogram.FromData(DeltaValues.ToArray(), nBins);
         }
 
         private float Normalize(float value, float period)

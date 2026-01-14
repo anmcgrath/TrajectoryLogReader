@@ -74,7 +74,7 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void Gantry_Expected_ReturnsCorrectValues()
         {
-            var expected = _log.Axes.Gantry.Expected.ToList();
+            var expected = _log.Axes.Gantry.ExpectedValues.ToList();
             expected.Count.ShouldBe(NumSnapshots);
             expected[0].ShouldBe(0);
             expected[1].ShouldBe(10);
@@ -84,7 +84,7 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void Gantry_Actual_ReturnsCorrectValues()
         {
-            var actual = _log.Axes.Gantry.Actual.ToList();
+            var actual = _log.Axes.Gantry.ActualValues.ToList();
             actual.Count.ShouldBe(NumSnapshots);
             actual[0].ShouldBe(1);
             actual[1].ShouldBe(11);
@@ -93,7 +93,7 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void Gantry_Deltas_ReturnsCorrectValues()
         {
-            var deltas = _log.Axes.Gantry.Deltas.ToList();
+            var deltas = _log.Axes.Gantry.DeltaValues.ToList();
             deltas.Count.ShouldBe(NumSnapshots);
             // Actual - Expected = 1
             deltas.All(d => Math.Abs(d - 1) < 0.001f).ShouldBeTrue();
@@ -108,7 +108,7 @@ namespace TrajectoryLogReader.Tests.Axes
             // Log is in MachineScale. 
             // Request IEC.
 
-            var expectedIEC = _log.Axes.Gantry.WithScale(AxisScale.ModifiedIEC61217).Expected.ToList();
+            var expectedIEC = _log.Axes.Gantry.WithScale(AxisScale.ModifiedIEC61217).ExpectedValues.ToList();
             // Machine 0 -> IEC 180
             expectedIEC[0].ShouldBe(180);
             // Machine 10 -> IEC 170 (Counter clockwise?)
@@ -121,7 +121,7 @@ namespace TrajectoryLogReader.Tests.Axes
             // Bank 0 (B), Leaf 0
             var leaf = _log.Axes.Mlc.GetLeaf(Bank.B, 0);
             leaf.ShouldNotBeNull();
-            var exp = leaf.Expected.ToList();
+            var exp = leaf.ExpectedValues.ToList();
             exp[0].ShouldBe(0f); // 0 * 0.1
             exp[1].ShouldBe(0.1f); // 1 * 0.1
         }
@@ -160,7 +160,7 @@ namespace TrajectoryLogReader.Tests.Axes
             gantryData.Data[0] = 359;
             gantryData.Data[1] = 1;
 
-            var delta = _log.Axes.Gantry.Deltas.First();
+            var delta = _log.Axes.Gantry.DeltaValues.First();
             delta.ShouldBe(2);
         }
 
@@ -192,7 +192,7 @@ namespace TrajectoryLogReader.Tests.Axes
             log.AxisData[0].Data[0] = 100.0f; // Exp
             log.AxisData[0].Data[1] = 0.1f; // Act
 
-            var delta = log.Axes.CouchLat.Deltas.First();
+            var delta = log.Axes.CouchLat.DeltaValues.First();
             delta.ShouldBe(0.1f, 0.001f);
         }
 
@@ -201,7 +201,7 @@ namespace TrajectoryLogReader.Tests.Axes
         {
             var accessor = _log.Axes.GetAxis(Axis.GantryRtn);
             accessor.ShouldNotBeNull();
-            accessor.Expected.Count().ShouldBe(NumSnapshots);
+            accessor.ExpectedValues.Count().ShouldBe(NumSnapshots);
         }
 
         [Test]

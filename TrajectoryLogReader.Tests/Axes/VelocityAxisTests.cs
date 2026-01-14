@@ -54,7 +54,7 @@ namespace TrajectoryLogReader.Tests.Axes
         public void Leaf_Velocity_CalculatesCorrectSpeed()
         {
             var leaf = _log.Axes.Mlc.GetLeaf(Bank.B, 0);
-            var velocity = leaf.GetVelocity().Expected.ToList();
+            var velocity = leaf.GetVelocity().ExpectedValues.ToList();
 
             velocity.Count.ShouldBe(3);
             velocity[0].ShouldBe(0f); // First point is 0

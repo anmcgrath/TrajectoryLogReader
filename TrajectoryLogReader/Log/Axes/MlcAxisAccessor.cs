@@ -40,19 +40,19 @@ namespace TrajectoryLogReader.Log.Axes
         public float RootMeanSquareError()
         {
             if (!_leafLookup.Any()) return 0f;
-            return Statistics.CalculateRootMeanSquareError(_leafLookup.Values.SelectMany(l => l.Deltas));
+            return Statistics.CalculateRootMeanSquareError(_leafLookup.Values.SelectMany(l => l.DeltaValues));
         }
 
         public float MaxError()
         {
             if (!_leafLookup.Any()) return 0f;
-            return Statistics.CalculateMaxError(_leafLookup.Values.SelectMany(l => l.Deltas));
+            return Statistics.CalculateMaxError(_leafLookup.Values.SelectMany(l => l.DeltaValues));
         }
 
         public Histogram ErrorHistogram(int nBins = 20)
         {
             // Collect all deltas from all leaves
-            var allDeltas = _leafLookup.Values.SelectMany(l => l.Deltas).ToArray();
+            var allDeltas = _leafLookup.Values.SelectMany(l => l.DeltaValues).ToArray();
             return Histogram.FromData(allDeltas, nBins);
         }
     }
