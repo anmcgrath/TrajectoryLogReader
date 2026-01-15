@@ -48,17 +48,28 @@ public class GammaCalculator2D
         var nX = (mx - 1) * (compared.Cols - 1) + compared.Cols;
         var nY = (my - 1) * (compared.Rows - 1) + compared.Rows;
 
-        var resampledX = Enumerable.Range(0, nX).Select(i => compared.XMin + i * xSearchRes).ToArray();
-        var resampledY = Enumerable.Range(0, nY).Select(i => compared.YMin + i * ySearchRes).ToArray();
+        var resampledX = new double[nX];
+        for (int i = 0; i < nX; i++)
+        {
+            resampledX[i] = compared.XMin + i * xSearchRes;
+        }
+
+        var resampledY = new double[nY];
+        for (int i = 0; i < nY; i++)
+        {
+            resampledY[i] = compared.YMin + i * ySearchRes;
+        }
 
         var resampledRefDose = new double[nY, nX];
-        for (int i = 0; i < nX; i++)
+
+        // Parallelize resampling
+        Parallel.For(0, nX, i =>
         {
             for (int j = 0; j < nY; j++)
             {
                 resampledRefDose[j, i] = reference.Interpolate(resampledX[i], resampledY[j]);
             }
-        }
+        });
 
         var offsets = GetOffsets(xSearchRes, ySearchRes, searchRadMm);
 
@@ -68,12 +79,15 @@ public class GammaCalculator2D
         var maxRefDose = Math.Max(compared.Max(), reference.Max());
         var threshDose = compared.Max() * (parameters.ThresholdPercent / 100);
 
+        // Precompute constants
+        double doseCriteriaSq = parameters.DoseTolPercent * parameters.DoseTolPercent;
+        double dtaCriteriaSq = parameters.DtaTolMm * parameters.DtaTolMm;
+
         int numPass = 0;
         int ptsTotal = 0;
 
-        var failedPoints = new List<PointData>();
-
-        for (int yi = 0; yi < compared.Rows; yi++)
+        // Parallelize Gamma calculation
+        Parallel.For(0, compared.Rows, () => (0, 0), (yi, loopState, localCounters) =>
         {
             int rowOffset = yi * compared.Cols;
             for (int xi = 0; xi < compared.Cols; xi++)
@@ -81,6 +95,7 @@ public class GammaCalculator2D
                 var x = compared.GetX(xi);
                 var y = compared.GetY(yi);
 
+                // Default to -1 (no calculation)
                 gammaGrid.Data[rowOffset + xi] = -1;
 
                 if (!compared.Contains(x, y))
@@ -91,7 +106,7 @@ public class GammaCalculator2D
                 if (comparedDose < threshDose)
                     continue;
 
-                ptsTotal++;
+                localCounters.Item2++; // ptsTotal++
                 double minGammaSquared = double.NaN;
 
                 foreach (var offset in offsets)
@@ -99,33 +114,43 @@ public class GammaCalculator2D
                     var xiRef = offset.XIndexOffset + xi * mx;
                     var yiRef = offset.YIndexOffset + yi * my;
 
-                    if (xiRef < 0 || yiRef < 0 || xiRef > resampledX.Length - 1 || yiRef > resampledY.Length - 1)
+                    if (xiRef < 0 || yiRef < 0 || xiRef > nX - 1 || yiRef > nY - 1)
                         continue;
 
                     var refDose = resampledRefDose[yiRef, xiRef];
-                    var gammaSq = GammaSquared(comparedDose,
-                        refDose,
-                        maxRefDose,
-                        offset.DistSquared,
-                        parameters.DoseTolPercent,
-                        parameters.DtaTolMm,
-                        parameters.Global);
+
+                    // Inline GammaSquared logic
+                    double doseDifference;
+                    if (parameters.Global)
+                    {
+                        doseDifference = 100 * (comparedDose - refDose) / maxRefDose;
+                    }
+                    else
+                    {
+                        doseDifference = 100 * (comparedDose - refDose) / refDose;
+                    }
+
+                    var gammaSq = (doseDifference * doseDifference) / doseCriteriaSq +
+                                  offset.DistSquared / dtaCriteriaSq;
+
                     if (double.IsNaN(minGammaSquared) || gammaSq <= minGammaSquared)
                         minGammaSquared = gammaSq;
                 }
 
                 if (minGammaSquared <= 1)
                 {
-                    numPass++;
-                }
-                else
-                {
-                    failedPoints.Add(new(x, y, Math.Sqrt(minGammaSquared)));
+                    localCounters.Item1++; // numPass++
                 }
 
                 gammaGrid.Data[rowOffset + xi] = (float)Math.Sqrt(minGammaSquared);
             }
-        }
+            return localCounters;
+        },
+        (finalCounters) =>
+        {
+            Interlocked.Add(ref numPass, finalCounters.Item1);
+            Interlocked.Add(ref ptsTotal, finalCounters.Item2);
+        });
 
         return new GammaResult2D(parameters, (double)numPass / ptsTotal, gammaGrid);
     }
@@ -141,6 +166,7 @@ public class GammaCalculator2D
     {
         var nX = (int)(2 * searchRadius / xRes) + 1;
         var nY = (int)(2 * searchRadius / yRes) + 1;
+        var searchRadiusSq = searchRadius * searchRadius;
 
         var result = new List<Offset>();
 
@@ -148,36 +174,12 @@ public class GammaCalculator2D
         {
             for (int j = -nY / 2; j <= nY / 2; j++)
             {
-                var distSq = Math.Pow(i * xRes, 2) + Math.Pow(j * yRes, 2);
-                if (distSq <= searchRadius * searchRadius)
+                var distSq = (i * xRes) * (i * xRes) + (j * yRes) * (j * yRes);
+                if (distSq <= searchRadiusSq)
                     result.Add(new Offset(i, j, distSq));
             }
         }
 
         return result.OrderBy(x => x.DistSquared).ToArray();
-    }
-
-    /// <summary>
-    /// Returns the Gamma (note upper case) value given two doses/locations in the dose/ref dose profiles.
-    /// </summary>
-    /// <param name="dose">The dose value in the measured profile</param>
-    /// <param name="doseRef">The dose value in the reference profile</param>
-    /// <param name="doseRefMax">The maximum dose value in the reference profile</param>
-    /// <param name="distSq"></param>
-    /// <param name="doseCriteriaPercent">The dose difference criteria (in %) e.g 3%</param>
-    /// <param name="dtaCriteriaMm">The DTA criteria (in %)</param>
-    /// <param name="global">Whether to use global normalisation</param>
-    /// <returns></returns>
-    private double GammaSquared(double dose,
-        double doseRef,
-        double doseRefMax,
-        double distSq,
-        double doseCriteriaPercent,
-        double dtaCriteriaMm, bool global)
-    {
-        var doseDifference = global ? 100 * (dose - doseRef) / doseRefMax : 100 * (dose - doseRef) / doseRef;
-
-        return Math.Pow(doseDifference, 2) / Math.Pow(doseCriteriaPercent, 2) +
-               distSq / Math.Pow(dtaCriteriaMm, 2);
     }
 }
