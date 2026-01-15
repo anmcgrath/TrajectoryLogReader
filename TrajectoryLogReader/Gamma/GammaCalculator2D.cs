@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using TrajectoryLogReader.Fluence;
 
 namespace TrajectoryLogReader.Gamma;
@@ -28,10 +29,10 @@ public class GammaCalculator2D
     /// <returns></returns>
     public GammaResult2D Calculate(GammaParameters2D parameters, IGrid<float> reference, IGrid<float> compared)
     {
-        var searchRadMm = parameters.DtaTolMm * 1.5;
+        var searchRadMm = parameters.DtaTolMm * 2;
 
-        var xSearchRes = parameters.DtaTolMm / 10;
-        var ySearchRes = parameters.DtaTolMm / 10;
+        var xSearchRes = parameters.DtaTolMm / 5;
+        var ySearchRes = parameters.DtaTolMm / 5;
 
         // resample the reference grid before we start so we avoid doing costly interpolations
         // the resampled dose grid has a resolution of (close to) xSearchRes/ySearchRes
@@ -45,27 +46,93 @@ public class GammaCalculator2D
         xSearchRes = compared.XRes / mx;
         ySearchRes = compared.YRes / my;
 
-        var nX = (mx - 1) * (compared.Cols - 1) + compared.Cols;
-        var nY = (my - 1) * (compared.Rows - 1) + compared.Rows;
+        var resampledSizeX = (mx - 1) * (compared.Cols - 1) + compared.Cols;
+        var resampledSizeY = (my - 1) * (compared.Rows - 1) + compared.Rows;
 
-        var resampledX = new double[nX];
-        for (int i = 0; i < nX; i++)
+        var maxRefDose = Math.Max(compared.Max(), reference.Max());
+        var threshDose = compared.Max() * (parameters.ThresholdPercent / 100);
+
+        var resampledX = new double[resampledSizeX];
+        for (int i = 0; i < resampledSizeX; i++)
         {
             resampledX[i] = compared.XMin + i * xSearchRes;
         }
 
-        var resampledY = new double[nY];
-        for (int i = 0; i < nY; i++)
+        var resampledY = new double[resampledSizeY];
+        for (int i = 0; i < resampledSizeY; i++)
         {
             resampledY[i] = compared.YMin + i * ySearchRes;
         }
 
-        var resampledRefDose = new double[nY, nX];
+        var resampledRefDose = new double[resampledSizeY, resampledSizeX];
 
-        // Parallelize resampling
-        Parallel.For(0, nX, i =>
+        // Pre-calculate the start/end column for each row in the resampled grid
+        // This optimization limits the costly interpolation to only those points within the reference grid
+        // that are relevant for the comparison (i.e. near points where compared dose > threshold).
+        var minCol = new int[resampledSizeY];
+        for (int k = 0; k < resampledSizeY; k++) minCol[k] = int.MaxValue;
+        var maxCol = new int[resampledSizeY];
+        for (int k = 0; k < resampledSizeY; k++) maxCol[k] = int.MinValue;
+
+        // Also pre-calculate the start/end column for the compared grid rows
+        var comparedMinCol = new int[compared.Rows];
+        for (int k = 0; k < compared.Rows; k++) comparedMinCol[k] = int.MaxValue;
+        var comparedMaxCol = new int[compared.Rows];
+        for (int k = 0; k < compared.Rows; k++) comparedMaxCol[k] = int.MinValue;
+
+        var nX = (int)(2 * searchRadMm / xSearchRes) + 1;
+        var nY = (int)(2 * searchRadMm / ySearchRes) + 1;
+        var marginX = nX / 2;
+        var marginY = nY / 2;
+
+        for (int yi = 0; yi < compared.Rows; yi++)
         {
-            for (int j = 0; j < nY; j++)
+            int minXi = -1, maxXi = -1;
+
+            // Find min/max xi in this row where dose > threshold
+            for (int xi = 0; xi < compared.Cols; xi++)
+            {
+                if (compared.GetValue(xi, yi) >= threshDose)
+                {
+                    if (minXi == -1) minXi = xi;
+                    maxXi = xi;
+                }
+            }
+
+            if (minXi == -1) continue;
+
+            // Store bounds for the compared grid loop
+            comparedMinCol[yi] = minXi;
+            comparedMaxCol[yi] = maxXi;
+
+            // Map to resampled coordinates
+            int cY = yi * my;
+            int startX = minXi * mx;
+            int endX = maxXi * mx;
+
+            // Apply search radius margins
+            int startJ = Math.Max(0, cY - marginY);
+            int endJ = Math.Min(resampledSizeY - 1, cY + marginY);
+
+            int rangeMinX = startX - marginX;
+            int rangeMaxX = endX + marginX;
+
+            for (int j = startJ; j <= endJ; j++)
+            {
+                if (rangeMinX < minCol[j]) minCol[j] = rangeMinX;
+                if (rangeMaxX > maxCol[j]) maxCol[j] = rangeMaxX;
+            }
+        }
+
+        // Parallelize resampling using the pre-calculated bounds
+        Parallel.For(0, resampledSizeY, j =>
+        {
+            if (minCol[j] > maxCol[j]) return;
+
+            int startI = Math.Max(0, minCol[j]);
+            int endI = Math.Min(resampledSizeX - 1, maxCol[j]);
+
+            for (int i = startI; i <= endI; i++)
             {
                 resampledRefDose[j, i] = reference.Interpolate(resampledX[i], resampledY[j]);
             }
@@ -76,8 +143,11 @@ public class GammaCalculator2D
         var gammaGrid = new GridF(compared.XMax - compared.XMin, compared.YMax - compared.YMin, compared.Cols,
             compared.Rows);
 
-        var maxRefDose = Math.Max(compared.Max(), reference.Max());
-        var threshDose = compared.Max() * (parameters.ThresholdPercent / 100);
+        // Initialize gamma grid with -1
+        for (int i = 0; i < gammaGrid.Data.Length; i++)
+        {
+            gammaGrid.Data[i] = -1;
+        }
 
         // Precompute constants
         double doseCriteriaSq = parameters.DoseTolPercent * parameters.DoseTolPercent;
@@ -88,69 +158,72 @@ public class GammaCalculator2D
 
         // Parallelize Gamma calculation
         Parallel.For(0, compared.Rows, () => (0, 0), (yi, loopState, localCounters) =>
-        {
-            int rowOffset = yi * compared.Cols;
-            for (int xi = 0; xi < compared.Cols; xi++)
             {
-                var x = compared.GetX(xi);
-                var y = compared.GetY(yi);
+                if (comparedMinCol[yi] > comparedMaxCol[yi]) return localCounters;
 
-                // Default to -1 (no calculation)
-                gammaGrid.Data[rowOffset + xi] = -1;
+                int rowOffset = yi * compared.Cols;
+                int startXi = comparedMinCol[yi];
+                int endXi = comparedMaxCol[yi];
 
-                if (!compared.Contains(x, y))
-                    continue;
-
-                var comparedDose = compared.GetValue(xi, yi);
-
-                if (comparedDose < threshDose)
-                    continue;
-
-                localCounters.Item2++; // ptsTotal++
-                double minGammaSquared = double.NaN;
-
-                foreach (var offset in offsets)
+                for (int xi = startXi; xi <= endXi; xi++)
                 {
-                    var xiRef = offset.XIndexOffset + xi * mx;
-                    var yiRef = offset.YIndexOffset + yi * my;
+                    var x = compared.GetX(xi);
+                    var y = compared.GetY(yi);
 
-                    if (xiRef < 0 || yiRef < 0 || xiRef > nX - 1 || yiRef > nY - 1)
+                    if (!compared.Contains(x, y))
                         continue;
 
-                    var refDose = resampledRefDose[yiRef, xiRef];
+                    var comparedDose = compared.GetValue(xi, yi);
 
-                    // Inline GammaSquared logic
-                    double doseDifference;
-                    if (parameters.Global)
+                    if (comparedDose < threshDose)
+                        continue;
+
+                    localCounters.Item2++; // ptsTotal++
+                    double minGammaSquared = double.NaN;
+
+                    foreach (var offset in offsets)
                     {
-                        doseDifference = 100 * (comparedDose - refDose) / maxRefDose;
+                        var xiRef = offset.XIndexOffset + xi * mx;
+                        var yiRef = offset.YIndexOffset + yi * my;
+
+                        if (xiRef < 0 || yiRef < 0 || xiRef > resampledSizeX - 1 || yiRef > resampledSizeY - 1)
+                            continue;
+
+                        var refDose = resampledRefDose[yiRef, xiRef];
+
+                        // Inline GammaSquared logic
+                        double doseDifference;
+                        if (parameters.Global)
+                        {
+                            doseDifference = 100 * (comparedDose - refDose) / maxRefDose;
+                        }
+                        else
+                        {
+                            doseDifference = 100 * (comparedDose - refDose) / refDose;
+                        }
+
+                        var gammaSq = (doseDifference * doseDifference) / doseCriteriaSq +
+                                      offset.DistSquared / dtaCriteriaSq;
+
+                        if (double.IsNaN(minGammaSquared) || gammaSq <= minGammaSquared)
+                            minGammaSquared = gammaSq;
                     }
-                    else
+
+                    if (minGammaSquared <= 1)
                     {
-                        doseDifference = 100 * (comparedDose - refDose) / refDose;
+                        localCounters.Item1++; // numPass++
                     }
 
-                    var gammaSq = (doseDifference * doseDifference) / doseCriteriaSq +
-                                  offset.DistSquared / dtaCriteriaSq;
-
-                    if (double.IsNaN(minGammaSquared) || gammaSq <= minGammaSquared)
-                        minGammaSquared = gammaSq;
+                    gammaGrid.Data[rowOffset + xi] = (float)Math.Sqrt(minGammaSquared);
                 }
 
-                if (minGammaSquared <= 1)
-                {
-                    localCounters.Item1++; // numPass++
-                }
-
-                gammaGrid.Data[rowOffset + xi] = (float)Math.Sqrt(minGammaSquared);
-            }
-            return localCounters;
-        },
-        (finalCounters) =>
-        {
-            Interlocked.Add(ref numPass, finalCounters.Item1);
-            Interlocked.Add(ref ptsTotal, finalCounters.Item2);
-        });
+                return localCounters;
+            },
+            (finalCounters) =>
+            {
+                Interlocked.Add(ref numPass, finalCounters.Item1);
+                Interlocked.Add(ref ptsTotal, finalCounters.Item2);
+            });
 
         return new GammaResult2D(parameters, (double)numPass / ptsTotal, gammaGrid);
     }
