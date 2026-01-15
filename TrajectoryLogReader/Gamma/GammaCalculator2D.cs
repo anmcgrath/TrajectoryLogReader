@@ -29,10 +29,10 @@ public class GammaCalculator2D
     /// <returns></returns>
     public GammaResult2D Calculate(GammaParameters2D parameters, IGrid<float> reference, IGrid<float> compared)
     {
-        var searchRadMm = parameters.DtaTolMm * 2;
+        var searchRadMm = parameters.SearchRadius ?? parameters.DtaTolMm * 2;
 
-        var xSearchRes = parameters.DtaTolMm / 5;
-        var ySearchRes = parameters.DtaTolMm / 5;
+        var xSearchRes = parameters.DtaTolMm / parameters.SamplingRate;
+        var ySearchRes = parameters.DtaTolMm / parameters.SamplingRate;
 
         // resample the reference grid before we start so we avoid doing costly interpolations
         // the resampled dose grid has a resolution of (close to) xSearchRes/ySearchRes

@@ -25,6 +25,18 @@ public class GammaParameters2D
     public double ThresholdPercent { get; private set; }
 
     /// <summary>
+    /// If this is set, this limits the gamma search to the radius specified around each point.
+    /// If not set, defaults as 2 * DTA tolerance
+    /// </summary>
+    public double? SearchRadius { get; private set; }
+
+    /// <summary>
+    /// When the gamma search is performed, a supersampled grid is created. The resolution of this grid
+    /// is given by DtaTol / SamplingRate. Default is 5
+    /// </summary>
+    public int SamplingRate { get; private set; } = 5;
+
+    /// <summary>
     /// Create new parameters for a gamma comparison.
     /// </summary>
     /// <param name="dtaTolMm">The distance to agreement tolerance (in mm)</param>
