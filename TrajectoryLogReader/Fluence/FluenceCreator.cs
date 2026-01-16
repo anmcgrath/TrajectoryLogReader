@@ -94,8 +94,9 @@ public class FluenceCreator
                 var cos = (float)Math.Cos(angleRadians);
 #endif
                 Span<Vector2> corners = stackalloc Vector2[4];
+                var leafPairCount = mlc.GetNumberOfLeafPairs();
 
-                for (int i = 0; i < mlc.GetNumberOfLeafPairs(); i++)
+                for (int i = 0; i < leafPairCount; i++)
                 {
                     var bankAPos = s.GetLeafPositionInMm(0, i);
                     var bankBPos = s.GetLeafPositionInMm(1, i);

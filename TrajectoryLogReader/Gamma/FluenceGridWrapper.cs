@@ -20,7 +20,7 @@ internal class FluenceGridWrapper : IGrid<float>
     public double YMin => _grid.Bounds.Y;
     public double YMax => _grid.Bounds.Y + _grid.Bounds.Height;
 
-    public float Max() => _grid.Data.Cast<float>().Max();
+    public float Max() => _grid.Data.Max();
 
     public float Interpolate(double x, double y, float valIfNotFound) =>
         _grid.Interpolate(x, y, valIfNotFound);

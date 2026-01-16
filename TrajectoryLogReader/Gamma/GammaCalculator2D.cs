@@ -111,6 +111,10 @@ public class GammaCalculator2D
         var resampledSizeX = (mx - 1) * (compared.Cols - 1) + compared.Cols;
         var resampledSizeY = (my - 1) * (compared.Rows - 1) + compared.Rows;
 
+        // Cache Max() values to avoid redundant array scans
+        var comparedMax = compared.Max();
+        var referenceMax = reference.Max();
+
         // Build resampled coordinate arrays
         var resampledX = new double[resampledSizeX];
         for (int i = 0; i < resampledSizeX; i++)
@@ -129,8 +133,8 @@ public class GammaCalculator2D
             My = my,
             ResampledSizeX = resampledSizeX,
             ResampledSizeY = resampledSizeY,
-            MaxRefDose = Math.Max(compared.Max(), reference.Max()),
-            ThreshDose = compared.Max() * (parameters.ThresholdPercent / 100),
+            MaxRefDose = Math.Max(comparedMax, referenceMax),
+            ThreshDose = comparedMax * (parameters.ThresholdPercent / 100),
             ResampledX = resampledX,
             ResampledY = resampledY,
             ResampledRefDose = new double[resampledSizeY, resampledSizeX],
