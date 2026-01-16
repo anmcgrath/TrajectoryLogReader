@@ -97,17 +97,17 @@ public class FluenceCreator
 
                 for (int i = 0; i < mlc.GetNumberOfLeafPairs(); i++)
                 {
-                    var bankAPos = s.GetLeafPositionInMm(1, i);
-                    var bankBPos = s.GetLeafPositionInMm(0, i);
-
-                    if (bankBPos < x1 && bankAPos < x1)
-                        continue;
-
-                    if (bankBPos > x2 && bankAPos > x2)
-                        continue;
+                    var bankAPos = s.GetLeafPositionInMm(0, i);
+                    var bankBPos = s.GetLeafPositionInMm(1, i);
 
                     bankBPos = Math.Max(bankBPos, x1);
+                    bankBPos = Math.Min(bankBPos, x2);
+                    bankAPos = Math.Max(bankAPos, x1);
                     bankAPos = Math.Min(bankAPos, x2);
+                    
+                    var width = bankAPos - bankBPos;
+                    if (width <= 0)
+                        continue;
 
                     var leafInfo = mlc.GetLeafInformation(i);
 
@@ -131,7 +131,6 @@ public class FluenceCreator
                     if (Math.Abs(yMinMm - yMaxMm) < 0.0001)
                         continue;
 
-                    var width = bankAPos - bankBPos;
                     var xCenter = bankBPos + width / 2f;
                     var yCenter = leafCenterYMm;
 

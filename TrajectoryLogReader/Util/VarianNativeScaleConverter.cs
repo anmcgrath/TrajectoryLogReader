@@ -19,15 +19,7 @@ public class VarianNativeScaleConverter : IScaleConverter
             case AxisScale.MachineScaleIsocentric:
                 return value;
             case AxisScale.ModifiedIEC61217:
-                switch (axis)
-                {
-                    case Axis.GantryRtn:
-                    case Axis.CouchRtn:
-                    case Axis.CollRtn:
-                        return ((180 - value) % 360 + 360) % 360;
-                    default:
-                        return value;
-                }
+                return ToIec(axis, value);
         }
 
         throw new ScaleConversionException(AxisScale.ModifiedIEC61217, to, axis);
@@ -78,7 +70,7 @@ public class VarianNativeScaleConverter : IScaleConverter
     /// <inheritdoc />
     public float MlcPositionToIec(int bank, float value)
     {
-        if (bank == 0)
+        if (bank == 1)
             return -value;
         return value;
     }
@@ -86,7 +78,7 @@ public class VarianNativeScaleConverter : IScaleConverter
     /// <inheritdoc />
     public float MlcPositionFromIec(int bank, float value)
     {
-        if (bank == 0)
+        if (bank == 1)
             return -value;
         return value;
     }

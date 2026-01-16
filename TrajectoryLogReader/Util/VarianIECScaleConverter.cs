@@ -51,7 +51,7 @@ public class VarianIECScaleConverter : IScaleConverter
     /// <inheritdoc />
     public float MlcPositionToIec(int bank, float value)
     {
-        if (bank == 0)
+        if (bank == 1)
             return -value;
         return value;
     }
@@ -59,7 +59,7 @@ public class VarianIECScaleConverter : IScaleConverter
     /// <inheritdoc />
     public float MlcPositionFromIec(int bank, float value)
     {
-        if (bank == 0)
+        if (bank == 1)
             return -value;
         return value;
     }

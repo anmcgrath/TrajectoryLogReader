@@ -53,7 +53,7 @@ namespace TrajectoryLogReader.Tests.Axes
         [Test]
         public void Leaf_Velocity_CalculatesCorrectSpeed()
         {
-            var leaf = _log.Axes.Mlc.GetLeaf(Bank.B, 0);
+            var leaf = _log.Axes.Mlc.GetLeaf(Bank.A, 0);
             var velocity = leaf.GetVelocity().ExpectedValues.ToList();
 
             velocity.Count.ShouldBe(3);

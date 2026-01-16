@@ -119,7 +119,7 @@ namespace TrajectoryLogReader.Tests.Axes
         public void Mlc_SpecificLeaf_ReturnsCorrectValues()
         {
             // Bank 0 (B), Leaf 0
-            var leaf = _log.Axes.Mlc.GetLeaf(Bank.B, 0);
+            var leaf = _log.Axes.Mlc.GetLeaf(Bank.A, 0);
             leaf.ShouldNotBeNull();
             var exp = leaf.ExpectedValues.ToList();
             exp[0].ShouldBe(0f); // 0 * 0.1
@@ -136,7 +136,7 @@ namespace TrajectoryLogReader.Tests.Axes
 
             moving.Count.ShouldBe(1);
             moving[0].LeafIndex.ShouldBe(0);
-            moving[0].BankIndex.ShouldBe(Bank.B);
+            moving[0].BankIndex.ShouldBe(Bank.A);
         }
 
         [Test]

@@ -6,13 +6,13 @@ namespace TrajectoryLogReader.MLC
     public class Bank
     {
         /// <summary>
-        /// Bank B (Left/X1 side usually, index 0 in internal structures)
+        /// Bank A (Right/X2 side usually, index 0 in internal structures)
         /// </summary>
-        public const int B = 0;
+        public const int A = 0;
 
         /// <summary>
-        /// Bank A (Right/X2 side usually, index 1 in internal structures)
+        /// Bank B (Left/X1 side usually, index 1 in internal structures)
         /// </summary>
-        public const int A = 1;
+        public const int B = 1;
     }
 }

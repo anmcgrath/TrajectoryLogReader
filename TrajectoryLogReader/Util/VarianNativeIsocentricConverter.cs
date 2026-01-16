@@ -32,12 +32,16 @@ public class VarianNativeIsocentricConverter : IScaleConverter
     /// <inheritdoc />
     public float MlcPositionToIec(int bank, float value)
     {
-        return _varianNativeScaleConverter.MlcPositionToIec(bank, value);
+        if (bank == 1)
+            return -value;
+        return value;
     }
 
     /// <inheritdoc />
     public float MlcPositionFromIec(int bank, float value)
     {
-        return _varianNativeScaleConverter.MlcPositionFromIec(bank, value);
+        if (bank == 1)
+            return -value;
+        return value;
     }
 }

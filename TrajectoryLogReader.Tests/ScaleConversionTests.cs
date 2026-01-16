@@ -40,6 +40,12 @@ public class ScaleConversionTests
     }
 
     [Test]
+    public void Machine_To_Iec_X1()
+    {
+        Scale.ToIec(AxisScale.MachineScale, Axis.X1, 10).ShouldBe(-10);
+    }
+
+    [Test]
     public void Gantry_Scale_From_ModifiedIEC6()
     {
         Scale.Convert(AxisScale.ModifiedIEC61217, AxisScale.MachineScale, Axis.GantryRtn, 0)
@@ -104,5 +110,18 @@ public class ScaleConversionTests
             .ShouldBe(1);
         Scale.Delta(AxisScale.ModifiedIEC61217, 10, AxisScale.ModifiedIEC61217, 9, Axis.GantryRtn)
             .ShouldBe(-1);
+    }
+
+    [Test]
+    public void MLC_To_Iec_Conversion_Correct()
+    {
+        // IEc BEV -ve towards X1 and +ve towards X2 for both banks
+        // Varian has bank B(X1) reversed so +ve is larger on X1
+        Scale.MlcToIec(AxisScale.MachineScale, 0, 1).ShouldBe(1);
+        Scale.MlcToIec(AxisScale.MachineScale, 1, 1).ShouldBe(-1);
+        Scale.MlcToIec(AxisScale.MachineScaleIsocentric, 0, 1).ShouldBe(1);
+        Scale.MlcToIec(AxisScale.MachineScaleIsocentric, 1, 1).ShouldBe(-1);
+        Scale.MlcToIec(AxisScale.ModifiedIEC61217, 0, 1).ShouldBe(1);
+        Scale.MlcToIec(AxisScale.ModifiedIEC61217, 1, 1).ShouldBe(-1);
     }
 }
