@@ -66,6 +66,48 @@ public class GammaCalculator2D
 
         var resampledRefDose = new double[resampledSizeY, resampledSizeX];
 
+        // Pre-compute interpolation indices and weights for the resampled grid
+        // This avoids expensive division and bounds checking in the inner loop
+        var xIndices = new int[resampledSizeX];
+        var xWeights = new double[resampledSizeX];
+        var refCols = reference.Cols;
+        var refRows = reference.Rows;
+        var refXMin = reference.XMin;
+        var refYMin = reference.YMin;
+        var refXRes = reference.XRes;
+        var refYRes = reference.YRes;
+
+        for (int i = 0; i < resampledSizeX; i++)
+        {
+            double x = resampledX[i];
+            double colF = (x - refXMin) / refXRes;
+            int col = (int)colF;
+            if (col < 0) { col = 0; colF = 0; }
+            else if (col >= refCols - 1) { col = refCols - 2; colF = refCols - 1; }
+            xIndices[i] = col;
+            xWeights[i] = colF - col; // tx: weight for col+1
+        }
+
+        var yIndices = new int[resampledSizeY];
+        var yWeights = new double[resampledSizeY];
+        for (int j = 0; j < resampledSizeY; j++)
+        {
+            double y = resampledY[j];
+            double rowF = (y - refYMin) / refYRes;
+            int row = (int)rowF;
+            if (row < 0) { row = 0; rowF = 0; }
+            else if (row >= refRows - 1) { row = refRows - 2; rowF = refRows - 1; }
+            yIndices[j] = row;
+            yWeights[j] = rowF - row; // ty: weight for row+1
+        }
+
+        // Get direct access to reference data if possible
+        float[]? refData = null;
+        if (reference is FluenceGridWrapper wrapper)
+        {
+            refData = wrapper.Data;
+        }
+
         // Pre-calculate the start/end column for each row in the resampled grid
         // This optimization limits the costly interpolation to only those points within the reference grid
         // that are relevant for the comparison (i.e. near points where compared dose > threshold).
@@ -124,7 +166,7 @@ public class GammaCalculator2D
             }
         }
 
-        // Parallelize resampling using the pre-calculated bounds
+        // Parallelize resampling using the pre-calculated bounds and pre-computed interpolation weights
         Parallel.For(0, resampledSizeY, j =>
         {
             if (minCol[j] > maxCol[j]) return;
@@ -132,9 +174,38 @@ public class GammaCalculator2D
             int startI = Math.Max(0, minCol[j]);
             int endI = Math.Min(resampledSizeX - 1, maxCol[j]);
 
-            for (int i = startI; i <= endI; i++)
+            int row = yIndices[j];
+            double ty = yWeights[j];
+            double tyInv = 1.0 - ty;
+
+            if (refData != null)
             {
-                resampledRefDose[j, i] = reference.Interpolate(resampledX[i], resampledY[j]);
+                // Fast path: direct array access
+                int row1Offset = row * refCols;
+                int row2Offset = (row + 1) * refCols;
+
+                for (int i = startI; i <= endI; i++)
+                {
+                    int col = xIndices[i];
+                    double tx = xWeights[i];
+                    double txInv = 1.0 - tx;
+
+                    // Bilinear interpolation
+                    double f00 = refData[row1Offset + col];
+                    double f10 = refData[row1Offset + col + 1];
+                    double f01 = refData[row2Offset + col];
+                    double f11 = refData[row2Offset + col + 1];
+
+                    resampledRefDose[j, i] = tyInv * (txInv * f00 + tx * f10) + ty * (txInv * f01 + tx * f11);
+                }
+            }
+            else
+            {
+                // Fallback: use interface method
+                for (int i = startI; i <= endI; i++)
+                {
+                    resampledRefDose[j, i] = reference.Interpolate(resampledX[i], resampledY[j]);
+                }
             }
         });
 
@@ -167,12 +238,6 @@ public class GammaCalculator2D
 
                 for (int xi = startXi; xi <= endXi; xi++)
                 {
-                    var x = compared.GetX(xi);
-                    var y = compared.GetY(yi);
-
-                    if (!compared.Contains(x, y))
-                        continue;
-
                     var comparedDose = compared.GetValue(xi, yi);
 
                     if (comparedDose < threshDose)
@@ -183,6 +248,12 @@ public class GammaCalculator2D
 
                     foreach (var offset in offsets)
                     {
+                        // Early termination: offsets are sorted by distance, so if the distance
+                        // component alone exceeds our current best gamma², we can stop
+                        double distComponent = offset.DistSquared / dtaCriteriaSq;
+                        if (!double.IsNaN(minGammaSquared) && distComponent >= minGammaSquared)
+                            break;
+
                         var xiRef = offset.XIndexOffset + xi * mx;
                         var yiRef = offset.YIndexOffset + yi * my;
 
@@ -208,10 +279,9 @@ public class GammaCalculator2D
                             doseDifference = 100 * (comparedDose - refDose) / refDose;
                         }
 
-                        var gammaSq = (doseDifference * doseDifference) / doseCriteriaSq +
-                                      offset.DistSquared / dtaCriteriaSq;
+                        var gammaSq = (doseDifference * doseDifference) / doseCriteriaSq + distComponent;
 
-                        if (double.IsNaN(minGammaSquared) || gammaSq <= minGammaSquared)
+                        if (double.IsNaN(minGammaSquared) || gammaSq < minGammaSquared)
                             minGammaSquared = gammaSq;
                     }
 
