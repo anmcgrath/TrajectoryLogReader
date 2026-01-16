@@ -32,6 +32,12 @@ public class FluenceOptions
     /// </summary>
     public bool UseApproximateFluence { get; set; } = false;
 
+    /// <summary>
+    /// Minimum Delta MU required to include a snapshot in the fluence calculation.
+    /// Useful for filtering out noise or transition artifacts. Default is 0.0001.
+    /// </summary>
+    public double MinDeltaMu { get; set; } = 0.0001;
+
     public FluenceOptions(int cols, int rows)
     {
         Cols = cols;

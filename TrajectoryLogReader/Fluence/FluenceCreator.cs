@@ -65,7 +65,7 @@ public class FluenceCreator
 
         foreach (var s in data)
         {
-            if (s.DeltaMu > 0)
+            if (s.DeltaMu > options.MinDeltaMu)
                 workItems.Add((s, s.DeltaMu));
         }
 
