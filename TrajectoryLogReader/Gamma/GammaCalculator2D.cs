@@ -195,10 +195,16 @@ public class GammaCalculator2D
                         double doseDifference;
                         if (parameters.Global)
                         {
+                            // Global: normalize to max reference dose
+                            if (maxRefDose == 0)
+                                continue; // Skip if max dose is zero to avoid division by zero
                             doseDifference = 100 * (comparedDose - refDose) / maxRefDose;
                         }
                         else
                         {
+                            // Local: normalize to reference dose at this point
+                            if (refDose == 0)
+                                continue; // Skip zero-dose reference points to avoid division by zero
                             doseDifference = 100 * (comparedDose - refDose) / refDose;
                         }
 
@@ -225,7 +231,9 @@ public class GammaCalculator2D
                 Interlocked.Add(ref ptsTotal, finalCounters.Item2);
             });
 
-        return new GammaResult2D(parameters, (double)numPass / ptsTotal, gammaGrid);
+        // Handle case where no points were above threshold
+        var fracPass = ptsTotal > 0 ? (double)numPass / ptsTotal : 0.0;
+        return new GammaResult2D(parameters, fracPass, gammaGrid);
     }
 
     /// <summary>

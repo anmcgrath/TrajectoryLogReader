@@ -109,8 +109,11 @@ namespace TrajectoryLogReader.Log
         /// <returns></returns>
         public float InterpolateAxisData(Axis axis, double timeInMs, int offset)
         {
+            if (timeInMs < 0)
+                throw new ArgumentOutOfRangeException(nameof(timeInMs), $"Time {timeInMs} cannot be negative.");
+
             if (timeInMs > TotalTimeInMs)
-                throw new Exception($"Time {timeInMs} is greater than {TotalTimeInMs}");
+                throw new ArgumentOutOfRangeException(nameof(timeInMs), $"Time {timeInMs} is greater than total time {TotalTimeInMs}.");
 
             var cpIndex = timeInMs / Header.SamplingIntervalInMS;
             var i0 = (int)cpIndex;
@@ -122,18 +125,26 @@ namespace TrajectoryLogReader.Log
                 i0 = i1 - 1;
             }
 
-            var t0 = i0 * Header.SamplingIntervalInMS;
-            var t1 = i1 * Header.SamplingIntervalInMS;
+            // Handle edge case where we only have one snapshot
+            if (i0 < 0)
+                i0 = 0;
 
             var axisIndex = Header.GetAxisIndex(axis);
-            if (axis < 0 || axisIndex > AxisData.Length - 1)
-                throw new Exception($"Data for axis {axis} does not exist.");
+            if (axisIndex < 0 || axisIndex > AxisData.Length - 1)
+                throw new ArgumentException($"Data for axis {axis} does not exist.", nameof(axis));
 
             var axisData = AxisData[axisIndex];
             var stride = axisData.SamplesPerSnapshot;
 
             var v0 = axisData.Data[i0 * stride + offset];
             var v1 = axisData.Data[i1 * stride + offset];
+
+            // If same index (only one snapshot or at exact boundary), return the value directly
+            if (i0 == i1)
+                return v0;
+
+            var t0 = i0 * Header.SamplingIntervalInMS;
+            var t1 = i1 * Header.SamplingIntervalInMS;
 
             var f = (timeInMs - t0) / (t1 - t0);
             return (float)(v0 + (v1 - v0) * f);
@@ -215,14 +226,14 @@ namespace TrajectoryLogReader.Log
         /// Returns the time (in ms) at the control point index specified.
         /// The control point index <paramref name="fractionalCp"/> can be fractional, since the log samples the machine at a high rate.
         /// </summary>
-        /// <param name="fractionalCp"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <param name="fractionalCp">The fractional control point index.</param>
+        /// <returns>The time in milliseconds, or -1 if the control point was not found.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when no control point data exists in the log.</exception>
         public int GetTimeInMsAtControlPoint(double fractionalCp)
         {
             var cpAxisIndex = Header.GetAxisIndex(Axis.ControlPoint);
             if (cpAxisIndex < 0)
-                throw new Exception("No control point data found.");
+                throw new InvalidOperationException("No control point data found in trajectory log.");
 
             var cpData = AxisData[cpAxisIndex];
             var stride = cpData.SamplesPerSnapshot;
