@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace TrajectoryLogReader.Fluence;
 
@@ -243,54 +244,257 @@ public class GridF
     {
         // 1. Convert Corners to Grid Space (Pixels)
         Span<Vector2> gridCorners = stackalloc Vector2[4];
+        float invXRes = (float)(1.0 / XRes);
+        float invYRes = (float)(1.0 / YRes);
+        float offsetX = (float)Bounds.X;
+        float offsetY = (float)Bounds.Y;
+
         for (int i = 0; i < 4; i++)
         {
-            float gx = (float)((corners[i].X - Bounds.X) / XRes);
-            float gy = (float)((corners[i].Y - Bounds.Y) / YRes);
-            gridCorners[i] = new Vector2(gx, gy);
+            gridCorners[i] = new Vector2(
+                (corners[i].X - offsetX) * invXRes,
+                (corners[i].Y - offsetY) * invYRes);
         }
 
-        // 2. Determine Row Range
-        // We need to cover the full vertical extent of the polygon in grid space
-        // Bounds are also in World Space, convert them
-        float boundsMinY = (float)((bounds.MinY - Bounds.Y) / YRes);
-        float boundsMaxY = (float)((bounds.MaxY - Bounds.Y) / YRes);
+        // 2. Pre-compute edge equations for interior detection
+        // For a convex quad, a point is inside if it's on the correct side of all 4 edges
+        Span<float> edgeA = stackalloc float[4]; // edge normal X component
+        Span<float> edgeB = stackalloc float[4]; // edge normal Y component
+        Span<float> edgeC = stackalloc float[4]; // edge distance from origin
+
+        for (int i = 0; i < 4; i++)
+        {
+            var p1 = gridCorners[i];
+            var p2 = gridCorners[(i + 1) & 3]; // & 3 is faster than % 4
+
+            // Edge direction
+            float dx = p2.X - p1.X;
+            float dy = p2.Y - p1.Y;
+
+            // Outward normal (perpendicular, pointing right of edge direction)
+            // For CCW winding: normal = (-dy, dx)
+            // For CW winding: normal = (dy, -dx)
+            // We'll determine winding from the sign later
+            edgeA[i] = -dy;
+            edgeB[i] = dx;
+            edgeC[i] = -(-dy * p1.X + dx * p1.Y);
+        }
+
+        // Determine winding by checking if center is "inside" with current normals
+        float centerX = (gridCorners[0].X + gridCorners[2].X) * 0.5f;
+        float centerY = (gridCorners[0].Y + gridCorners[2].Y) * 0.5f;
+        float testSign = edgeA[0] * centerX + edgeB[0] * centerY + edgeC[0];
+        float windingSign = testSign >= 0 ? 1f : -1f;
+
+        // Flip normals if needed so "inside" is always positive
+        if (windingSign < 0)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                edgeA[i] = -edgeA[i];
+                edgeB[i] = -edgeB[i];
+                edgeC[i] = -edgeC[i];
+            }
+        }
+
+        // 3. Determine Row Range
+        float boundsMinY = (bounds.MinY - offsetY) * invYRes;
+        float boundsMaxY = (bounds.MaxY - offsetY) * invYRes;
 
         int y0 = Math.Max(0, (int)Math.Floor(boundsMinY));
         int y1 = Math.Min(Rows - 1, (int)Math.Ceiling(boundsMaxY));
 
-        var areaPixel = 1.0f; // In grid space, pixel area is 1x1 = 1.
+        if (y0 > y1) return;
 
+        // 4. Pre-compute row-edge intersections
+        // For each edge, compute where it crosses each horizontal line y = row and y = row + 1
+        int numRows = y1 - y0 + 1;
+        Span<float> rowMinX = stackalloc float[numRows];
+        Span<float> rowMaxX = stackalloc float[numRows];
+
+        // Initialize with extreme values
+        for (int i = 0; i < numRows; i++)
+        {
+            rowMinX[i] = float.MaxValue;
+            rowMaxX[i] = float.MinValue;
+        }
+
+        // Process each edge
+        for (int e = 0; e < 4; e++)
+        {
+            var p1 = gridCorners[e];
+            var p2 = gridCorners[(e + 1) & 3];
+
+            float minEdgeY = Math.Min(p1.Y, p2.Y);
+            float maxEdgeY = Math.Max(p1.Y, p2.Y);
+
+            // Skip horizontal edges (they don't contribute to X range)
+            if (maxEdgeY - minEdgeY < 1e-6f) continue;
+
+            float invDy = 1f / (p2.Y - p1.Y);
+
+            // For each row this edge might affect
+            int edgeRowStart = Math.Max(y0, (int)Math.Floor(minEdgeY));
+            int edgeRowEnd = Math.Min(y1, (int)Math.Floor(maxEdgeY));
+
+            for (int row = edgeRowStart; row <= edgeRowEnd; row++)
+            {
+                int ri = row - y0;
+
+                // Check if edge crosses this row's vertical band [row, row+1]
+                float rowTop = row + 1;
+                float rowBot = row;
+
+                // Include vertex contributions
+                if (p1.Y >= rowBot && p1.Y <= rowTop)
+                {
+                    if (p1.X < rowMinX[ri]) rowMinX[ri] = p1.X;
+                    if (p1.X > rowMaxX[ri]) rowMaxX[ri] = p1.X;
+                }
+
+                // Intersection with y = rowBot
+                if ((p1.Y < rowBot && p2.Y > rowBot) || (p1.Y > rowBot && p2.Y < rowBot))
+                {
+                    float x = p1.X + (rowBot - p1.Y) * (p2.X - p1.X) * invDy;
+                    if (x < rowMinX[ri]) rowMinX[ri] = x;
+                    if (x > rowMaxX[ri]) rowMaxX[ri] = x;
+                }
+
+                // Intersection with y = rowTop
+                if ((p1.Y < rowTop && p2.Y > rowTop) || (p1.Y > rowTop && p2.Y < rowTop))
+                {
+                    float x = p1.X + (rowTop - p1.Y) * (p2.X - p1.X) * invDy;
+                    if (x < rowMinX[ri]) rowMinX[ri] = x;
+                    if (x > rowMaxX[ri]) rowMaxX[ri] = x;
+                }
+            }
+        }
+
+        // Also check the last vertex
+        for (int e = 0; e < 4; e++)
+        {
+            var p = gridCorners[e];
+            int row = (int)Math.Floor(p.Y);
+            if (row >= y0 && row <= y1)
+            {
+                int ri = row - y0;
+                if (p.X < rowMinX[ri]) rowMinX[ri] = p.X;
+                if (p.X > rowMaxX[ri]) rowMaxX[ri] = p.X;
+            }
+        }
+
+        // 5. Process each row
         for (int row = y0; row <= y1; row++)
         {
-            // Calculate X Range for this row (y to y+1)
-            GetXRangeFast(gridCorners, row, row + 1, out float minX, out float maxX);
+            int ri = row - y0;
 
-            int startCol = Math.Max(0, (int)Math.Floor(minX));
-            int endCol = Math.Min(Cols - 1, (int)Math.Ceiling(maxX));
+            // Skip rows with no intersection
+            if (rowMinX[ri] > rowMaxX[ri]) continue;
+
+            int startCol = Math.Max(0, (int)Math.Floor(rowMinX[ri]));
+            int endCol = Math.Min(Cols - 1, (int)Math.Ceiling(rowMaxX[ri]));
+
+            if (startCol > endCol) continue;
 
             int rowOffset = row * Cols;
+
+            // 6. Find interior columns (pixels fully inside the polygon)
+            // A pixel [col, col+1] x [row, row+1] is fully inside if all 4 corners are inside
+            int interiorStart = -1;
+            int interiorEnd = -1;
+
+            // Check each column to find interior range
             for (int col = startCol; col <= endCol; col++)
             {
-                // Pixel bounds in Grid Space are simply (col, row, col+1, row+1)
-                var pixelRect = new AABB(col, row, col + 1, row + 1);
-
-                var areaIntersection = Intersection.GetIntersectionArea(pixelRect, gridCorners);
-
-                if (areaIntersection > 0)
+                if (IsPixelFullyInside(col, row, edgeA, edgeB, edgeC))
                 {
-                    if (areaIntersection >= areaPixel - 1e-9)
+                    if (interiorStart < 0) interiorStart = col;
+                    interiorEnd = col;
+                }
+                else if (interiorStart >= 0)
+                {
+                    // We've exited the interior region
+                    break;
+                }
+            }
+
+            // 7. Process pixels
+            if (interiorStart >= 0)
+            {
+                // Batch fill interior pixels
+                for (int col = interiorStart; col <= interiorEnd; col++)
+                {
+                    Data[rowOffset + col] += value;
+                }
+
+                // Clip left edge pixels
+                for (int col = startCol; col < interiorStart; col++)
+                {
+                    float area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
+                    if (area > 0)
                     {
-                        Data[rowOffset + col] += value;
+                        Data[rowOffset + col] += value * area;
                     }
-                    else
+                }
+
+                // Clip right edge pixels
+                for (int col = interiorEnd + 1; col <= endCol; col++)
+                {
+                    float area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
+                    if (area > 0)
                     {
-                        Data[rowOffset + col] +=
-                            value * areaIntersection; // areaIntersection is fraction since pixel area is 1
+                        Data[rowOffset + col] += value * area;
+                    }
+                }
+            }
+            else
+            {
+                // No interior pixels - clip all
+                for (int col = startCol; col <= endCol; col++)
+                {
+                    float area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
+                    if (area > 0)
+                    {
+                        if (area >= 0.999999f)
+                        {
+                            Data[rowOffset + col] += value;
+                        }
+                        else
+                        {
+                            Data[rowOffset + col] += value * area;
+                        }
                     }
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Checks if a pixel is fully inside the convex polygon defined by the edge equations.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsPixelFullyInside(int col, int row,
+        ReadOnlySpan<float> edgeA, ReadOnlySpan<float> edgeB, ReadOnlySpan<float> edgeC)
+    {
+        // Check all 4 corners of the pixel
+        float x0 = col, x1 = col + 1;
+        float y0 = row, y1 = row + 1;
+
+        // A point (x,y) is inside if edgeA[i]*x + edgeB[i]*y + edgeC[i] >= 0 for all edges
+        for (int i = 0; i < 4; i++)
+        {
+            float a = edgeA[i];
+            float b = edgeB[i];
+            float c = edgeC[i];
+
+            // Check all 4 corners - if any is outside this edge, pixel is not fully inside
+            if (a * x0 + b * y0 + c < 0) return false;
+            if (a * x1 + b * y0 + c < 0) return false;
+            if (a * x0 + b * y1 + c < 0) return false;
+            if (a * x1 + b * y1 + c < 0) return false;
+        }
+
+        return true;
     }
 
     /// <summary>
