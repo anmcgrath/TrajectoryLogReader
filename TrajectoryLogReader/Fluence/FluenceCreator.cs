@@ -77,8 +77,7 @@ public class FluenceCreator
             {
                 var s = item.s;
                 var deltaMu = item.deltaMu;
-                Span<Vector2> corners = stackalloc Vector2[4];
-
+                
                 var x1 = s.X1InMm;
                 var y1 = s.Y1InMm;
                 var x2 = s.X2InMm;
@@ -94,6 +93,7 @@ public class FluenceCreator
                 var sin = (float)Math.Sin(angleRadians);
                 var cos = (float)Math.Cos(angleRadians);
 #endif
+                Span<Vector2> corners = stackalloc Vector2[4];
 
                 for (int i = 0; i < mlc.GetNumberOfLeafPairs(); i++)
                 {
@@ -104,7 +104,7 @@ public class FluenceCreator
                     bankBPos = Math.Min(bankBPos, x2);
                     bankAPos = Math.Max(bankAPos, x1);
                     bankAPos = Math.Min(bankAPos, x2);
-                    
+
                     var width = bankAPos - bankBPos;
                     if (width <= 0)
                         continue;
@@ -118,17 +118,13 @@ public class FluenceCreator
                     var yMaxMm = leafCenterYMm + leafWidthMm / 2f;
 
                     // Constrain to jaw positions
-                    if (yMinMm < y1)
-                        yMinMm = y1;
-                    if (yMaxMm < y1)
-                        yMaxMm = y1;
-                    if (yMinMm > y2)
-                        yMinMm = y2;
-                    if (yMaxMm > y2)
-                        yMaxMm = y2;
+                    if (yMinMm < y1) yMinMm = y1;
+                    if (yMaxMm < y1) yMaxMm = y1;
+                    if (yMinMm > y2) yMinMm = y2;
+                    if (yMaxMm > y2) yMaxMm = y2;
 
-                    // both outside y jaw
-                    if (Math.Abs(yMinMm - yMaxMm) < 0.0001)
+                    var height = yMaxMm - yMinMm;
+                    if (height < 0.0001)
                         continue;
 
                     var xCenter = bankBPos + width / 2f;
@@ -141,7 +137,7 @@ public class FluenceCreator
                     RotatedRect.GetRotatedRectAndBounds(
                         new Vector2(xRot, yRot),
                         width,
-                        leafWidthMm,
+                        height,
                         cos, sin, corners, out var bounds);
 
                     localGrid.DrawData(corners, bounds, deltaMu, useApproximate);
