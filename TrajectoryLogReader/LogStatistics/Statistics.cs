@@ -42,7 +42,7 @@ public class Statistics
         int aggregateCount = 0;
         foreach (var snapshot in _data)
         {
-            var binData = snapshot.GetScalarRecord(binAxis).GetRecordInIec(binRecordType);
+            var binData = snapshot.GetScalarRecord(binAxis).WithScale(AxisScale.IEC61217).GetRecord(binRecordType);
             var data = valueSelector(snapshot);
             int index = (int)((binData - min) / binSize);
 

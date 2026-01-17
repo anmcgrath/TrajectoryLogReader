@@ -11,7 +11,8 @@ public static class Scale
     {
         { AxisScale.MachineScale, new VarianNativeScaleConverter() },
         { AxisScale.ModifiedIEC61217, new VarianIECScaleConverter() },
-        { AxisScale.MachineScaleIsocentric, new VarianNativeIsocentricConverter() }
+        { AxisScale.MachineScaleIsocentric, new VarianNativeIsocentricConverter() },
+        { AxisScale.IEC61217, new IEC61217ScaleConverter() }
     };
 
     /// <summary>

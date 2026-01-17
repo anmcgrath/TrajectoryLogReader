@@ -13,13 +13,18 @@
         MachineScale = 1,
 
         /// <summary>
-        /// Varian IEC
+        /// Varian's modified IEC 61217 coordinate system
         /// </summary>
         ModifiedIEC61217 = 2,
 
         /// <summary>
         /// Varian native w isocentric couch
         /// </summary>
-        MachineScaleIsocentric = 3
+        MachineScaleIsocentric = 3,
+
+        /// <summary>
+        /// True IEC 61217 coordinate system (international standard)
+        /// </summary>
+        IEC61217 = 4
     }
 }
