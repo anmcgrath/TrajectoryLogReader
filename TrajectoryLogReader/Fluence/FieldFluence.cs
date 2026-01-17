@@ -15,9 +15,17 @@ public class FieldFluence
     /// </summary>
     public FluenceOptions Options { get; }
 
-    internal FieldFluence(GridF grid, FluenceOptions options)
+    /// <summary>
+    /// The rotated jaw corners for each unique jaw/collimator configuration in the field.
+    /// Each array of 4 points represents one jaw rectangle rotated by collimator angle.
+    /// Points are ordered: TopRight, TopLeft, BottomLeft, BottomRight.
+    /// </summary>
+    public List<Point[]> JawOutlines { get; }
+
+    internal FieldFluence(GridF grid, FluenceOptions options, List<Point[]> jawOutlines)
     {
         Grid = grid;
         Options = options;
+        JawOutlines = jawOutlines;
     }
 }
