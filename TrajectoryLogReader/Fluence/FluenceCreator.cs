@@ -132,17 +132,17 @@ public class FluenceCreator
                     var yMaxMm = leafCenterYMm + leafWidthMm / 2f;
 
                     // Constrain to jaw positions
-                    if (yMinMm < y1) yMinMm = y1;
-                    if (yMaxMm < y1) yMaxMm = y1;
-                    if (yMinMm > y2) yMinMm = y2;
-                    if (yMaxMm > y2) yMaxMm = y2;
+                    yMinMm = Math.Max(yMinMm, y1);
+                    yMinMm = Math.Min(yMinMm, y2);
+                    yMaxMm = Math.Max(yMaxMm, y1);
+                    yMaxMm = Math.Min(yMaxMm, y2);
 
                     var height = yMaxMm - yMinMm;
                     if (height < 0.0001)
                         continue;
 
                     var xCenter = bankBPos + width / 2f;
-                    var yCenter = leafCenterYMm;
+                    var yCenter = (yMinMm + yMaxMm) / 2f;
 
                     // Rotate the center of the leaf around (0,0) to account for collimator rotation
                     var xRot = xCenter * cos - yCenter * sin;
