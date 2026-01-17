@@ -90,6 +90,26 @@ namespace TrajectoryLogReader.Log
             return _fluenceCreator.Create(options, recordType, samplingRateInMs, Snapshots);
         }
 
+        /// <summary>
+        /// Anonymizes the log by removing patient and plan identifiers.
+        /// </summary>
+        /// <param name="options">Customization options for anonymization. If null, default values are used.</param>
+        public void Anonymize(AnonymizationOptions? options = null)
+        {
+            options ??= new AnonymizationOptions();
+
+            MetaData.PatientId = options.PatientId;
+            MetaData.PlanName = options.PlanName;
+            MetaData.PlanUID = options.PlanUID;
+            MetaData.SOPInstanceUID = options.SOPInstanceUID;
+            MetaData.BeamName = options.BeamName;
+            FilePath = options.FilePath;
+
+            foreach (var subBeam in SubBeams)
+            {
+                subBeam.Name = options.SubBeamNameSelector(subBeam.SequenceNumber);
+            }
+        }
 
         internal TrajectoryLog()
         {
@@ -113,7 +133,8 @@ namespace TrajectoryLogReader.Log
                 throw new ArgumentOutOfRangeException(nameof(timeInMs), $"Time {timeInMs} cannot be negative.");
 
             if (timeInMs > TotalTimeInMs)
-                throw new ArgumentOutOfRangeException(nameof(timeInMs), $"Time {timeInMs} is greater than total time {TotalTimeInMs}.");
+                throw new ArgumentOutOfRangeException(nameof(timeInMs),
+                    $"Time {timeInMs} is greater than total time {TotalTimeInMs}.");
 
             var cpIndex = timeInMs / Header.SamplingIntervalInMS;
             var i0 = (int)cpIndex;
