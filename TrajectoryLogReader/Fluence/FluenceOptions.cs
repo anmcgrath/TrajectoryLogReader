@@ -44,6 +44,11 @@ public class FluenceOptions
     /// </summary>
     public double Margin { get; set; } = 10;
 
+    /// <summary>
+    /// Set this to override the collimator angle to a fixed value
+    /// </summary>
+    public float? FixedCollimatorAngle { get; set; } = null;
+
     public FluenceOptions(int cols, int rows)
     {
         Cols = cols;
