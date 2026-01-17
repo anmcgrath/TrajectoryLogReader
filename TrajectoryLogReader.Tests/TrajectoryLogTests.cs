@@ -30,7 +30,10 @@ public class TrajectoryLogTests
         };
 
         // Act
-        log.Anonymize();
+        log.Anonymize(new AnonymizationOptions()
+        {
+            SubBeamNameSelector = i => "Anonymized"
+        });
 
         // Assert
         log.MetaData.PatientId.ShouldBe("Anonymized");
@@ -74,7 +77,7 @@ public class TrajectoryLogTests
             SOPInstanceUID = "S-UID",
             BeamName = "B-Name",
             FilePath = "F-Path",
-            SubBeamName = "SB-Name"
+            SubBeamNameSelector = i => "SB-Name"
         };
 
         // Act
