@@ -506,63 +506,6 @@ public class GridF
         return true;
     }
 
-    /// <summary>
-    /// Calculates the min and max X values of the polygon within the given Y range (Optimized for Span).
-    /// </summary>
-    private void GetXRangeFast(ReadOnlySpan<Vector2> vertices, float yMin, float yMax, out float minX, out float maxX)
-    {
-        minX = float.MaxValue;
-        maxX = float.MinValue;
-
-        int count = vertices.Length;
-        for (int i = 0; i < count; i++)
-        {
-            var p1 = vertices[i];
-            var p2 = vertices[(i + 1) % count];
-
-            // Check if edge intersects the Y band
-            // Case 1: Both points above or below - skip (unless one is exactly on boundary)
-            if (Math.Max(p1.Y, p2.Y) < yMin || Math.Min(p1.Y, p2.Y) > yMax)
-                continue;
-
-            // Include vertices inside the band
-            if (p1.Y >= yMin && p1.Y <= yMax)
-            {
-                if (p1.X < minX) minX = p1.X;
-                if (p1.X > maxX) maxX = p1.X;
-            }
-
-            if (p2.Y >= yMin && p2.Y <= yMax)
-            {
-                if (p2.X < minX) minX = p2.X;
-                if (p2.X > maxX) maxX = p2.X;
-            }
-
-            // Intersect with yMin
-            if ((p1.Y < yMin && p2.Y > yMin) || (p1.Y > yMin && p2.Y < yMin))
-            {
-                float x = p1.X + (yMin - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y);
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-            }
-
-            // Intersect with yMax
-            if ((p1.Y < yMax && p2.Y > yMax) || (p1.Y > yMax && p2.Y < yMax))
-            {
-                float x = p1.X + (yMax - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y);
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-            }
-        }
-
-        // Fallback if no intersection found
-        if (minX > maxX)
-        {
-            minX = 0;
-            maxX = 0;
-        }
-    }
-
     public override string ToString()
     {
         var sb = new StringBuilder();
