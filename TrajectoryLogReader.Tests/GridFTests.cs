@@ -155,4 +155,83 @@ public class GridFTests
         grid.Interpolate(-5, -5).ShouldBe(0f);
         grid.Interpolate(0, 0).ShouldBe(10f);
     }
+
+    [Test]
+    public void Constructor_WithBounds_SetsPropertiesCorrectly()
+    {
+        var bounds = new Rect { X = 10, Y = 20, Width = 10, Height = 20 };
+        var cols = 5;
+        var rows = 4;
+
+        var grid = new GridF(bounds, cols, rows);
+
+        grid.Width.ShouldBe(10.0);
+        grid.Height.ShouldBe(20.0);
+        grid.Cols.ShouldBe(cols);
+        grid.Rows.ShouldBe(rows);
+        grid.XRes.ShouldBe(2.0); // 10 / 5
+        grid.YRes.ShouldBe(5.0); // 20 / 4
+        grid.Bounds.X.ShouldBe(10.0);
+        grid.Bounds.Y.ShouldBe(20.0);
+    }
+
+    [Test]
+    public void GetX_GetY_WithShiftedBounds_ReturnCorrectCoordinates()
+    {
+        var bounds = new Rect { X = 10, Y = 20, Width = 10, Height = 20 };
+        var grid = new GridF(bounds, 5, 4);
+
+        grid.GetX(0).ShouldBe(10.0);
+        grid.GetX(1).ShouldBe(12.0);
+        grid.GetY(0).ShouldBe(20.0);
+        grid.GetY(1).ShouldBe(25.0);
+    }
+
+    [Test]
+    public void GetCol_GetRow_WithShiftedBounds_ReturnCorrectIndices()
+    {
+        var bounds = new Rect { X = 10, Y = 20, Width = 10, Height = 20 };
+        // XRes 2, YRes 5
+        var grid = new GridF(bounds, 5, 4);
+
+        // 10 is start, so 10 -> 0
+        grid.GetCol(10.0).ShouldBe(0);
+        // 11 -> 0 (int((11-10)/2) = 0)
+        grid.GetCol(11.0).ShouldBe(0);
+        // 12 -> 1
+        grid.GetCol(12.0).ShouldBe(1);
+
+        // 20 -> 0
+        grid.GetRow(20.0).ShouldBe(0);
+        // 25 -> 1
+        grid.GetRow(25.0).ShouldBe(1);
+    }
+
+    [Test]
+    public void Interpolate_WithShiftedBounds_ReturnsCorrectValue()
+    {
+        // 2x2 grid. 
+        // Bounds (10, 10), Width 2, Height 2.
+        // XRes 1, YRes 1.
+        // (10, 10) -> [0,0]
+        // (11, 10) -> [0,1]
+        // (10, 11) -> [1,0]
+        // (11, 11) -> [1,1]
+        var bounds = new Rect { X = 10, Y = 10, Width = 2, Height = 2 };
+        var grid = new GridF(bounds, 2, 2);
+
+        grid[0, 0] = 0;
+        grid[0, 1] = 10;
+        grid[1, 0] = 0;
+        grid[1, 1] = 10;
+
+        // Interpolate at (10.5, 10.5). Should be center of square.
+        // Top edge (row 0) goes 0 -> 10. Mid is 5.
+        // Bottom edge (row 1) goes 0 -> 10. Mid is 5.
+        // So 5.
+        grid.Interpolate(10.5, 10.5).ShouldBe(5.0f);
+
+        // Outside
+        grid.Interpolate(0, 0, -1).ShouldBe(-1);
+    }
 }

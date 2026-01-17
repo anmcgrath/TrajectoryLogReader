@@ -38,6 +38,12 @@ public class FluenceOptions
     /// </summary>
     public double MinDeltaMu { get; set; } = 0.0001;
 
+    /// <summary>
+    /// Margin (in mm) to add to each side of the automatically calculated grid bounds.
+    /// Only applies when Width/Height are not explicitly specified. Default is 10 mm.
+    /// </summary>
+    public double Margin { get; set; } = 10;
+
     public FluenceOptions(int cols, int rows)
     {
         Cols = cols;

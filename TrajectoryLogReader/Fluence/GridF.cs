@@ -14,12 +14,12 @@ public class GridF
     /// <summary>
     /// Total width of the grid in physical units (mm).
     /// </summary>
-    public double Width { get; }
+    public double Width => Bounds.Width;
 
     /// <summary>
     /// Total height of the grid in physical units (mm).
     /// </summary>
-    public double Height { get; }
+    public double Height => Bounds.Height;
 
     /// <summary>
     /// Resolution in X direction (mm / pixel).
@@ -63,16 +63,25 @@ public class GridF
         set => Data[row * Cols + col] = value;
     }
 
-    public GridF(double width, double height, int cols, int rows)
+    public GridF(double width, double height, int cols, int rows) :
+        this(new Rect() { X = -width / 2, Y = -height / 2, Width = width, Height = height }, cols, rows)
     {
-        Width = width;
-        Height = height;
         Cols = cols;
         Rows = rows;
         XRes = width / cols;
         YRes = height / rows;
         Data = new float[rows * cols];
         Bounds = new Rect() { X = -width / 2, Y = -height / 2, Width = width, Height = height };
+    }
+
+    public GridF(Rect bounds, int cols, int rows)
+    {
+        Cols = cols;
+        Rows = rows;
+        XRes = bounds.Width / cols;
+        YRes = bounds.Height / rows;
+        Data = new float[rows * cols];
+        Bounds = bounds;
     }
 
     /// <summary>

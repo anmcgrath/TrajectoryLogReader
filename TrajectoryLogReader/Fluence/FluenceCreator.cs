@@ -50,15 +50,28 @@ public class FluenceCreator
     public FieldFluence Create(FluenceOptions options, IFieldDataCollection fieldData)
     {
         var data = fieldData.ToList();
-        var maxExtent = CalculateMaxExtentX(data);
-        var w = options.Width <= 0 ? maxExtent.X : options.Width;
-        var h = options.Height <= 0 ? maxExtent.Y : options.Height;
+        var maxExtent = CalculateMaxExtent(data);
 
-        var grid = new GridF(
-            w,
-            h,
-            options.Cols,
-            options.Rows);
+        // Apply margin to the calculated bounds
+        var bounds = new Rect(
+            maxExtent.X - options.Margin,
+            maxExtent.Y - options.Margin,
+            maxExtent.Width + 2 * options.Margin,
+            maxExtent.Height + 2 * options.Margin);
+
+        // Override with user-specified dimensions if provided (centered at origin)
+        if (options.Width > 0)
+        {
+            bounds.X = -options.Width / 2;
+            bounds.Width = options.Width;
+        }
+        if (options.Height > 0)
+        {
+            bounds.Y = -options.Height / 2;
+            bounds.Height = options.Height;
+        }
+
+        var grid = new GridF(bounds, options.Cols, options.Rows);
 
         // Prepare work items
         var workItems = new List<(IFieldData s, float deltaMu)>();
@@ -72,7 +85,7 @@ public class FluenceCreator
         var useApproximate = options.UseApproximateFluence;
 
         Parallel.ForEach(workItems,
-            () => new GridF(w, h, options.Cols, options.Rows),
+            () => new GridF(bounds, options.Cols, options.Rows),
             (item, loopState, localGrid) =>
             {
                 var s = item.s;
@@ -139,9 +152,9 @@ public class FluenceCreator
                         new Vector2(xRot, yRot),
                         width,
                         height,
-                        cos, sin, corners, out var bounds);
+                        cos, sin, corners, out var leafBounds);
 
-                    localGrid.DrawData(corners, bounds, deltaMu, useApproximate);
+                    localGrid.DrawData(corners, leafBounds, deltaMu, useApproximate);
                 }
 
                 return localGrid;
@@ -157,10 +170,17 @@ public class FluenceCreator
         return new FieldFluence(grid, options);
     }
 
-    private Point CalculateMaxExtentX(IEnumerable<IFieldData> fieldData)
+    /// <summary>
+    /// Calculates the bounding rectangle that covers all jaw positions across all field data,
+    /// accounting for collimator rotation.
+    /// </summary>
+    private Rect CalculateMaxExtent(IEnumerable<IFieldData> fieldData)
     {
-        var xExtent = double.MinValue;
-        var yExtent = double.MinValue;
+        var minX = double.MaxValue;
+        var maxX = double.MinValue;
+        var minY = double.MaxValue;
+        var maxY = double.MinValue;
+
         foreach (var d in fieldData)
         {
             var x1 = d.X1InMm;
@@ -169,27 +189,34 @@ public class FluenceCreator
             var y2 = d.Y2InMm;
             var coll = d.CollimatorInDegrees * Math.PI / 180;
 
+            var cos = Math.Cos(coll);
+            var sin = Math.Sin(coll);
+
+            // Jaw corners in collimator coordinates:
             // c2 ---Y2-- c1
             //  |         |
             //  X1       X2
             //  |         |
             // c3 --Y1---c4
 
-            var c1Dist = Math.Sqrt(x2 * x2 + y2 * y2);
-            var c2Dist = Math.Sqrt(x1 * x1 + y2 * y2);
-            var c3Dist = Math.Sqrt(x1 * x1 + y1 * y1);
-            var c4Dist = Math.Sqrt(x1 * x1 + y1 * y1);
+            // Rotate each corner by collimator angle
+            var c1 = RotatePoint(x2, y2, cos, sin);
+            var c2 = RotatePoint(x1, y2, cos, sin);
+            var c3 = RotatePoint(x1, y1, cos, sin);
+            var c4 = RotatePoint(x2, y1, cos, sin);
 
-            var d1 = Math.Max(c1Dist, c3Dist);
-            var d2 = Math.Max(c2Dist, c4Dist);
-            var cosCol = Math.Abs(Math.Cos(Math.PI / 4 - coll));
-            var sinCol = Math.Abs(Math.Sin(Math.PI / 4 - coll));
-            var maxX = Math.Max(cosCol * d1, sinCol * d2);
-            var maxY = Math.Max(cosCol * d2, sinCol * d1);
-            xExtent = Math.Max(maxX, xExtent);
-            yExtent = Math.Max(maxY, yExtent);
+            // Update bounds with all rotated corners
+            minX = Math.Min(minX, Math.Min(Math.Min(c1.X, c2.X), Math.Min(c3.X, c4.X)));
+            maxX = Math.Max(maxX, Math.Max(Math.Max(c1.X, c2.X), Math.Max(c3.X, c4.X)));
+            minY = Math.Min(minY, Math.Min(Math.Min(c1.Y, c2.Y), Math.Min(c3.Y, c4.Y)));
+            maxY = Math.Max(maxY, Math.Max(Math.Max(c1.Y, c2.Y), Math.Max(c3.Y, c4.Y)));
         }
 
-        return new Point(xExtent * 2, yExtent * 2);
+        return new Rect(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    private static Point RotatePoint(double x, double y, double cos, double sin)
+    {
+        return new Point(x * cos - y * sin, x * sin + y * cos);
     }
 }
