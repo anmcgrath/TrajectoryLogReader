@@ -49,6 +49,11 @@ public class FluenceOptions
     /// </summary>
     public float? FixedCollimatorAngle { get; set; } = null;
 
+    /// <summary>
+    /// Sets how many processors to use for fluence creation
+    /// </summary>
+    public int MaxParallelism { get; set; } = Environment.ProcessorCount;
+
     public FluenceOptions(int cols, int rows)
     {
         Cols = cols;

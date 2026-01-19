@@ -86,80 +86,12 @@ public class FluenceCreator
         var useApproximate = options.UseApproximateFluence;
 
         Parallel.ForEach(workItems,
-            () => new GridF(bounds, options.Cols, options.Rows),
-            (item, loopState, localGrid) =>
+            new ParallelOptions()
             {
-                var s = item.s;
-                var deltaMu = item.deltaMu;
-
-                var x1 = s.X1InMm;
-                var y1 = s.Y1InMm;
-                var x2 = s.X2InMm;
-                var y2 = s.Y2InMm;
-                var coll = options.FixedCollimatorAngle ?? s.CollimatorInDegrees;
-                var mlc = s.Mlc;
-
-                var angleRadians = (float)(coll * Math.PI / 180);
-
-#if NET7_0_OR_GREATER
-                var (sin, cos) = MathF.SinCos(angleRadians);
-#else
-                var sin = (float)Math.Sin(angleRadians);
-                var cos = (float)Math.Cos(angleRadians);
-#endif
-                Span<Vector2> corners = stackalloc Vector2[4];
-                var leafPairCount = mlc.GetNumberOfLeafPairs();
-
-                for (int i = 0; i < leafPairCount; i++)
-                {
-                    var bankAPos = s.GetLeafPositionInMm(0, i);
-                    var bankBPos = s.GetLeafPositionInMm(1, i);
-
-                    bankBPos = Math.Max(bankBPos, x1);
-                    bankBPos = Math.Min(bankBPos, x2);
-                    bankAPos = Math.Max(bankAPos, x1);
-                    bankAPos = Math.Min(bankAPos, x2);
-
-                    var width = bankAPos - bankBPos;
-                    if (width <= 0)
-                        continue;
-
-                    var leafInfo = mlc.GetLeafInformation(i);
-
-                    // Working in Mm
-                    var leafWidthMm = leafInfo.WidthInMm;
-                    var leafCenterYMm = leafInfo.YInMm;
-                    var yMinMm = leafCenterYMm - leafWidthMm / 2f;
-                    var yMaxMm = leafCenterYMm + leafWidthMm / 2f;
-
-                    // Constrain to jaw positions
-                    yMinMm = Math.Max(yMinMm, y1);
-                    yMinMm = Math.Min(yMinMm, y2);
-                    yMaxMm = Math.Max(yMaxMm, y1);
-                    yMaxMm = Math.Min(yMaxMm, y2);
-
-                    var height = yMaxMm - yMinMm;
-                    if (height < 0.0001)
-                        continue;
-
-                    var xCenter = bankBPos + width / 2f;
-                    var yCenter = (yMinMm + yMaxMm) / 2f;
-
-                    // Rotate the center of the leaf around (0,0) to account for collimator rotation
-                    var xRot = xCenter * cos - yCenter * sin;
-                    var yRot = xCenter * sin + yCenter * cos;
-
-                    RotatedRect.GetRotatedRectAndBounds(
-                        new Vector2(xRot, yRot),
-                        width,
-                        height,
-                        cos, sin, corners, out var leafBounds);
-
-                    localGrid.DrawData(corners, leafBounds, deltaMu, useApproximate);
-                }
-
-                return localGrid;
+                MaxDegreeOfParallelism = options.MaxParallelism
             },
+            () => new GridF(bounds, options.Cols, options.Rows),
+            (item, loopState, localGrid) => ProcessLocalGrid(options, item, localGrid, useApproximate),
             (localGrid) =>
             {
                 lock (grid)
@@ -169,6 +101,81 @@ public class FluenceCreator
             });
 
         return new FieldFluence(grid, options, jawOutlines);
+    }
+
+    private static GridF ProcessLocalGrid(FluenceOptions options, (IFieldData s, float deltaMu) item, GridF localGrid,
+        bool useApproximate)
+    {
+        var s = item.s;
+        var deltaMu = item.deltaMu;
+
+        var x1 = s.X1InMm;
+        var y1 = s.Y1InMm;
+        var x2 = s.X2InMm;
+        var y2 = s.Y2InMm;
+        var coll = options.FixedCollimatorAngle ?? s.CollimatorInDegrees;
+        var mlc = s.Mlc;
+
+        var angleRadians = (float)(coll * Math.PI / 180);
+
+#if NET7_0_OR_GREATER
+                var (sin, cos) = MathF.SinCos(angleRadians);
+#else
+        var sin = (float)Math.Sin(angleRadians);
+        var cos = (float)Math.Cos(angleRadians);
+#endif
+        Span<Vector2> corners = stackalloc Vector2[4];
+        var leafPairCount = mlc.GetNumberOfLeafPairs();
+
+        for (int i = 0; i < leafPairCount; i++)
+        {
+            var bankAPos = s.GetLeafPositionInMm(0, i);
+            var bankBPos = s.GetLeafPositionInMm(1, i);
+
+            bankBPos = Math.Max(bankBPos, x1);
+            bankBPos = Math.Min(bankBPos, x2);
+            bankAPos = Math.Max(bankAPos, x1);
+            bankAPos = Math.Min(bankAPos, x2);
+
+            var width = bankAPos - bankBPos;
+            if (width <= 0)
+                continue;
+
+            var leafInfo = mlc.GetLeafInformation(i);
+
+            // Working in Mm
+            var leafWidthMm = leafInfo.WidthInMm;
+            var leafCenterYMm = leafInfo.YInMm;
+            var yMinMm = leafCenterYMm - leafWidthMm / 2f;
+            var yMaxMm = leafCenterYMm + leafWidthMm / 2f;
+
+            // Constrain to jaw positions
+            yMinMm = Math.Max(yMinMm, y1);
+            yMinMm = Math.Min(yMinMm, y2);
+            yMaxMm = Math.Max(yMaxMm, y1);
+            yMaxMm = Math.Min(yMaxMm, y2);
+
+            var height = yMaxMm - yMinMm;
+            if (height < 0.0001)
+                continue;
+
+            var xCenter = bankBPos + width / 2f;
+            var yCenter = (yMinMm + yMaxMm) / 2f;
+
+            // Rotate the center of the leaf around (0,0) to account for collimator rotation
+            var xRot = xCenter * cos - yCenter * sin;
+            var yRot = xCenter * sin + yCenter * cos;
+
+            RotatedRect.GetRotatedRectAndBounds(
+                new Vector2(xRot, yRot),
+                width,
+                height,
+                cos, sin, corners, out var leafBounds);
+
+            localGrid.DrawData(corners, leafBounds, deltaMu, useApproximate);
+        }
+
+        return localGrid;
     }
 
     /// <summary>
