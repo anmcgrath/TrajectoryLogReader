@@ -1,4 +1,5 @@
-﻿using TrajectoryLogReader.Fluence;
+﻿using TrajectoryLogReader.Complexity;
+using TrajectoryLogReader.Fluence;
 using TrajectoryLogReader.Log.Axes;
 using TrajectoryLogReader.Log.Snapshots;
 using TrajectoryLogReader.LogStatistics;
@@ -110,6 +111,17 @@ namespace TrajectoryLogReader.Log
         internal SubBeam(TrajectoryLog log)
         {
             _log = log;
+        }
+
+        /// <summary>
+        /// Calculates the Average Leaf Pair Opening (ALPO) for this sub-beam.
+        /// ALPO measures the average gap between opposing MLC leaves for leaf pairs within the jaw opening.
+        /// </summary>
+        /// <param name="options">Calculation options. If null, default options are used.</param>
+        /// <returns>The average leaf pair opening in centimeters.</returns>
+        public double CalculateAverageLeafPairOpening(AverageLeafPairOpeningOptions? options = null)
+        {
+            return AverageLeafPairOpeningCalculator.Calculate(Snapshots, options);
         }
 
         private int CalculateStartIndex()
