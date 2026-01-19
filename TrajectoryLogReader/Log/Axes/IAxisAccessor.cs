@@ -49,5 +49,14 @@ namespace TrajectoryLogReader.Log.Axes
         /// The time (in ms) for this data recording.
         /// </summary>
         public int TimeInMs { get; }
+
+        /// <summary>
+        /// Create a filtered axis accessor that only includes values where the filter condition is met.
+        /// </summary>
+        /// <param name="filterAxis">The axis to use for filtering (e.g., DeltaMu)</param>
+        /// <param name="recordType">The record type to use in the filter</param>
+        /// <param name="predicate">The filter condition (e.g., value => value > 0)</param>
+        /// <returns>A new axis accessor with filtered values</returns>
+        public IAxisAccessor WithFilter(IAxisAccessor filterAxis, RecordType recordType, Func<float, bool> predicate);
     }
 }

@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TrajectoryLogReader.LogStatistics;
 
 namespace TrajectoryLogReader.Log.Axes
 {
-    public class VelocityAxisAccessor : IAxisAccessor
+    public class VelocityAxisAccessor : AxisAccessorBase
     {
         private readonly IAxisAccessor _inner;
         private readonly double _samplingIntervalSeconds;
-        public int TimeInMs => _inner.TimeInMs;
+        public override int TimeInMs => _inner.TimeInMs;
+
+        private float[]? _expected;
+        private float[]? _actual;
+        private float[]? _errors;
 
         public VelocityAxisAccessor(IAxisAccessor inner, double samplingIntervalMs)
         {
@@ -34,43 +37,60 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
-        public IEnumerable<float> ExpectedValues => CalculateVelocity(_inner.ExpectedValues);
-
-        public IEnumerable<float> ActualValues => CalculateVelocity(_inner.ActualValues);
-
-        public IEnumerable<float> ErrorValues
+        public override IEnumerable<float> ExpectedValues
         {
             get
             {
-                // Velocity Delta = ActualVelocity - ExpectedVelocity
-                using var exp = ExpectedValues.GetEnumerator();
-                using var act = ActualValues.GetEnumerator();
-
-                while (exp.MoveNext() && act.MoveNext())
+                if (_expected == null)
                 {
-                    yield return act.Current - exp.Current;
+                    _expected = CalculateVelocity(_inner.ExpectedValues).ToArray();
                 }
+
+                return _expected;
             }
         }
 
-        public IAxisAccessor WithScale(AxisScale scale)
+        public override IEnumerable<float> ActualValues
+        {
+            get
+            {
+                if (_actual == null)
+                {
+                    _actual = CalculateVelocity(_inner.ActualValues).ToArray();
+                }
+
+                return _actual;
+            }
+        }
+
+        public override IEnumerable<float> ErrorValues
+        {
+            get
+            {
+                if (_errors == null)
+                {
+                    _errors = GetErrors().ToArray();
+                }
+
+                return _errors;
+            }
+        }
+
+        private IEnumerable<float> GetErrors()
+        {
+            // Velocity Delta = ActualVelocity - ExpectedVelocity
+            using var exp = ExpectedValues.GetEnumerator();
+            using var act = ActualValues.GetEnumerator();
+
+            while (exp.MoveNext() && act.MoveNext())
+            {
+                yield return act.Current - exp.Current;
+            }
+        }
+
+        public override IAxisAccessor WithScale(AxisScale scale)
         {
             return new VelocityAxisAccessor(_inner.WithScale(scale), _samplingIntervalSeconds * 1000.0);
-        }
-
-        public float RootMeanSquareError()
-        {
-            return Statistics.CalculateRootMeanSquareError(ErrorValues);
-        }
-
-        public float MaxError()
-        {
-            return Statistics.CalculateMaxError(ErrorValues);
-        }
-
-        public Histogram ErrorHistogram(int nBins = 20)
-        {
-            return Histogram.FromData(ErrorValues.ToArray(), nBins);
         }
     }
 }

@@ -1,16 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TrajectoryLogReader.LogStatistics;
 
 namespace TrajectoryLogReader.Log.Axes
 {
-    public class CombinedAxisAccessor : IAxisAccessor
+    public class CombinedAxisAccessor : AxisAccessorBase
     {
         private readonly IAxisAccessor _axis1;
         private readonly IAxisAccessor _axis2;
         private readonly Func<float, float, float> _combiner;
-        public int TimeInMs => _axis1.TimeInMs;
+        public override int TimeInMs => _axis1.TimeInMs;
+
+        private float[]? _expected;
+        private float[]? _actual;
+        private float[]? _errors;
 
         public CombinedAxisAccessor(IAxisAccessor axis1, IAxisAccessor axis2, Func<float, float, float> combiner)
         {
@@ -19,66 +22,81 @@ namespace TrajectoryLogReader.Log.Axes
             _combiner = combiner;
         }
 
-        public IEnumerable<float> ExpectedValues
+        public override IEnumerable<float> ExpectedValues
         {
             get
             {
-                using var e1 = _axis1.ExpectedValues.GetEnumerator();
-                using var e2 = _axis2.ExpectedValues.GetEnumerator();
-
-                while (e1.MoveNext() && e2.MoveNext())
+                if (_expected == null)
                 {
-                    yield return _combiner(e1.Current, e2.Current);
+                    _expected = GetExpected().ToArray();
                 }
+
+                return _expected;
             }
         }
 
-        public IEnumerable<float> ActualValues
+        private IEnumerable<float> GetExpected()
+        {
+            using var e1 = _axis1.ExpectedValues.GetEnumerator();
+            using var e2 = _axis2.ExpectedValues.GetEnumerator();
+
+            while (e1.MoveNext() && e2.MoveNext())
+            {
+                yield return _combiner(e1.Current, e2.Current);
+            }
+        }
+
+        public override IEnumerable<float> ActualValues
         {
             get
             {
-                using var e1 = _axis1.ActualValues.GetEnumerator();
-                using var e2 = _axis2.ActualValues.GetEnumerator();
-
-                while (e1.MoveNext() && e2.MoveNext())
+                if (_actual == null)
                 {
-                    yield return _combiner(e1.Current, e2.Current);
+                    _actual = GetActual().ToArray();
                 }
+
+                return _actual;
             }
         }
 
-        public IEnumerable<float> ErrorValues
+        private IEnumerable<float> GetActual()
+        {
+            using var e1 = _axis1.ActualValues.GetEnumerator();
+            using var e2 = _axis2.ActualValues.GetEnumerator();
+
+            while (e1.MoveNext() && e2.MoveNext())
+            {
+                yield return _combiner(e1.Current, e2.Current);
+            }
+        }
+
+        public override IEnumerable<float> ErrorValues
         {
             get
             {
-                using var e1 = _axis1.ErrorValues.GetEnumerator();
-                using var e2 = _axis2.ErrorValues.GetEnumerator();
-
-                while (e1.MoveNext() && e2.MoveNext())
+                if (_errors == null)
                 {
-                    yield return _combiner(e1.Current, e2.Current);
+                    _errors = GetErrors().ToArray();
                 }
+
+                return _errors;
             }
         }
 
-        public IAxisAccessor WithScale(AxisScale scale)
+        private IEnumerable<float> GetErrors()
+        {
+            using var e1 = _axis1.ErrorValues.GetEnumerator();
+            using var e2 = _axis2.ErrorValues.GetEnumerator();
+
+            while (e1.MoveNext() && e2.MoveNext())
+            {
+                yield return _combiner(e1.Current, e2.Current);
+            }
+        }
+
+        public override IAxisAccessor WithScale(AxisScale scale)
         {
             return new CombinedAxisAccessor(_axis1.WithScale(scale), _axis2.WithScale(scale), _combiner);
-        }
-
-        public float RootMeanSquareError()
-        {
-            return Statistics.CalculateRootMeanSquareError(ErrorValues);
-        }
-
-        public float MaxError()
-        {
-            return Statistics.CalculateMaxError(ErrorValues);
-        }
-
-        public Histogram ErrorHistogram(int nBins = 20)
-        {
-            return Histogram.FromData(ErrorValues.ToArray(), nBins);
         }
     }
 }

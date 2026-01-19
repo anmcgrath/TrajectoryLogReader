@@ -1,9 +1,8 @@
-using TrajectoryLogReader.LogStatistics;
 using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Log.Axes
 {
-    public class MlcLeafAxisAccessor : IAxisAccessor
+    public class MlcLeafAxisAccessor : AxisAccessorBase
     {
         private readonly TrajectoryLog _log;
         private readonly int _bankIndex;
@@ -11,7 +10,7 @@ namespace TrajectoryLogReader.Log.Axes
         private readonly int _startIndex;
         private readonly int _endIndex;
         private readonly AxisScale _targetScale;
-        public int TimeInMs => (_endIndex - _startIndex) * _log.Header.SamplingIntervalInMS;
+        public override int TimeInMs => (_endIndex - _startIndex) * _log.Header.SamplingIntervalInMS;
 
         public int BankIndex => _bankIndex;
         public int LeafIndex => _leafIndex;
@@ -29,7 +28,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _expected;
 
-        public IEnumerable<float> ExpectedValues
+        public override IEnumerable<float> ExpectedValues
         {
             get
             {
@@ -53,7 +52,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _actual;
 
-        public IEnumerable<float> ActualValues
+        public override IEnumerable<float> ActualValues
         {
             get
             {
@@ -77,7 +76,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _errors;
 
-        public IEnumerable<float> ErrorValues
+        public override IEnumerable<float> ErrorValues
         {
             get
             {
@@ -104,24 +103,9 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
-        public IAxisAccessor WithScale(AxisScale scale)
+        public override IAxisAccessor WithScale(AxisScale scale)
         {
             return new MlcLeafAxisAccessor(_log, _bankIndex, _leafIndex, _startIndex, _endIndex, scale);
-        }
-
-        public float RootMeanSquareError()
-        {
-            return Statistics.CalculateRootMeanSquareError(ErrorValues);
-        }
-
-        public float MaxError()
-        {
-            return Statistics.CalculateMaxError(ErrorValues);
-        }
-
-        public Histogram ErrorHistogram(int nBins = 20)
-        {
-            return Histogram.FromData(ErrorValues.ToArray(), nBins);
         }
 
         public IAxisAccessor GetVelocity()

@@ -5,7 +5,7 @@ using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Log.Axes
 {
-    internal class AxisAccessor : IAxisAccessor
+    internal class AxisAccessor : AxisAccessorBase
     {
         private readonly TrajectoryLog _log;
         private readonly Axis _axis;
@@ -16,7 +16,7 @@ namespace TrajectoryLogReader.Log.Axes
         /// <summary>
         /// The time (in ms) for this data
         /// </summary>
-        public int TimeInMs => (_endIndex - _startIndex) * _log.Header.SamplingIntervalInMS;
+        public override int TimeInMs => (_endIndex - _startIndex) * _log.Header.SamplingIntervalInMS;
 
         public AxisAccessor(TrajectoryLog log, Axis axis, int startIndex, int endIndex, AxisScale? targetScale = null)
         {
@@ -29,7 +29,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _expected;
 
-        public IEnumerable<float> ExpectedValues
+        public override IEnumerable<float> ExpectedValues
         {
             get
             {
@@ -53,7 +53,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _actual;
 
-        public IEnumerable<float> ActualValues
+        public override IEnumerable<float> ActualValues
         {
             get
             {
@@ -77,7 +77,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         private float[]? _deltas;
 
-        public IEnumerable<float> ErrorValues
+        public override IEnumerable<float> ErrorValues
         {
             get
             {
@@ -118,24 +118,9 @@ namespace TrajectoryLogReader.Log.Axes
             }
         }
 
-        public IAxisAccessor WithScale(AxisScale scale)
+        public override IAxisAccessor WithScale(AxisScale scale)
         {
             return new AxisAccessor(_log, _axis, _startIndex, _endIndex, scale);
-        }
-
-        public float RootMeanSquareError()
-        {
-            return Statistics.CalculateRootMeanSquareError(ErrorValues);
-        }
-
-        public float MaxError()
-        {
-            return Statistics.CalculateMaxError(ErrorValues);
-        }
-
-        public Histogram ErrorHistogram(int nBins = 20)
-        {
-            return Histogram.FromData(ErrorValues.ToArray(), nBins);
         }
 
         private float Normalize(float value, float period)
