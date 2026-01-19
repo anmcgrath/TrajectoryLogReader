@@ -1,11 +1,11 @@
 ﻿using TrajectoryLogReader.Util;
 
-namespace TrajectoryLogReader.Log;
+namespace TrajectoryLogReader.Log.Snapshots;
 
 /// <summary>
 /// Represents a single scalar value record (e.g., Gantry angle, Couch position) from the log.
 /// </summary>
-public class ScalarRecord
+public class ScalarRecord : IScalarRecord
 {
     private readonly int _measIndex;
     private readonly TrajectoryLog _log;
@@ -20,12 +20,7 @@ public class ScalarRecord
         _targetScale = targetScale;
     }
 
-    /// <summary>
-    /// Creates a new ScalarRecord with values converted to the specified scale.
-    /// </summary>
-    /// <param name="scale">The target scale for value conversion.</param>
-    /// <returns>A new ScalarRecord configured to return values in the specified scale.</returns>
-    public ScalarRecord WithScale(AxisScale scale)
+    public IScalarRecord WithScale(AxisScale scale)
     {
         return new ScalarRecord(_log, _axis, _measIndex, scale);
     }
@@ -36,33 +31,19 @@ public class ScalarRecord
     private AxisScale SourceScale => _log.Header.AxisScale;
     private AxisScale EffectiveScale => _targetScale ?? SourceScale;
 
-    /// <summary>
-    /// The expected position of the axis (in target scale if WithScale was called, otherwise native scale).
-    /// </summary>
     public float Expected => _targetScale.HasValue
         ? Scale.Convert(SourceScale, _targetScale.Value, _axis, RawExpected)
         : RawExpected;
 
-    /// <summary>
-    /// The actual position of the axis (in target scale if WithScale was called, otherwise native scale).
-    /// </summary>
     public float Actual => _targetScale.HasValue
         ? Scale.Convert(SourceScale, _targetScale.Value, _axis, RawActual)
         : RawActual;
 
-    /// <summary>
-    /// Returns the scalar record of type <paramref name="type"/>
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
     public float GetRecord(RecordType type)
     {
         return type == RecordType.ExpectedPosition ? Expected : Actual;
     }
 
-    /// <summary>
-    /// Actual - Expected (computed in effective scale with proper normalization for rotational axes)
-    /// </summary>
     public float Error => Scale.Delta(EffectiveScale, Expected, EffectiveScale, Actual, _axis);
 
     /// <summary>

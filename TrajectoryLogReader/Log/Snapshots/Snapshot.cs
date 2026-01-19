@@ -29,11 +29,11 @@ public class Snapshot
     /// <summary>
     /// Collimator rotation angle (in degrees)
     /// </summary>
-    public ScalarRecord CollRtn
+    public IScalarRecord CollRtn
     {
         get
         {
-            field ??= new(_log, Axis.CollRtn, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.CollRtn, _measIndex);
             return field;
         }
     }
@@ -41,11 +41,11 @@ public class Snapshot
     /// <summary>
     /// Gantry rotation angle (in degrees)
     /// </summary>
-    public ScalarRecord GantryRtn
+    public IScalarRecord GantryRtn
     {
         get
         {
-            field ??= new(_log, Axis.GantryRtn, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.GantryRtn, _measIndex);
             return field;
         }
     }
@@ -53,11 +53,11 @@ public class Snapshot
     /// <summary>
     /// Y1 jaw position (in cm)
     /// </summary>
-    public ScalarRecord Y1
+    public IScalarRecord Y1
     {
         get
         {
-            field ??= new(_log, Axis.Y1, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.Y1, _measIndex);
             return field;
         }
     }
@@ -65,11 +65,11 @@ public class Snapshot
     /// <summary>
     /// Y2 jaw position (in cm)
     /// </summary>
-    public ScalarRecord Y2
+    public IScalarRecord Y2
     {
         get
         {
-            field ??= new(_log, Axis.Y2, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.Y2, _measIndex);
             return field;
         }
     }
@@ -77,11 +77,11 @@ public class Snapshot
     /// <summary>
     /// X1 jaw position (in cm)
     /// </summary>
-    public ScalarRecord X1
+    public IScalarRecord X1
     {
         get
         {
-            field ??= new(_log, Axis.X1, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.X1, _measIndex);
             return field;
         }
     }
@@ -89,11 +89,11 @@ public class Snapshot
     /// <summary>
     /// X2 jaw position (in cm)
     /// </summary>
-    public ScalarRecord X2
+    public IScalarRecord X2
     {
         get
         {
-            field ??= new(_log, Axis.X2, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.X2, _measIndex);
             return field;
         }
     }
@@ -101,11 +101,11 @@ public class Snapshot
     /// <summary>
     /// Couch vertical position (in cm)
     /// </summary>
-    public ScalarRecord CouchVrt
+    public IScalarRecord CouchVrt
     {
         get
         {
-            field ??= new(_log, Axis.CouchVrt, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.CouchVrt, _measIndex);
             return (field);
         }
     }
@@ -113,11 +113,11 @@ public class Snapshot
     /// <summary>
     /// Couch longitudinal position (in cm)
     /// </summary>
-    public ScalarRecord CouchLng
+    public IScalarRecord CouchLng
     {
         get
         {
-            field ??= new(_log, Axis.CouchLng, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.CouchLng, _measIndex);
             return field;
         }
     }
@@ -125,11 +125,11 @@ public class Snapshot
     /// <summary>
     /// Couch lateral position (in cm)
     /// </summary>
-    public ScalarRecord CouchLat
+    public IScalarRecord CouchLat
     {
         get
         {
-            field ??= new(_log, Axis.CouchLat, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.CouchLat, _measIndex);
             return field;
         }
     }
@@ -137,11 +137,11 @@ public class Snapshot
     /// <summary>
     /// Couch rotation angle (in degrees)
     /// </summary>
-    public ScalarRecord CouchRtn
+    public IScalarRecord CouchRtn
     {
         get
         {
-            field ??= new(_log, Axis.CouchRtn, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.CouchRtn, _measIndex);
             return field;
         }
     }
@@ -149,11 +149,11 @@ public class Snapshot
     /// <summary>
     /// Couch pitch angle (in degrees).
     /// </summary>
-    public ScalarRecord CouchPitch
+    public IScalarRecord CouchPitch
     {
         get
         {
-            field ??= new(_log, Axis.CouchPitch, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.CouchPitch, _measIndex);
             return field;
         }
     }
@@ -161,11 +161,11 @@ public class Snapshot
     /// <summary>
     /// Couch roll angle (in degrees).
     /// </summary>
-    public ScalarRecord CouchRoll
+    public IScalarRecord CouchRoll
     {
         get
         {
-            field ??= new(_log, Axis.CouchRoll, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.CouchRoll, _measIndex);
             return field;
         }
     }
@@ -173,11 +173,11 @@ public class Snapshot
     /// <summary>
     /// Monitor units delivered.
     /// </summary>
-    public ScalarRecord MU
+    public IScalarRecord MU
     {
         get
         {
-            field ??= new(_log, Axis.MU, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.MU, _measIndex);
             return field;
         }
     }
@@ -185,11 +185,11 @@ public class Snapshot
     /// <summary>
     /// Beam hold status.
     /// </summary>
-    public ScalarRecord BeamHold
+    public IScalarRecord BeamHold
     {
         get
         {
-            field ??= new(_log, Axis.BeamHold, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.BeamHold, _measIndex);
             return field;
         }
     }
@@ -197,11 +197,11 @@ public class Snapshot
     /// <summary>
     /// Current control point index.
     /// </summary>
-    public ScalarRecord ControlPoint
+    public IScalarRecord ControlPoint
     {
         get
         {
-            field ??= new(_log, Axis.ControlPoint, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.ControlPoint, _measIndex);
             return field;
         }
     }
@@ -209,11 +209,11 @@ public class Snapshot
     /// <summary>
     /// Target position.
     /// </summary>
-    public ScalarRecord TargetPosition
+    public IScalarRecord TargetPosition
     {
         get
         {
-            field ??= new(_log, Axis.TargetPosition, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.TargetPosition, _measIndex);
             return field;
         }
     }
@@ -221,11 +221,11 @@ public class Snapshot
     /// <summary>
     /// Tracking target position.
     /// </summary>
-    public ScalarRecord TrackingTarget
+    public IScalarRecord TrackingTarget
     {
         get
         {
-            field ??= new(_log, Axis.TrackingTarget, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.TrackingTarget, _measIndex);
             return field;
         }
     }
@@ -233,11 +233,11 @@ public class Snapshot
     /// <summary>
     /// Tracking phase.
     /// </summary>
-    public ScalarRecord TrackingPhase
+    public IScalarRecord TrackingPhase
     {
         get
         {
-            field ??= new(_log, Axis.TrackingPhase, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.TrackingPhase, _measIndex);
             return field;
         }
     }
@@ -245,11 +245,11 @@ public class Snapshot
     /// <summary>
     /// Tracking base position.
     /// </summary>
-    public ScalarRecord TrackingBase
+    public IScalarRecord TrackingBase
     {
         get
         {
-            field ??= new(_log, Axis.TrackingBase, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.TrackingBase, _measIndex);
             return field;
         }
     }
@@ -257,11 +257,23 @@ public class Snapshot
     /// <summary>
     /// Tracking conformity index.
     /// </summary>
-    public ScalarRecord TrackingConformityIndex
+    public IScalarRecord TrackingConformityIndex
     {
         get
         {
-            field ??= new(_log, Axis.TrackingConformityIndex, _measIndex);
+            field ??= new ScalarRecord(_log, Axis.TrackingConformityIndex, _measIndex);
+            return field;
+        }
+    }
+
+    /// <summary>
+    /// The change in MU between this snapshot and the last
+    /// </summary>
+    public IScalarRecord DeltaMu
+    {
+        get
+        {
+            field ??= new DeltaMuRecord(_log, Axis.MU, _measIndex);
             return field;
         }
     }
@@ -283,7 +295,7 @@ public class Snapshot
     /// </summary>
     /// <param name="axis">The axis to retrieve.</param>
     /// <returns>The scalar record for the axis.</returns>
-    public ScalarRecord GetScalarRecord(Axis axis)
+    public IScalarRecord GetScalarRecord(Axis axis)
     {
         if (axis == Axis.MLC)
             throw new Exception($"Cannot get scalar record for MLC. Use MLC to get MLC data.");
