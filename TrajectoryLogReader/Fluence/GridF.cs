@@ -442,7 +442,14 @@ public class GridF
                     float area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
                     if (area > 0)
                     {
-                        Data[rowOffset + col] += value * area;
+                        if (area >= 0.999999f)
+                        {
+                            Data[rowOffset + col] += value;
+                        }
+                        else
+                        {
+                            Data[rowOffset + col] += value * area;
+                        }
                     }
                 }
 
@@ -452,7 +459,14 @@ public class GridF
                     float area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
                     if (area > 0)
                     {
-                        Data[rowOffset + col] += value * area;
+                        if (area >= 0.999999f)
+                        {
+                            Data[rowOffset + col] += value;
+                        }
+                        else
+                        {
+                            Data[rowOffset + col] += value * area;
+                        }
                     }
                 }
             }
@@ -489,7 +503,10 @@ public class GridF
         float x0 = col, x1 = col + 1;
         float y0 = row, y1 = row + 1;
 
-        // A point (x,y) is inside if edgeA[i]*x + edgeB[i]*y + edgeC[i] >= 0 for all edges
+        // Small epsilon to handle floating-point precision issues at polygon boundaries
+        const float epsilon = 1e-5f;
+
+        // A point (x,y) is inside if edgeA[i]*x + edgeB[i]*y + edgeC[i] >= -epsilon for all edges
         for (int i = 0; i < 4; i++)
         {
             float a = edgeA[i];
@@ -497,10 +514,10 @@ public class GridF
             float c = edgeC[i];
 
             // Check all 4 corners - if any is outside this edge, pixel is not fully inside
-            if (a * x0 + b * y0 + c < 0) return false;
-            if (a * x1 + b * y0 + c < 0) return false;
-            if (a * x0 + b * y1 + c < 0) return false;
-            if (a * x1 + b * y1 + c < 0) return false;
+            if (a * x0 + b * y0 + c < -epsilon) return false;
+            if (a * x1 + b * y0 + c < -epsilon) return false;
+            if (a * x0 + b * y1 + c < -epsilon) return false;
+            if (a * x1 + b * y1 + c < -epsilon) return false;
         }
 
         return true;
