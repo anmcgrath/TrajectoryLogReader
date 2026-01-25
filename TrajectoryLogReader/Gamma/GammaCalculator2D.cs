@@ -6,7 +6,7 @@ namespace TrajectoryLogReader.Gamma;
 /// <summary>
 /// Calculates 2D Gamma index between two fluence maps.
 /// </summary>
-public class GammaCalculator2D
+public static class GammaCalculator2D
 {
     /// <summary>
     /// Perform a gamma comparison between two field fluences.
@@ -15,7 +15,7 @@ public class GammaCalculator2D
     /// <param name="reference">Reference fluence.</param>
     /// <param name="compared">Compared fluence.</param>
     /// <returns>Gamma result.</returns>
-    public GammaResult2D Calculate(GammaParameters2D parameters, FieldFluence reference, FieldFluence compared)
+    public static GammaResult2D Calculate(GammaParameters2D parameters, FieldFluence reference, FieldFluence compared)
     {
         return Calculate(parameters, new FluenceGridWrapper(reference.Grid), new FluenceGridWrapper(compared.Grid));
     }
@@ -27,7 +27,7 @@ public class GammaCalculator2D
     /// <param name="reference">The reference grid</param>
     /// <param name="compared">The grid that will be compared to the <paramref name="reference"/></param>
     /// <returns></returns>
-    public GammaResult2D Calculate(GammaParameters2D parameters, IGrid<float> reference, IGrid<float> compared)
+    public static GammaResult2D Calculate(GammaParameters2D parameters, IGrid<float> reference, IGrid<float> compared)
     {
         var ctx = InitializeContext(parameters, reference, compared);
 
@@ -89,15 +89,14 @@ public class GammaCalculator2D
         public double DtaCriteriaSq;
     }
 
-    private GammaContext InitializeContext(GammaParameters2D parameters, IGrid<float> reference, IGrid<float> compared)
+    private static GammaContext InitializeContext(GammaParameters2D parameters, IGrid<float> reference, IGrid<float> compared)
     {
         var searchRadMm = parameters.SearchRadius ?? parameters.DtaTolMm * 2;
-        var xSearchRes = parameters.DtaTolMm / parameters.SamplingRate;
-        var ySearchRes = parameters.DtaTolMm / parameters.SamplingRate;
 
-        // ensure we don't run out of memory
-        xSearchRes = Math.Max(xSearchRes, compared.XRes / 20);
-        ySearchRes = Math.Max(ySearchRes, compared.YRes / 20);
+        var samplingRate = Math.Min(parameters.SamplingRate, 10);
+
+        var xSearchRes = parameters.DtaTolMm / samplingRate;
+        var ySearchRes = parameters.DtaTolMm / samplingRate;
 
         // Calculate resampling multipliers
         // mx or my = the number of spaces between original dose points
@@ -158,7 +157,7 @@ public class GammaCalculator2D
     /// Pre-compute interpolation indices and weights for the resampled grid.
     /// This avoids expensive division and bounds checking in the inner loop.
     /// </summary>
-    private void ComputeInterpolationWeights(ref GammaContext ctx, IGrid<float> reference)
+    private static void ComputeInterpolationWeights(ref GammaContext ctx, IGrid<float> reference)
     {
         var refCols = reference.Cols;
         var refRows = reference.Rows;
@@ -212,7 +211,7 @@ public class GammaCalculator2D
     /// Pre-calculate the start/end column bounds for both the resampled and compared grids.
     /// This optimization limits the costly interpolation to only points relevant for comparison.
     /// </summary>
-    private void ComputeColumnBounds(ref GammaContext ctx, IGrid<float> compared)
+    private static void ComputeColumnBounds(ref GammaContext ctx, IGrid<float> compared)
     {
         // Initialize bounds arrays
         for (int k = 0; k < ctx.ResampledSizeY; k++)
@@ -275,7 +274,7 @@ public class GammaCalculator2D
     /// <summary>
     /// Resample the reference grid using pre-computed interpolation weights.
     /// </summary>
-    private void ResampleReferenceGrid(ref GammaContext ctx, IGrid<float> reference)
+    private static void ResampleReferenceGrid(ref GammaContext ctx, IGrid<float> reference)
     {
         var refData = ctx.RefData;
         var refCols = ctx.RefCols;
@@ -335,7 +334,7 @@ public class GammaCalculator2D
     /// <summary>
     /// Compute gamma values for all points above threshold.
     /// </summary>
-    private (double fracPass, GridF gammaGrid) ComputeGammaValues(
+    private static (double fracPass, GridF gammaGrid) ComputeGammaValues(
         ref GammaContext ctx,
         GammaParameters2D parameters,
         IGrid<float> compared)
@@ -390,8 +389,8 @@ public class GammaCalculator2D
                     {
                         // Early termination: offsets are sorted by distance
                         double distComponent = offset.DistSquared / dtaCriteriaSq;
-                        if (!double.IsNaN(minGammaSquared) && distComponent >= minGammaSquared)
-                            break;
+                        //if (!double.IsNaN(minGammaSquared) && distComponent >= minGammaSquared)
+                        //    break;
 
                         var xiRef = offset.XIndexOffset + xi * mx;
                         var yiRef = offset.YIndexOffset + yi * my;
