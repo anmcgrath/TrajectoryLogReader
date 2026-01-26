@@ -6,7 +6,7 @@ namespace TrajectoryLogReader.Extensions;
 /// <summary>
 /// Extension methods for saving fluence data to files.
 /// </summary>
-public static class FluenceIO
+public static class FluenceIOExtensions
 {
     /// <summary>
     /// Saves the fluence grid to a Tab-Separated Values (TSV) file.
