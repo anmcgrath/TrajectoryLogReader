@@ -32,7 +32,19 @@ public static class LogReader
     private const string ExpectedSignature = "VOSTL";
 
     /// <summary>
-    /// Reads a binary (*.bin) trajectory log file (Varian) asynchronously.
+    /// Expected file signature prefix for compressed trajectory log files.
+    /// </summary>
+    private const string CompressedSignature = "VOSTLC";
+
+    /// <summary>
+    /// GZip magic bytes for auto-detection.
+    /// </summary>
+    private const byte GzipMagic1 = 0x1F;
+    private const byte GzipMagic2 = 0x8B;
+
+    /// <summary>
+    /// Reads a trajectory log file (Varian) asynchronously.
+    /// Automatically detects compressed (.cbin) vs uncompressed (.bin) format.
     /// </summary>
     /// <param name="filePath">The log file path</param>
     /// <param name="mode">If set to HeaderAndMetaData, the reader does not read log data, only the header and metadata.</param>
@@ -54,6 +66,12 @@ public static class LogReader
             throw new InvalidDataException(
                 $"File size ({fileInfo.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
 
+        // Check if compressed format
+        if (await IsCompressedFormatAsync(filePath))
+        {
+            return await CompressedLogReader.ReadAsync(filePath);
+        }
+
         using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
         var log = await ReadBinaryAsync(fs, mode);
         log.FilePath = filePath;
@@ -61,7 +79,8 @@ public static class LogReader
     }
 
     /// <summary>
-    /// Reads a binary (*.bin) trajectory log file (Varian).
+    /// Reads a trajectory log file (Varian).
+    /// Automatically detects compressed (.cbin) vs uncompressed (.bin) format.
     /// </summary>
     /// <param name="filePath">The log file path</param>
     /// <param name="mode">If set to HeaderAndMetaData, the reader does not read log data, only the header and metadata.</param>
@@ -82,6 +101,12 @@ public static class LogReader
             throw new InvalidDataException(
                 $"File size ({fileInfo.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
 
+        // Check if compressed format
+        if (IsCompressedFormat(filePath))
+        {
+            return CompressedLogReader.Read(filePath);
+        }
+
         using var fs = File.OpenRead(filePath);
         var log = ReadBinary(fs, mode);
         log.FilePath = filePath;
@@ -89,9 +114,10 @@ public static class LogReader
     }
 
     /// <summary>
-    /// Reads a binary (*.bin) trajectory log file (Varian) from a stream.
+    /// Reads a trajectory log file (Varian) from a stream.
+    /// Automatically detects compressed vs uncompressed format.
     /// </summary>
-    /// <param name="stream">The stream to read from.</param>
+    /// <param name="stream">The stream to read from (must be seekable).</param>
     /// <param name="mode">If set to HeaderAndMetaData, the reader does not read log data, only the header and metadata.</param>
     /// <returns>The parsed trajectory log.</returns>
     /// <exception cref="ArgumentNullException">Thrown when stream is null.</exception>
@@ -100,11 +126,19 @@ public static class LogReader
     {
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
+
+        // Check if compressed format (resets stream position)
+        if (IsCompressedFormat(stream))
+        {
+            return CompressedLogReader.Read(stream);
+        }
+
         return ParseFromStream(stream, mode);
     }
 
     /// <summary>
-    /// Reads a binary (*.bin) trajectory log file (Varian) from a stream asynchronously.
+    /// Reads a trajectory log file (Varian) from a stream asynchronously.
+    /// Automatically detects compressed vs uncompressed format.
     /// </summary>
     /// <param name="stream">The stream to read from.</param>
     /// <param name="mode">If set to HeaderAndMetaData, the reader does not read log data, only the header and metadata.</param>
@@ -128,6 +162,13 @@ public static class LogReader
                 $"Stream size ({ms.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
 
         ms.Position = 0;
+
+        // Check if compressed format (resets stream position)
+        if (IsCompressedFormat(ms))
+        {
+            return CompressedLogReader.Read(ms);
+        }
+
         return ParseFromStream(ms, mode);
     }
 
@@ -238,5 +279,67 @@ public static class LogReader
         }
 
         return log;
+    }
+
+    /// <summary>
+    /// Checks if a file is in compressed format by reading its signature.
+    /// Detects both VOSTLC signature and GZip-wrapped compressed files.
+    /// </summary>
+    private static bool IsCompressedFormat(string filePath)
+    {
+        using var fs = File.OpenRead(filePath);
+        return IsCompressedFormat(fs);
+    }
+
+    /// <summary>
+    /// Checks if a file is in compressed format by reading its signature asynchronously.
+    /// </summary>
+    private static async Task<bool> IsCompressedFormatAsync(string filePath)
+    {
+        using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
+        var buffer = new byte[SignatureSize];
+        var bytesRead = await fs.ReadAsync(buffer, 0, SignatureSize);
+        if (bytesRead < 2)
+            return false;
+
+        // Check for GZip magic bytes
+        if (buffer[0] == GzipMagic1 && buffer[1] == GzipMagic2)
+            return true;
+
+        // Check for VOSTLC signature
+        if (bytesRead >= CompressedSignature.Length)
+        {
+            var sig = Encoding.UTF8.GetString(buffer, 0, CompressedSignature.Length);
+            return sig == CompressedSignature;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if a stream contains compressed format data.
+    /// Stream position is reset after checking.
+    /// </summary>
+    private static bool IsCompressedFormat(Stream stream)
+    {
+        var buffer = new byte[SignatureSize];
+        var bytesRead = stream.Read(buffer, 0, SignatureSize);
+        stream.Position = 0;
+
+        if (bytesRead < 2)
+            return false;
+
+        // Check for GZip magic bytes
+        if (buffer[0] == GzipMagic1 && buffer[1] == GzipMagic2)
+            return true;
+
+        // Check for VOSTLC signature
+        if (bytesRead >= CompressedSignature.Length)
+        {
+            var sig = Encoding.UTF8.GetString(buffer, 0, CompressedSignature.Length);
+            return sig == CompressedSignature;
+        }
+
+        return false;
     }
 }
