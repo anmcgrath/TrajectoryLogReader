@@ -20,12 +20,22 @@ public static class DicomFluenceExtensions
     /// <param name="patientName">Patient Name.</param>
     /// <param name="patientId">Patient ID.</param>
     public static void SaveToDicom(this FieldFluence fluence, string fileName, string patientName, string patientId)
+        => fluence.Grid.SaveToDicom(patientName, patientId, fileName);
+
+    /// <summary>
+    /// Saves the grid as a DICOM RT Image.
+    /// </summary>
+    /// <param name="grid">The grid to save.</param>
+    /// <param name="fileName">The output file name.</param>
+    /// <param name="patientName">Patient Name.</param>
+    /// <param name="patientId">Patient ID.</param>
+    public static void SaveToDicom(this IGrid<float> grid, string fileName, string patientName, string patientId)
     {
-        var fluenceGrid = fluence.Grid.Data;
-        var spacingX = fluence.Grid.XRes;
-        var spacingY = fluence.Grid.YRes;
-        int rows = fluence.Grid.Rows;
-        int cols = fluence.Grid.Cols;
+        var fluenceGrid = grid.Flatten();
+        var spacingX = grid.XRes;
+        var spacingY = grid.YRes;
+        int rows = grid.Rows;
+        int cols = grid.Cols;
 
         // 1. Calculate Scaling (Map float grid to 16-bit unsigned integer)
         float maxVal = fluenceGrid.Cast<float>().Max();

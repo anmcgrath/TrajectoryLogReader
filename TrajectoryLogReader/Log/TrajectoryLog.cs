@@ -222,7 +222,7 @@ namespace TrajectoryLogReader.Log
         }
 
         /// <summary>
-        /// Returns the MLC position (in cm) at the specified time <paramref name="timeInMs"/>
+        /// Returns the MLC position (in cm) at the specified measurement index <paramref name="measIndex"/>
         /// </summary>
         /// <param name="measIndex">The measurement index 0.. number of data points - 1</param>
         /// <param name="recordType"></param>
