@@ -19,7 +19,7 @@ public static class LogReader
     /// <summary>
     /// Size of the metadata block in bytes.
     /// </summary>
-    private const int MetaDataSize = 745;
+    private const int MetaDataSize = LogIOHelper.MetaDataSize;
 
     /// <summary>
     /// Maximum allowed file size (500 MB)
@@ -51,7 +51,8 @@ public static class LogReader
             throw new FileNotFoundException("Trajectory log file not found.", filePath);
 
         if (fileInfo.Length > MaxAllowedFileSize)
-            throw new InvalidDataException($"File size ({fileInfo.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
+            throw new InvalidDataException(
+                $"File size ({fileInfo.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
 
         using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
         var log = await ReadBinaryAsync(fs, mode);
@@ -78,7 +79,8 @@ public static class LogReader
             throw new FileNotFoundException("Trajectory log file not found.", filePath);
 
         if (fileInfo.Length > MaxAllowedFileSize)
-            throw new InvalidDataException($"File size ({fileInfo.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
+            throw new InvalidDataException(
+                $"File size ({fileInfo.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
 
         using var fs = File.OpenRead(filePath);
         var log = ReadBinary(fs, mode);
@@ -122,7 +124,8 @@ public static class LogReader
         await stream.CopyToAsync(ms);
 
         if (ms.Length > MaxAllowedFileSize)
-            throw new InvalidDataException($"Stream size ({ms.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
+            throw new InvalidDataException(
+                $"Stream size ({ms.Length} bytes) exceeds maximum allowed size ({MaxAllowedFileSize} bytes).");
 
         ms.Position = 0;
         return ParseFromStream(ms, mode);
@@ -131,7 +134,7 @@ public static class LogReader
     private static TrajectoryLog ParseFromStream(Stream stream, LogReaderReadMode mode)
     {
         var utf8 = Encoding.UTF8;
-        var log = new TrajectoryLog() { FilePath = null };
+        var log = new TrajectoryLog() { FilePath = string.Empty };
         var header = new Header();
 
         // We keep the stream open as it is managed by the caller (or the async wrapper)
@@ -140,12 +143,14 @@ public static class LogReader
             // First SignatureSize bytes should contain 'VOSTL'
             var sigBytes = br.ReadBytes(SignatureSize);
             if (sigBytes.Length < SignatureSize)
-                throw new EndOfStreamException($"File too short: expected at least {SignatureSize} bytes for signature.");
+                throw new EndOfStreamException(
+                    $"File too short: expected at least {SignatureSize} bytes for signature.");
 
             var sig = utf8.GetString(sigBytes);
 
             if (!sig.StartsWith(ExpectedSignature))
-                throw new InvalidDataException($"Invalid file signature '{sig.TrimEnd('\0')}'. Expected '{ExpectedSignature}'.");
+                throw new InvalidDataException(
+                    $"Invalid file signature '{sig.TrimEnd('\0')}'. Expected '{ExpectedSignature}'.");
 
             var versionBytes = br.ReadBytes(SignatureSize);
             if (versionBytes.Length < SignatureSize)
@@ -190,7 +195,7 @@ public static class LogReader
             log.MlcModel = header.MlcModel == MLCModel.NDS120 ? new Millenium120MLC() : null;
 
             log.Header = header;
-            log.MetaData = ReadMetaData(br.ReadBytes(MetaDataSize), utf8);
+            log.MetaData = LogIOHelper.ReadMetaData(br.ReadBytes(MetaDataSize));
 
             // Skip the data if mode is HeaderAndMetaData
             if (mode == LogReaderReadMode.HeaderAndMetaData)
@@ -206,14 +211,7 @@ public static class LogReader
 
             for (int i = 0; i < header.NumberOfSubBeams; i++)
             {
-                var subBeam = new SubBeam(log);
-                subBeam.ControlPoint = br.ReadInt32();
-                subBeam.MU = br.ReadSingle();
-                subBeam.RadTime = br.ReadSingle();
-                subBeam.SequenceNumber = br.ReadInt32();
-                subBeam.Name = utf8.GetString(br.ReadBytes(512)).Trim().Trim('\t', '\0');
-                br.ReadBytes(32);
-                log.SubBeams.Add(subBeam);
+                log.SubBeams.Add(LogIOHelper.ReadSubBeam(br, log));
             }
 
             log.AxisData = new AxisData[header.NumAxesSampled];
@@ -240,51 +238,5 @@ public static class LogReader
         }
 
         return log;
-    }
-
-    private static MetaData ReadMetaData(byte[] bytes, Encoding strEncoding)
-    {
-        var metaData = new MetaData();
-        var metaDataStr = strEncoding.GetString(bytes);
-        var lines = metaDataStr.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-        foreach (var line in lines)
-        {
-            var lineSplit = line.Split(new[] { ':' }, 2);
-            if (lineSplit.Length < 2)
-                continue; // Skip malformed lines
-
-            var type = lineSplit[0];
-            var val = lineSplit[1];
-
-            switch (type)
-            {
-                case "Patient ID":
-                    metaData.PatientId = val.Trim().Trim('\t', '\0');
-                    break;
-                case "Plan Name":
-                    metaData.PlanName = val.Trim().Trim('\t', '\0');
-                    break;
-                case "Plan UID":
-                    metaData.PlanUID = val.Trim().Trim('\t', '\0');
-                    break;
-                case "Original MU":
-                    if (double.TryParse(val.Trim(), out var muPlanned))
-                        metaData.MUPlanned = muPlanned;
-                    break;
-                case "Remaining MU":
-                    if (double.TryParse(val.Trim(), out var muRemaining))
-                        metaData.MURemaining = muRemaining;
-                    break;
-                case "Energy":
-                    metaData.Energy = val.Trim().Trim('\t', '\0');
-                    break;
-                case "BeamName":
-                    metaData.BeamName = val.Trim().Trim('\t', '\0');
-                    break;
-            }
-        }
-
-        return metaData;
     }
 }

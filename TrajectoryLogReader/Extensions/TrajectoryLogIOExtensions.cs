@@ -163,5 +163,14 @@ public static class TrajectoryLogIOExtensions
         {
             log.SaveToText(fileName, includeHeaders, '\t', scale, axes);
         }
+
+        /// <summary>
+        /// Writes the trajectory log to a compressed format which can be read using the <see cref="CompressedLogReader"/>
+        /// </summary>
+        /// <param name="fileName"></param>
+        public void SaveAsCompressed(string fileName)
+        {
+            CompressedLogWriter.Write(log, fileName, true);
+        }
     }
 }

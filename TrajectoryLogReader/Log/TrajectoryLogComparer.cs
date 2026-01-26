@@ -4,7 +4,7 @@ namespace TrajectoryLogReader.Log;
 /// Compares two TrajectoryLog instances for equality.
 /// Useful for verifying round-trip serialization (read -> write -> read).
 /// </summary>
-public static class TrajectoryLogComparer
+internal static class TrajectoryLogComparer
 {
     /// <summary>
     /// Compares two TrajectoryLog instances and returns a result indicating equality.
@@ -47,7 +47,8 @@ public static class TrajectoryLogComparer
 
         if (expected == null || actual == null)
         {
-            result.AddDifference("Header", $"Expected: {(expected == null ? "null" : "not null")}, Actual: {(actual == null ? "null" : "not null")}");
+            result.AddDifference("Header",
+                $"Expected: {(expected == null ? "null" : "not null")}, Actual: {(actual == null ? "null" : "not null")}");
             return;
         }
 
@@ -82,7 +83,8 @@ public static class TrajectoryLogComparer
         {
             for (int i = 0; i < expected.SamplesPerAxis.Length; i++)
             {
-                CompareValue($"Header.SamplesPerAxis[{i}]", expected.SamplesPerAxis[i], actual.SamplesPerAxis[i], result);
+                CompareValue($"Header.SamplesPerAxis[{i}]", expected.SamplesPerAxis[i], actual.SamplesPerAxis[i],
+                    result);
             }
         }
     }
@@ -94,7 +96,8 @@ public static class TrajectoryLogComparer
 
         if (expected == null || actual == null)
         {
-            result.AddDifference("MetaData", $"Expected: {(expected == null ? "null" : "not null")}, Actual: {(actual == null ? "null" : "not null")}");
+            result.AddDifference("MetaData",
+                $"Expected: {(expected == null ? "null" : "not null")}, Actual: {(actual == null ? "null" : "not null")}");
             return;
         }
 
@@ -107,14 +110,16 @@ public static class TrajectoryLogComparer
         CompareValue("MetaData.BeamName", expected.BeamName, actual.BeamName, result);
     }
 
-    private static void CompareSubBeams(List<SubBeam> expected, List<SubBeam> actual, ComparisonResult result, float tolerance)
+    private static void CompareSubBeams(List<SubBeam> expected, List<SubBeam> actual, ComparisonResult result,
+        float tolerance)
     {
         if (expected == null && actual == null)
             return;
 
         if (expected == null || actual == null)
         {
-            result.AddDifference("SubBeams", $"Expected: {(expected == null ? "null" : "not null")}, Actual: {(actual == null ? "null" : "not null")}");
+            result.AddDifference("SubBeams",
+                $"Expected: {(expected == null ? "null" : "not null")}, Actual: {(actual == null ? "null" : "not null")}");
             return;
         }
 
@@ -137,20 +142,23 @@ public static class TrajectoryLogComparer
         }
     }
 
-    private static void CompareAxisData(TrajectoryLog expected, TrajectoryLog actual, ComparisonResult result, float tolerance)
+    private static void CompareAxisData(TrajectoryLog expected, TrajectoryLog actual, ComparisonResult result,
+        float tolerance)
     {
         if (expected.AxisData == null && actual.AxisData == null)
             return;
 
         if (expected.AxisData == null || actual.AxisData == null)
         {
-            result.AddDifference("AxisData", $"Expected: {(expected.AxisData == null ? "null" : "not null")}, Actual: {(actual.AxisData == null ? "null" : "not null")}");
+            result.AddDifference("AxisData",
+                $"Expected: {(expected.AxisData == null ? "null" : "not null")}, Actual: {(actual.AxisData == null ? "null" : "not null")}");
             return;
         }
 
         if (expected.AxisData.Length != actual.AxisData.Length)
         {
-            result.AddDifference("AxisData.Length", $"Expected: {expected.AxisData.Length}, Actual: {actual.AxisData.Length}");
+            result.AddDifference("AxisData.Length",
+                $"Expected: {expected.AxisData.Length}, Actual: {actual.AxisData.Length}");
             return;
         }
 
@@ -221,7 +229,8 @@ public static class TrajectoryLogComparer
         }
     }
 
-    private static void CompareFloat(string path, float expected, float actual, ComparisonResult result, float tolerance)
+    private static void CompareFloat(string path, float expected, float actual, ComparisonResult result,
+        float tolerance)
     {
         if (Math.Abs(expected - actual) > tolerance)
         {

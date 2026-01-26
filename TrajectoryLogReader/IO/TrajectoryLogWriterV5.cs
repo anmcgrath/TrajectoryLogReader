@@ -31,17 +31,7 @@ public static class TrajectoryLogWriterV5
     /// <summary>
     /// Size of the metadata block in bytes.
     /// </summary>
-    private const int MetaDataSize = 745;
-
-    /// <summary>
-    /// Size of the sub-beam name field in bytes.
-    /// </summary>
-    private const int SubBeamNameSize = 512;
-
-    /// <summary>
-    /// Size of the sub-beam reserved field in bytes.
-    /// </summary>
-    private const int SubBeamReservedSize = 32;
+    private const int MetaDataSize = LogIOHelper.MetaDataSize;
 
     /// <summary>
     /// Writes a TrajectoryLog to a file in Varian binary format (v5.0).
@@ -97,30 +87,22 @@ public static class TrajectoryLogWriterV5
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
 
-        ValidateLog(log);
+        LogIOHelper.ValidateLog(log);
+        ValidateLogV5(log);
 
         using var bw = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
 
         WriteSignatureAndVersion(bw);
         WriteHeader(bw, log.Header);
-        WriteMetaData(bw, log.MetaData);
+        LogIOHelper.WriteMetaData(bw, log.MetaData);
         WriteReservedBytes(bw, log.Header.NumAxesSampled);
         WriteSubBeams(bw, log.SubBeams);
         WriteAxisData(bw, log);
     }
 
-    private static void ValidateLog(TrajectoryLog log)
+    private static void ValidateLogV5(TrajectoryLog log)
     {
-        if (log.Header == null)
-            throw new InvalidOperationException("TrajectoryLog.Header cannot be null.");
-        if (log.MetaData == null)
-            throw new InvalidOperationException("TrajectoryLog.MetaData cannot be null.");
-        if (log.AxisData == null)
-            throw new InvalidOperationException("TrajectoryLog.AxisData cannot be null.");
-        if (log.Header.AxesSampled == null)
-            throw new InvalidOperationException("Header.AxesSampled cannot be null.");
-        if (log.Header.SamplesPerAxis == null)
-            throw new InvalidOperationException("Header.SamplesPerAxis cannot be null.");
+        // Additional V5-specific validation
         if (log.Header.NumAxesSampled != log.Header.AxesSampled.Length)
             throw new InvalidOperationException("Header.NumAxesSampled must match AxesSampled.Length.");
         if (log.Header.NumAxesSampled != log.Header.SamplesPerAxis.Length)
@@ -163,33 +145,6 @@ public static class TrajectoryLogWriterV5
         bw.Write((int)header.MlcModel);
     }
 
-    private static void WriteMetaData(BinaryWriter bw, MetaData metaData)
-    {
-        var sb = new StringBuilder();
-
-        if (!string.IsNullOrEmpty(metaData.PatientId))
-            sb.Append($"Patient ID:{metaData.PatientId}\r\n");
-        if (!string.IsNullOrEmpty(metaData.PlanName))
-            sb.Append($"Plan Name:{metaData.PlanName}\r\n");
-        if (!string.IsNullOrEmpty(metaData.PlanUID))
-            sb.Append($"Plan UID:{metaData.PlanUID}\r\n");
-        if (metaData.MUPlanned > 0)
-            sb.Append($"Original MU:{metaData.MUPlanned}\r\n");
-        if (metaData.MURemaining > 0)
-            sb.Append($"Remaining MU:{metaData.MURemaining}\r\n");
-        if (!string.IsNullOrEmpty(metaData.Energy))
-            sb.Append($"Energy:{metaData.Energy}\r\n");
-        if (!string.IsNullOrEmpty(metaData.BeamName))
-            sb.Append($"BeamName:{metaData.BeamName}\r\n");
-
-        var metaBytes = new byte[MetaDataSize];
-        var metaStr = sb.ToString();
-        if (metaStr.Length > 0)
-            Encoding.UTF8.GetBytes(metaStr, 0, Math.Min(metaStr.Length, MetaDataSize), metaBytes, 0);
-
-        bw.Write(metaBytes);
-    }
-
     private static void WriteReservedBytes(BinaryWriter bw, int numAxesSampled)
     {
         // Calculate reserved bytes needed to reach header offset 1024
@@ -203,22 +158,7 @@ public static class TrajectoryLogWriterV5
     {
         foreach (var subBeam in subBeams)
         {
-            bw.Write(subBeam.ControlPoint);
-            bw.Write(subBeam.MU);
-            bw.Write(subBeam.RadTime);
-            bw.Write(subBeam.SequenceNumber);
-
-            // Write name (512 bytes, null-padded)
-            var nameBytes = new byte[SubBeamNameSize];
-            if (!string.IsNullOrEmpty(subBeam.Name))
-            {
-                var nameStr = subBeam.Name;
-                Encoding.UTF8.GetBytes(nameStr, 0, Math.Min(nameStr.Length, SubBeamNameSize), nameBytes, 0);
-            }
-            bw.Write(nameBytes);
-
-            // Write reserved bytes (32 bytes)
-            bw.Write(new byte[SubBeamReservedSize]);
+            LogIOHelper.WriteSubBeam(bw, subBeam);
         }
     }
 
