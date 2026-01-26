@@ -9,18 +9,6 @@ namespace TrajectoryLogReader.Gamma;
 public static class GammaCalculator2D
 {
     /// <summary>
-    /// Perform a gamma comparison between two field fluences.
-    /// </summary>
-    /// <param name="parameters">Gamma parameters.</param>
-    /// <param name="reference">Reference fluence.</param>
-    /// <param name="compared">Compared fluence.</param>
-    /// <returns>Gamma result.</returns>
-    public static GammaResult2D Calculate(GammaParameters2D parameters, FieldFluence reference, FieldFluence compared)
-    {
-        return Calculate(parameters, new FluenceGridWrapper(reference.Grid), new FluenceGridWrapper(compared.Grid));
-    }
-
-    /// <summary>
     /// Perform a gamma comparison between two grids.
     /// </summary>
     /// <param name="parameters">The gamma parameters used for the comparison.</param>
@@ -89,7 +77,8 @@ public static class GammaCalculator2D
         public double DtaCriteriaSq;
     }
 
-    private static GammaContext InitializeContext(GammaParameters2D parameters, IGrid<float> reference, IGrid<float> compared)
+    private static GammaContext InitializeContext(GammaParameters2D parameters, IGrid<float> reference,
+        IGrid<float> compared)
     {
         var searchRadMm = parameters.SearchRadius ?? parameters.DtaTolMm * 2;
 
@@ -117,11 +106,11 @@ public static class GammaCalculator2D
         // Build resampled coordinate arrays
         var resampledX = new double[resampledSizeX];
         for (int i = 0; i < resampledSizeX; i++)
-            resampledX[i] = compared.XMin + i * xSearchRes;
+            resampledX[i] = compared.Bounds.X + i * xSearchRes;
 
         var resampledY = new double[resampledSizeY];
         for (int i = 0; i < resampledSizeY; i++)
-            resampledY[i] = compared.YMin + i * ySearchRes;
+            resampledY[i] = compared.Bounds.Y + i * ySearchRes;
 
         return new GammaContext
         {
@@ -142,7 +131,7 @@ public static class GammaCalculator2D
             YIndices = new int[resampledSizeY],
             YWeights = new double[resampledSizeY],
             RefCols = reference.Cols,
-            RefData = reference is FluenceGridWrapper wrapper ? wrapper.Data : null,
+            RefData = reference.Flatten(),
             MinCol = new int[resampledSizeY],
             MaxCol = new int[resampledSizeY],
             ComparedMinCol = new int[compared.Rows],
@@ -161,8 +150,8 @@ public static class GammaCalculator2D
     {
         var refCols = reference.Cols;
         var refRows = reference.Rows;
-        var refXMin = reference.XMin;
-        var refYMin = reference.YMin;
+        var refXMin = reference.Bounds.X;
+        var refYMin = reference.Bounds.Y;
         var refXRes = reference.XRes;
         var refYRes = reference.YRes;
 
@@ -238,7 +227,7 @@ public static class GammaCalculator2D
             // Find min/max xi in this row where dose > threshold
             for (int xi = 0; xi < compared.Cols; xi++)
             {
-                if (compared.GetValue(xi, yi) >= ctx.ThreshDose)
+                if (compared.GetData(xi, yi) >= ctx.ThreshDose)
                 {
                     if (minXi == -1) minXi = xi;
                     maxXi = xi;
@@ -340,8 +329,7 @@ public static class GammaCalculator2D
         IGrid<float> compared)
     {
         var gammaGrid = new GridF(
-            compared.XMax - compared.XMin,
-            compared.YMax - compared.YMin,
+            compared.Bounds,
             compared.Cols,
             compared.Rows);
 
@@ -367,7 +355,7 @@ public static class GammaCalculator2D
         var dtaCriteriaSq = ctx.DtaCriteriaSq;
         var isGlobal = parameters.Global;
 
-        Parallel.For(0, compared.Rows, () => (0, 0), (yi, loopState, localCounters) =>
+        Parallel.For(0, compared.Rows, () => (0, 0), (yi, _, localCounters) =>
             {
                 if (comparedMinCol[yi] > comparedMaxCol[yi]) return localCounters;
 
@@ -377,7 +365,7 @@ public static class GammaCalculator2D
 
                 for (int xi = startXi; xi <= endXi; xi++)
                 {
-                    var comparedDose = compared.GetValue(xi, yi);
+                    var comparedDose = compared.GetData(xi, yi);
 
                     if (comparedDose < threshDose)
                         continue;

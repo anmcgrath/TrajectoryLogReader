@@ -15,7 +15,7 @@ public class GammaTests
         FillGrid(g2, 100.5f); // half a prcnt higher
         var gParams = new GammaParameters2D(1, 1, true, 10);
         var res = GammaCalculator2D
-            .Calculate(gParams, new FluenceGridWrapper(g1), new FluenceGridWrapper(g2));
+            .Calculate(gParams, g1, g2);
         res.FracPass.ShouldBe(1);
 
         var diff = 100 * (100.5 - 100) / 100.5;

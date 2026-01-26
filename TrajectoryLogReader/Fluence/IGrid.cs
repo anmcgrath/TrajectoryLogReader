@@ -23,24 +23,9 @@ public interface IGrid<T>
     double YRes { get; }
 
     /// <summary>
-    /// Smallest x position
+    /// The grid dimensions
     /// </summary>
-    double XMin { get; }
-
-    /// <summary>
-    /// Largest x position
-    /// </summary>
-    double XMax { get; }
-
-    /// <summary>
-    /// Smallest y position
-    /// </summary>
-    double YMin { get; }
-
-    /// <summary>
-    /// Largest y position
-    /// </summary>
-    double YMax { get; }
+    Rect Bounds { get; }
 
     /// <summary>
     /// The max value
@@ -63,7 +48,7 @@ public interface IGrid<T>
     /// <param name="row"></param>
     /// <param name="col"></param>
     /// <returns></returns>
-    T GetValue(int row, int col);
+    T GetData(int row, int col);
 
     /// <summary>
     /// Returns the x value at col <paramref name="col"/>
@@ -78,14 +63,6 @@ public interface IGrid<T>
     /// <param name="row"></param>
     /// <returns></returns>
     double GetY(int row);
-
-    /// <summary>
-    /// Whether (x,y) is inside the grid
-    /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <returns></returns>
-    bool Contains(double x, double y);
 
     /// <summary>
     /// Returns the data as a flat array row by row

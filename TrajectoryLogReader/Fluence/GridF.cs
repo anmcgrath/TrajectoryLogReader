@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 /// <summary>
 /// A dense 2D grid of floating point values.
 /// </summary>
-public class GridF
+public class GridF : IGrid<float>
 {
     /// <summary>
     /// Total width of the grid in physical units (mm).
@@ -50,6 +50,12 @@ public class GridF
     /// Access data with flat index [row * Cols + col].
     /// </summary>
     public float[] Data { get; }
+
+    /// <summary>
+    /// The maximum value in the grid
+    /// </summary>
+    /// <returns></returns>
+    public float Max() => Data.Max();
 
     /// <summary>
     /// Gets or sets the data value at the specified row and column.
@@ -99,6 +105,8 @@ public class GridF
     {
         return Bounds.Y + row * YRes;
     }
+
+    public float[] Flatten() => Data;
 
     /// <summary>
     /// Returns the data value at the specified column and row.
