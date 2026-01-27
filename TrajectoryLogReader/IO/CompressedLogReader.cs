@@ -126,11 +126,15 @@ public static class CompressedLogReader
             using var decompressed = new MemoryStream();
             gzipStream.CopyTo(decompressed);
             decompressed.Position = 0;
-            return ReadFromStream(decompressed);
+            var log = ReadFromStream(decompressed);
+            log.CompressionFormat = CompressionFormat.CompressedDeltaGZip;
+            return log;
         }
         else
         {
-            return ReadFromStream(stream);
+            var log = ReadFromStream(stream);
+            log.CompressionFormat = CompressionFormat.CompressedDelta;
+            return log;
         }
     }
 

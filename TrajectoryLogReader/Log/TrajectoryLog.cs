@@ -50,6 +50,12 @@ namespace TrajectoryLogReader.Log
         public LogAxes Axes => field ??= new LogAxes(this, 0, Header.NumberOfSnapshots - 1);
 
         /// <summary>
+        /// The format the file was stored in.
+        /// </summary>
+        /// <returns></returns>
+        public CompressionFormat CompressionFormat { get; internal set; } = CompressionFormat.Uncompressed;
+
+        /// <summary>
         /// A collection of all measurement snapshots in the log.
         /// </summary>
         public SnapshotCollection Snapshots
