@@ -7,7 +7,9 @@ using TrajectoryLogReader.Util;
 namespace TrajectoryLogReader.Fluence;
 
 /// <summary>
-/// Creates 2D fluence maps from trajectory log data.
+/// Reconstructs a 2D fluence map by accumulating MU-weighted leaf openings over time.
+/// Conceptually, each snapshot contributes dose proportional to its <c>DeltaMu</c>,
+/// and the union of those contributions yields a delivery-derived fluence estimate.
 /// </summary>
 public class FluenceCreator
 {
@@ -16,14 +18,15 @@ public class FluenceCreator
     }
 
     /// <summary>
-    /// Creates a fluence map from measurement data.
+    /// Creates a fluence map from trajectory-log snapshots. This overload allows you to
+    /// select expected vs. actual positions and down-sample the log for speed.
     /// </summary>
     /// <param name="options">Fluence generation options.</param>
     /// <param name="recordType">Expected or Actual position.</param>
     /// <param name="samplingRateInMs">
-    ///     The number of ms between each sample. Default is 20.
-    ///     Set to higher for less accurate but faster fluence generation.
-    ///     Must be a multiple of the log file sampling rate
+    /// The time between sampled snapshots in milliseconds. Larger values reduce noise and
+    /// computation but can smooth away transient delivery details. The value is coerced to
+    /// a multiple of the log's sampling interval.
     /// </param>
     /// <param name="data">The measurement data.</param>
     /// <returns>A <see cref="FieldFluence"/> object.</returns>
@@ -42,7 +45,8 @@ public class FluenceCreator
     }
 
     /// <summary>
-    /// Creates a fluence map from a generic field data collection.
+    /// Creates a fluence map from any IEC-consistent delivery snapshot source.
+    /// This is the primary entry point for both log-derived and plan-derived fluence.
     /// </summary>
     /// <param name="options">Fluence generation options.</param>
     /// <param name="fieldData">The field data source.</param>
@@ -179,9 +183,9 @@ public class FluenceCreator
     }
 
     /// <summary>
-    /// Calculates the bounding rectangle that covers all jaw positions across all field data,
-    /// accounting for collimator rotation. Also outputs the jaw outline for the configuration
-    /// that produces the maximum extent.
+    /// Calculates the jaw-driven spatial extent required to cover all rotated field outlines.
+    /// This ensures the fluence grid is large enough even when collimator rotation expands
+    /// the axis-aligned bounding box.
     /// </summary>
     private Rect CalculateMaxExtent(IEnumerable<IFieldData> fieldData, out List<Point[]> jawOutlines,
         FluenceOptions options)

@@ -2,15 +2,22 @@ using TrajectoryLogReader.Log;
 
 namespace TrajectoryLogReader.Fluence;
 
+/// <summary>
+/// Configures how fluence is reconstructed from delivery snapshots. These settings control
+/// grid resolution, spatial extent, and the trade-off between geometric accuracy and speed.
+/// Distances are expressed in millimeters.
+/// </summary>
 public class FluenceOptions
 {
     /// <summary>
-    /// The number of grid points in the x direction, defaults to 100
+    /// The number of grid columns (X direction). Higher values improve spatial resolution
+    /// at the cost of CPU time and memory. Default is 100.
     /// </summary>
     public int Cols { get; set; } = 100;
 
     /// <summary>
-    /// The number of grid points in the y direction, defaults to 100
+    /// The number of grid rows (Y direction). Higher values improve spatial resolution
+    /// at the cost of CPU time and memory. Default is 100.
     /// </summary>
     public int Rows { get; set; } = 100;
 
@@ -54,12 +61,20 @@ public class FluenceOptions
     /// </summary>
     public int MaxParallelism { get; set; } = Environment.ProcessorCount;
 
+    /// <summary>
+    /// Creates options with an explicit grid resolution.
+    /// </summary>
+    /// <param name="cols">The number of grid columns (X direction).</param>
+    /// <param name="rows">The number of grid rows (Y direction).</param>
     public FluenceOptions(int cols, int rows)
     {
         Cols = cols;
         Rows = rows;
     }
 
+    /// <summary>
+    /// Creates options using the default grid resolution and bounds behavior.
+    /// </summary>
     public FluenceOptions()
     {
     }

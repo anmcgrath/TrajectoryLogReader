@@ -5,16 +5,21 @@ using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Extensions;
 
+/// <summary>
+/// IO convenience methods for exporting trajectory logs into common analysis formats.
+/// </summary>
 public static class TrajectoryLogIOExtensions
 {
-    /// <param name="log"></param>
     extension(TrajectoryLog log)
     {
         /// <summary>
-        /// Writes a TrajectoryLog to a file in Varian binary format (v5.0).
+        /// Writes the log back to the Varian binary trajectory format (v5.0 only).
+        /// This is primarily useful for round-tripping edited or anonymized logs.
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <exception cref="NotImplementedException"></exception>
+        /// <param name="fileName">The destination .bin file path.</param>
+        /// <exception cref="NotImplementedException">
+        /// Thrown when attempting to save a version other than 5.0.
+        /// </exception>
         public void SaveAs(string fileName)
         {
             if ((int)log.Header.Version != 5)
@@ -23,6 +28,14 @@ public static class TrajectoryLogIOExtensions
             TrajectoryLogWriterV5.Write(log, fileName);
         }
 
+        /// <summary>
+        /// Asynchronously writes the log to the Varian binary trajectory format (v5.0 only).
+        /// </summary>
+        /// <param name="fileName">The destination .bin file path.</param>
+        /// <returns>A task that completes when the file has been written.</returns>
+        /// <exception cref="NotImplementedException">
+        /// Thrown when attempting to save a version other than 5.0.
+        /// </exception>
         public Task SaveAsAsync(string fileName)
         {
             if ((int)log.Header.Version != 5)
@@ -32,13 +45,18 @@ public static class TrajectoryLogIOExtensions
         }
 
         /// <summary>
-        /// Save the trajectory log to a text file.
+        /// Exports the sampled axes to a delimited text file.
         /// </summary>
-        /// <param name="fileName">The file to save to.</param>
-        /// <param name="includeHeaders">If true, writes the axis headings as the first line.</param>
-        /// <param name="delimiter">The delimiter separating values in a line</param>
-        /// <param name="scale">The scale the data is written as</param>
-        /// <param name="axes">The axes to write. If empty, writes all axes.</param>
+        /// <param name="fileName">The destination file path.</param>
+        /// <param name="includeHeaders">If true, writes column headers on the first line.</param>
+        /// <param name="delimiter">The delimiter separating values on each line.</param>
+        /// <param name="scale">
+        /// The coordinate system to export. Use <see cref="AxisScale.IEC61217"/> when you want
+        /// standards-based sign conventions.
+        /// </param>
+        /// <param name="axes">
+        /// The axes to export. When omitted, all sampled axes from the log header are used.
+        /// </param>
         public void SaveToText(string fileName,
             bool includeHeaders,
             char delimiter,
@@ -50,13 +68,15 @@ public static class TrajectoryLogIOExtensions
         }
 
         /// <summary>
-        /// Save the trajectory log to a string builder
+        /// Exports the sampled axes to a <see cref="StringBuilder"/> using a delimited layout.
+        /// This overload is useful when you want to capture the output in-memory (for example,
+        /// to attach to a report or feed into another tool).
         /// </summary>
         /// <param name="sb">A string builder used for saving.</param>
-        /// <param name="includeHeaders">If true, writes the axis headings as the first line.</param>
-        /// <param name="delimiter">The delimiter separating values in a line</param>
-        ///     /// <param name="scale">The scale the data is written as</param>
-        /// <param name="axes">The axes to write. If empty, writes all axes.</param>
+        /// <param name="includeHeaders">If true, writes column headers on the first line.</param>
+        /// <param name="delimiter">The delimiter separating values on each line.</param>
+        /// <param name="scale">The coordinate system to export.</param>
+        /// <param name="axes">The axes to export. When empty, all sampled axes are used.</param>
         public void SaveToText(StringBuilder sb, bool includeHeaders, char delimiter,
             AxisScale scale = AxisScale.Default,
             params Axis[] axes)
@@ -121,13 +141,13 @@ public static class TrajectoryLogIOExtensions
         }
 
         /// <summary>
-        /// Save the trajectory log to a stream
+        /// Exports the sampled axes to a stream using a delimited layout.
         /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="includeHeaders">If true, writes the axis headings as the first line.</param>
-        /// <param name="delimiter">The delimiter separating values in a line</param>
-        ///     /// <param name="scale">The scale the data is written as</param>
-        /// <param name="axes">The axes to write. If empty, writes all axes.</param>
+        /// <param name="stream">The destination stream.</param>
+        /// <param name="includeHeaders">If true, writes column headers on the first line.</param>
+        /// <param name="delimiter">The delimiter separating values on each line.</param>
+        /// <param name="scale">The coordinate system to export.</param>
+        /// <param name="axes">The axes to export.</param>
         public void SaveToText(Stream stream, bool includeHeaders, char delimiter,
             AxisScale scale, Axis[] axes)
         {
@@ -138,12 +158,12 @@ public static class TrajectoryLogIOExtensions
         }
 
         /// <summary>
-        /// Save the trajectory log to a .csv (comma seperated values) file.
+        /// Exports the sampled axes to a CSV (comma-separated values) file.
         /// </summary>
-        /// <param name="fileName">The CSV file name</param>
-        /// <param name="includeHeaders">If true, writes the axis headings as the first line.</param>
-        /// <param name="scale">The scale the data is written as</param>
-        /// <param name="axes">The axes to write. If empty, writes all axes.</param>
+        /// <param name="fileName">The destination CSV file path.</param>
+        /// <param name="includeHeaders">If true, writes column headers on the first line.</param>
+        /// <param name="scale">The coordinate system to export.</param>
+        /// <param name="axes">The axes to export.</param>
         public void SaveToCsv(string fileName, bool includeHeaders, AxisScale scale,
             Axis[] axes)
         {
@@ -151,12 +171,12 @@ public static class TrajectoryLogIOExtensions
         }
 
         /// <summary>
-        /// Save the trajectory log to a tab seperated value file.
+        /// Exports the sampled axes to a TSV (tab-separated values) file.
         /// </summary>
-        /// <param name="fileName">The TSV file name</param>
-        /// <param name="includeHeaders">If true, writes the axis headings as the first line.</param>
-        /// <param name="scale">The scale the data is written as</param>
-        /// <param name="axes">The axes to write. If empty, writes all axes.</param>
+        /// <param name="fileName">The destination TSV file path.</param>
+        /// <param name="includeHeaders">If true, writes column headers on the first line.</param>
+        /// <param name="scale">The coordinate system to export.</param>
+        /// <param name="axes">The axes to export. When empty, all sampled axes are used.</param>
         public void SaveToTsv(string fileName, bool includeHeaders,
             AxisScale scale = AxisScale.Default,
             params Axis[] axes)
@@ -165,9 +185,10 @@ public static class TrajectoryLogIOExtensions
         }
 
         /// <summary>
-        /// Writes the trajectory log to a compressed format which can be read using the <see cref="CompressedLogReader"/>
+        /// Writes the log to the library's compressed binary format (.cbin), which preserves
+        /// the clinically relevant numeric content while reducing storage footprint.
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileName">The destination .cbin file path.</param>
         public void SaveAsCompressed(string fileName)
         {
             CompressedLogWriter.Write(log, fileName, true);

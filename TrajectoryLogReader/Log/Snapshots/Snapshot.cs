@@ -3,7 +3,9 @@
 namespace TrajectoryLogReader.Log.Snapshots;
 
 /// <summary>
-/// Represents a single snapshot of measurement data at a specific time point.
+/// Represents one sampled time point from a trajectory log. Each property exposes the
+/// expected and actual value for a treatment axis at the same
+/// sampling instant.
 /// </summary>
 public class Snapshot
 {
@@ -17,17 +19,19 @@ public class Snapshot
     private readonly TrajectoryLog _log;
 
     /// <summary>
-    /// The index of this measurement in the log sequence.
+    /// The zero-based snapshot index within the log.
     /// </summary>
     public int MeasIndex => _measIndex;
 
     /// <summary>
-    /// The time in milliseconds from the start of the log.
+    /// Elapsed time from the start of the log in milliseconds, computed from the header
+    /// sampling interval.
     /// </summary>
     public int TimeInMs => _log.Header.SamplingIntervalInMS * _measIndex;
 
     /// <summary>
-    /// Collimator rotation angle (in degrees)
+    /// Collimator rotation angle in degrees. Use <see cref="IScalarRecord.WithScale"/>
+    /// if you need IEC 61217 conventions regardless of the log's native scale.
     /// </summary>
     public IScalarRecord CollRtn
     {
@@ -39,7 +43,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Gantry rotation angle (in degrees)
+    /// Gantry rotation angle in degrees. 
     /// </summary>
     public IScalarRecord GantryRtn
     {
@@ -51,7 +55,8 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Y1 jaw position (in cm)
+    /// Y1 jaw position in centimeters at isocenter. Interpret sign/direction using the
+    /// record's effective scale.
     /// </summary>
     public IScalarRecord Y1
     {
@@ -63,7 +68,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Y2 jaw position (in cm)
+    /// Y2 jaw position in centimeters at isocenter.
     /// </summary>
     public IScalarRecord Y2
     {
@@ -75,7 +80,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// X1 jaw position (in cm)
+    /// X1 jaw position in centimeters at isocenter.
     /// </summary>
     public IScalarRecord X1
     {
@@ -87,7 +92,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// X2 jaw position (in cm)
+    /// X2 jaw position in centimeters at isocenter.
     /// </summary>
     public IScalarRecord X2
     {
@@ -99,7 +104,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Couch vertical position (in cm)
+    /// Couch vertical position in centimeters.
     /// </summary>
     public IScalarRecord CouchVrt
     {
@@ -111,7 +116,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Couch longitudinal position (in cm)
+    /// Couch longitudinal position in centimeters.
     /// </summary>
     public IScalarRecord CouchLng
     {
@@ -123,7 +128,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Couch lateral position (in cm)
+    /// Couch lateral position in centimeters.
     /// </summary>
     public IScalarRecord CouchLat
     {
@@ -135,7 +140,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Couch rotation angle (in degrees)
+    /// Couch rotation angle (yaw) in degrees.
     /// </summary>
     public IScalarRecord CouchRtn
     {
@@ -147,7 +152,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Couch pitch angle (in degrees).
+    /// Couch pitch angle in degrees.
     /// </summary>
     public IScalarRecord CouchPitch
     {
@@ -159,7 +164,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Couch roll angle (in degrees).
+    /// Couch roll angle in degrees.
     /// </summary>
     public IScalarRecord CouchRoll
     {
@@ -171,7 +176,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Monitor units delivered.
+    /// Cumulative monitor units (MU). For dose-weighted analyses, prefer <see cref="DeltaMu"/>.
     /// </summary>
     public IScalarRecord MU
     {
@@ -183,7 +188,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Beam hold status.
+    /// Beam hold status
     /// </summary>
     public IScalarRecord BeamHold
     {
@@ -195,7 +200,8 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Current control point index.
+    /// Current control point index as reported in the log. This is useful when mapping
+    /// delivery back to plan control points.
     /// </summary>
     public IScalarRecord ControlPoint
     {
@@ -207,7 +213,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Target position.
+    /// Target position for tracking-enabled deliveries.
     /// </summary>
     public IScalarRecord TargetPosition
     {
@@ -219,7 +225,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Tracking target position.
+    /// Tracking target position used by the motion management subsystem.
     /// </summary>
     public IScalarRecord TrackingTarget
     {
@@ -231,7 +237,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Tracking phase.
+    /// Tracking phase indicator
     /// </summary>
     public IScalarRecord TrackingPhase
     {
@@ -243,7 +249,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Tracking base position.
+    /// Tracking base position
     /// </summary>
     public IScalarRecord TrackingBase
     {
@@ -255,7 +261,7 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Tracking conformity index.
+    /// Tracking conformity index, when available.
     /// </summary>
     public IScalarRecord TrackingConformityIndex
     {
@@ -267,7 +273,8 @@ public class Snapshot
     }
 
     /// <summary>
-    /// The change in MU between this snapshot and the last
+    /// Incremental MU delivered since the previous snapshot. This is the most appropriate
+    /// weight for dose-proportional metrics.
     /// </summary>
     public IScalarRecord DeltaMu
     {
@@ -279,7 +286,8 @@ public class Snapshot
     }
 
     /// <summary>
-    /// MLC leaf positions (in cm)
+    /// MLC leaf positions for this snapshot. Leaf positions are exposed in both banks and
+    /// follow the log's axis scale unless converted explicitly.
     /// </summary>
     public MLCSnapshot MLC
     {
@@ -291,10 +299,12 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Retrieves a scalar record for a specific axis.
+    /// Retrieves a scalar axis record by enum value. This is helpful for generic analyses
+    /// (for example iterating over sampled axes) without hard-coding property names.
     /// </summary>
-    /// <param name="axis">The axis to retrieve.</param>
-    /// <returns>The scalar record for the axis.</returns>
+    /// <param name="axis">The scalar axis to retrieve.</param>
+    /// <returns>A scalar record for the requested axis.</returns>
+    /// <exception cref="Exception">Thrown when requesting <see cref="Axis.MLC"/>.</exception>
     public IScalarRecord GetScalarRecord(Axis axis)
     {
         if (axis == Axis.MLC)
@@ -304,9 +314,9 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Returns the next snapshot. Null if this is the first
+    /// Returns the previous snapshot in time, or <see langword="null"/> if this is the first.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The prior snapshot, if one exists.</returns>
     public Snapshot? Previous()
     {
         if (_measIndex == 0)
@@ -315,9 +325,9 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Returns the next snapshot. Null if this is the last.
+    /// Returns the next snapshot in time, or <see langword="null"/> if this is the last.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The subsequent snapshot, if one exists.</returns>
     public Snapshot? Next()
     {
         if (_measIndex == _log.Header.NumberOfSnapshots - 1)
@@ -326,7 +336,8 @@ public class Snapshot
     }
 
     /// <summary>
-    /// The MLC model used.
+    /// The MLC model associated with this log. Use this to interpret leaf indexing,
+    /// leaf widths, and bank conventions correctly.
     /// </summary>
     public IMLCModel MlcModel => _log.MlcModel;
 }

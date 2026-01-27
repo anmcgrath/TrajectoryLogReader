@@ -13,22 +13,26 @@ using System.Linq;
 public static class DicomFluenceExtensions
 {
     /// <summary>
-    /// Saves the fluence map as a DICOM RT Image.
+    /// Saves a fluence map as a DICOM RT Image for interoperability with clinical tooling.
+    /// The resulting dataset uses derived RTIMAGE semantics and encodes fluence as a
+    /// rescaled 16-bit grayscale image.
     /// </summary>
     /// <param name="fluence">The field fluence.</param>
-    /// <param name="fileName">The output file name.</param>
-    /// <param name="patientName">Patient Name.</param>
-    /// <param name="patientId">Patient ID.</param>
+    /// <param name="fileName">The destination DICOM file path.</param>
+    /// <param name="patientName">Patient name to embed in the DICOM header.</param>
+    /// <param name="patientId">Patient identifier to embed in the DICOM header.</param>
     public static void SaveToDicom(this FieldFluence fluence, string fileName, string patientName, string patientId)
         => fluence.Grid.SaveToDicom(patientName, patientId, fileName);
 
     /// <summary>
-    /// Saves the grid as a DICOM RT Image.
+    /// Saves a numeric grid as a DICOM RT Image. Pixel values are linearly rescaled into
+    /// unsigned 16-bit storage, with the rescale slope/intercept recorded so that the
+    /// original floating-point values can be reconstructed downstream.
     /// </summary>
-    /// <param name="grid">The grid to save.</param>
-    /// <param name="fileName">The output file name.</param>
-    /// <param name="patientName">Patient Name.</param>
-    /// <param name="patientId">Patient ID.</param>
+    /// <param name="grid">The fluence-like grid to save (units are user-defined).</param>
+    /// <param name="fileName">The destination DICOM file path.</param>
+    /// <param name="patientName">Patient name to embed in the DICOM header.</param>
+    /// <param name="patientId">Patient identifier to embed in the DICOM header.</param>
     public static void SaveToDicom(this IGrid<float> grid, string fileName, string patientName, string patientId)
     {
         var fluenceGrid = grid.Flatten();
@@ -110,15 +114,18 @@ public static class DicomFluenceExtensions
     }
 
     /// <summary>
-    /// Creates a <see cref="FieldFluence"/> from a <see cref="BeamModel"/>
+    /// Creates a fluence map from a DICOM RT Plan beam. Control points are optionally
+    /// interpolated so the fluence accumulation better reflects continuous delivery.
     /// </summary>
-    /// <param name="beam"></param>
-    /// <param name="options"></param>
+    /// <param name="beam">The beam model parsed from an RT Plan.</param>
+    /// <param name="options">Fluence grid and accumulation options.</param>
     /// <param name="cpDelta">
     /// Set to control the fractional control points that are included in the fluence.
-    /// When set to one, for example, the fluence will be created from every control point.
-    /// When set to 0.5, every 0.5 control points will be used (interpolated).</param>
-    /// <returns></returns>
+    /// When set to 1, the fluence uses each control point as-is. When set below 1,
+    /// intermediate control points are interpolated (for example 0.5 samples twice per
+    /// control-point interval).
+    /// </param>
+    /// <returns>A fluence map derived from the beam definition.</returns>
     public static FieldFluence CreateFluence(this BeamModel beam, FluenceOptions options, double cpDelta = 1)
     {
         return new FluenceCreator().Create(options, new BeamCollectionAdapter(beam, cpDelta));

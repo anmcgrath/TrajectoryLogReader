@@ -359,5 +359,10 @@ namespace TrajectoryLogReader.Log
         {
             return AverageLeafPairOpeningCalculator.Calculate(Snapshots, options);
         }
+
+        public ComparisonResult CompareTo(TrajectoryLog other, float tolerance)
+        {
+            return TrajectoryLogComparer.Compare(this, other, tolerance);
+        }
     }
 }
