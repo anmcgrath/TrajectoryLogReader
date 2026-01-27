@@ -134,4 +134,80 @@ public class GantryAndDoseRateTests
                 0f, 120f, 60f, 0f
             });
     }
+
+    [Test]
+    public void FluentDeltaChainingMatchesGantrySpeed()
+    {
+        // snapshot.GantryRtn.GetDelta(1s) should equal snapshot.GantrySpeed
+        _log.Snapshots.Select(x => x.GantryRtn.GetDelta(TimeSpan.FromSeconds(1)).Actual)
+            .ToArray()
+            .ShouldBeEquivalentTo(new float[]
+            {
+                0f, 2f, 4f, -2f
+            });
+
+        _log.Snapshots.Select(x => x.GantryRtn.GetDelta(TimeSpan.FromSeconds(1)).Expected)
+            .ToArray()
+            .ShouldBeEquivalentTo(new float[]
+            {
+                0f, 2f, 4f, -2f
+            });
+    }
+
+    [Test]
+    public void FluentDeltaChainingComputesAcceleration()
+    {
+        // snapshot.GantryRtn.GetDelta(1s).GetDelta(1s) computes acceleration
+        // Gantry Speeds are [0, 2, 4, -2]
+        // Accelerations:
+        // T2: (4 - 2) / 0.5 = 4 deg/s^2
+        // T3: (-2 - 4) / 0.5 = -12 deg/s^2
+        _log.Snapshots.Select(x => x.GantryRtn.GetDelta(TimeSpan.FromSeconds(1)).GetDelta(TimeSpan.FromSeconds(1)).Actual)
+            .ToArray()
+            .ShouldBeEquivalentTo(new float[]
+            {
+                0f, 4f, 4f, -12f
+            });
+    }
+
+    [Test]
+    public void FluentDeltaChainingMatchesDoseRate()
+    {
+        // snapshot.MU.GetDelta(1 minute) should equal snapshot.DoseRate
+        _log.Snapshots.Select(x => x.MU.GetDelta(TimeSpan.FromMinutes(1)).Actual)
+            .ToArray()
+            .ShouldBeEquivalentTo(new float[]
+            {
+                0f, 120f, 60f, 0f
+            });
+    }
+
+    [Test]
+    public void RotationalAxisWrappingHandlesCorrectly()
+    {
+        // Test that gantry going 359° → 1° shows positive velocity (not -358°)
+        var wrapLog = new TrajectoryLog();
+        wrapLog.Header = new Header();
+        wrapLog.Header.SamplingIntervalInMS = 1000; // 1 second for easy math
+        wrapLog.Header.NumberOfSnapshots = 3;
+        wrapLog.Header.AxisScale = AxisScale.ModifiedIEC61217;
+        wrapLog.Header.AxesSampled = new[] { Axis.GantryRtn };
+        wrapLog.Header.SamplesPerAxis = new[] { 2 };
+
+        var gantryData = new AxisData(3, 2);
+        gantryData.Data = new[]
+        {
+            // Exp, Act
+            358f, 358f,  // T0
+            360f, 360f,  // T1 (Diff 2 deg) -> Speed = 2 deg/s (but 360 normalizes)
+            2f, 2f       // T2 (Diff 2 deg from 360→2, should wrap correctly) -> Speed = 2 deg/s
+        };
+        wrapLog.AxisData = new[] { gantryData };
+
+        // The delta should be +2 deg/s, not -358 deg/s
+        var velocities = wrapLog.Snapshots.Select(x => x.GantryRtn.GetDelta(TimeSpan.FromSeconds(1)).Actual).ToArray();
+        velocities[0].ShouldBe(0f); // First snapshot has no previous
+        velocities[1].ShouldBe(2f); // 360-358 = 2
+        velocities[2].ShouldBe(2f); // 2-360 wraps to 2 (not -358)
+    }
 }

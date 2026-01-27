@@ -30,4 +30,11 @@ public interface IScalarRecord
     /// <param name="scale">The target scale for value conversion.</param>
     /// <returns>A new ScalarRecord configured to return values in the specified scale.</returns>
     public IScalarRecord WithScale(AxisScale scale);
+
+    /// <summary>
+    /// Gets the delta axis, in delta/timespan. If timespan is null, just returns the delta.
+    /// </summary>
+    /// <param name="timeSpan">Set the time interval if required, default is no timespan (just delta)</param>
+    /// <returns></returns>
+    public IScalarRecord GetDelta(TimeSpan? timeSpan = null);
 }

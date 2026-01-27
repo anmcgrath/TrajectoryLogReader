@@ -6,7 +6,7 @@ namespace TrajectoryLogReader.Log.Snapshots;
 /// Represents a single MLC leaf position record at a specific measurement point.
 /// Provides a unified API consistent with ScalarRecord and the column-based MlcLeafAxisAccessor.
 /// </summary>
-public class MLCLeafRecord
+public class MLCLeafRecord : IScalarRecord
 {
     private readonly int _measIndex;
     private readonly TrajectoryLog _log;
@@ -14,7 +14,8 @@ public class MLCLeafRecord
     private readonly int _leafIndex;
     private readonly AxisScale? _targetScale;
 
-    internal MLCLeafRecord(TrajectoryLog log, int measIndex, int bankIndex, int leafIndex, AxisScale? targetScale = null)
+    internal MLCLeafRecord(TrajectoryLog log, int measIndex, int bankIndex, int leafIndex,
+        AxisScale? targetScale = null)
     {
         _log = log;
         _measIndex = measIndex;
@@ -38,7 +39,7 @@ public class MLCLeafRecord
     /// </summary>
     /// <param name="scale">The target scale for value conversion.</param>
     /// <returns>A new MLCLeafRecord configured to return values in the specified scale.</returns>
-    public MLCLeafRecord WithScale(AxisScale scale)
+    public IScalarRecord WithScale(AxisScale scale)
     {
         return new MLCLeafRecord(_log, _measIndex, _bankIndex, _leafIndex, scale);
     }
@@ -75,5 +76,22 @@ public class MLCLeafRecord
     public float GetRecord(RecordType recordType)
     {
         return recordType == RecordType.ExpectedPosition ? Expected : Actual;
+    }
+
+    /// <summary>
+    /// Gets the delta (change) from the previous snapshot to this one. Can be chained
+    /// for higher-order derivatives (e.g., <c>GetDelta().GetDelta()</c> for acceleration).
+    /// </summary>
+    /// <param name="timeSpan">If specified, converts delta to a rate (e.g., deg/s, MU/min)</param>
+    /// <returns>A delta record representing the change from previous to current</returns>
+    public IScalarRecord GetDelta(TimeSpan? timeSpan = null)
+    {
+        var previous = _measIndex > 0
+            ? new MLCLeafRecord(_log, _measIndex - 1, _bankIndex, _leafIndex, _targetScale)
+            : null;
+        var msConverter = timeSpan.HasValue
+            ? (float)(timeSpan.Value.TotalMilliseconds / _log.Header.SamplingIntervalInMS)
+            : 1f;
+        return new DeltaRecord(previous, this, msConverter, Axis.MLC, _targetScale, _log);
     }
 }

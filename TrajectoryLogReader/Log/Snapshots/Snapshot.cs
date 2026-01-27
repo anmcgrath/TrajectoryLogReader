@@ -280,7 +280,7 @@ public class Snapshot
     {
         get
         {
-            field ??= new DeltaRecord(_log, Axis.MU, _measIndex, 1f);
+            field ??= MU.GetDelta();
             return field;
         }
     }
@@ -292,7 +292,7 @@ public class Snapshot
     {
         get
         {
-            field ??= GetDeltaRecord(Axis.GantryRtn, TimeSpan.FromSeconds(1));
+            field ??= GantryRtn.GetDelta(TimeSpan.FromSeconds(1));
             return field;
         }
     }
@@ -304,7 +304,7 @@ public class Snapshot
     {
         get
         {
-            field ??= GetDeltaRecord(Axis.GantryRtn, TimeSpan.FromMinutes(1));
+            field ??= MU.GetDelta(TimeSpan.FromMinutes(1));
             return field;
         }
     }
@@ -349,8 +349,7 @@ public class Snapshot
         if (axis == Axis.MLC)
             throw new Exception($"Cannot get scalar record for MLC. Use MLC to get MLC data.");
 
-        var msConverter = !timeSpan.HasValue ? 1 : timeSpan.Value.TotalMilliseconds / _log.Header.SamplingIntervalInMS;
-        return new DeltaRecord(_log, axis, _measIndex, (float)msConverter);
+        return GetScalarRecord(axis).GetDelta(timeSpan);
     }
 
     /// <summary>

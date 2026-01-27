@@ -116,4 +116,21 @@ public class ScalarRecord : IScalarRecord
     [Obsolete("Use WithScale(AxisScale.IEC61217).GetRecord(recordType) instead")]
     public float GetRecordInIec(RecordType recordType) =>
         Scale.ToIec(SourceScale, _axis, recordType == RecordType.ExpectedPosition ? RawExpected : RawActual);
+
+    /// <summary>
+    /// Gets the delta (change) from the previous snapshot to this one. Can be chained
+    /// for higher-order derivatives (e.g., <c>GetDelta().GetDelta()</c> for acceleration).
+    /// </summary>
+    /// <param name="timeSpan">If specified, converts delta to a rate (e.g., deg/s, MU/min)</param>
+    /// <returns>A delta record representing the change from previous to current</returns>
+    public IScalarRecord GetDelta(TimeSpan? timeSpan = null)
+    {
+        var previous = _measIndex > 0
+            ? new ScalarRecord(_log, _axis, _measIndex - 1, _targetScale)
+            : null;
+        var msConverter = timeSpan.HasValue
+            ? (float)(timeSpan.Value.TotalMilliseconds / _log.Header.SamplingIntervalInMS)
+            : 1f;
+        return new DeltaRecord(previous, this, msConverter, _axis, _targetScale, _log);
+    }
 }
