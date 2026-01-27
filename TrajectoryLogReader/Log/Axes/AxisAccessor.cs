@@ -5,10 +5,11 @@ using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Log.Axes
 {
-    internal class AxisAccessor : AxisAccessorBase
+    internal class AxisAccessor : AxisAccessorBase, IOriginalAxisAccessor
     {
         private readonly TrajectoryLog _log;
-        private readonly Axis _axis;
+        public Axis Axis { get; }
+
         private readonly int _startIndex;
         private readonly int _endIndex;
         private readonly AxisScale _targetScale;
@@ -18,10 +19,13 @@ namespace TrajectoryLogReader.Log.Axes
         /// </summary>
         public override int TimeInMs => (_endIndex - _startIndex) * _log.Header.SamplingIntervalInMS;
 
+        public override int SampleRateInMs => _log.Header.SamplingIntervalInMS;
+
+
         public AxisAccessor(TrajectoryLog log, Axis axis, int startIndex, int endIndex, AxisScale? targetScale = null)
         {
             _log = log;
-            _axis = axis;
+            Axis = axis;
             _startIndex = startIndex;
             _endIndex = endIndex;
             _targetScale = targetScale ?? _log.Header.AxisScale;
@@ -46,8 +50,8 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var val = _log.GetAxisData(_axis, i, RecordType.ExpectedPosition);
-                yield return Scale.Convert(_log.Header.AxisScale, _targetScale, _axis, val);
+                var val = _log.GetAxisData(Axis, i, RecordType.ExpectedPosition);
+                yield return Scale.Convert(_log.Header.AxisScale, _targetScale, Axis, val);
             }
         }
 
@@ -70,8 +74,8 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var val = _log.GetAxisData(_axis, i, RecordType.ActualPosition);
-                yield return Scale.Convert(_log.Header.AxisScale, _targetScale, _axis, val);
+                var val = _log.GetAxisData(Axis, i, RecordType.ActualPosition);
+                yield return Scale.Convert(_log.Header.AxisScale, _targetScale, Axis, val);
             }
         }
 
@@ -94,19 +98,19 @@ namespace TrajectoryLogReader.Log.Axes
         {
             for (int i = _startIndex; i <= _endIndex; i++)
             {
-                var exp = _log.GetAxisData(_axis, i, RecordType.ExpectedPosition);
-                var act = _log.GetAxisData(_axis, i, RecordType.ActualPosition);
+                var exp = _log.GetAxisData(Axis, i, RecordType.ExpectedPosition);
+                var act = _log.GetAxisData(Axis, i, RecordType.ActualPosition);
 
-                var expConv = Scale.Convert(_log.Header.AxisScale, _targetScale, _axis, exp);
-                var actConv = Scale.Convert(_log.Header.AxisScale, _targetScale, _axis, act);
+                var expConv = Scale.Convert(_log.Header.AxisScale, _targetScale, Axis, exp);
+                var actConv = Scale.Convert(_log.Header.AxisScale, _targetScale, Axis, act);
 
                 var diff = actConv - expConv;
 
-                if (IsRotational(_axis))
+                if (IsRotational(Axis))
                 {
                     diff = Normalize(diff, 360);
                 }
-                else if (IsCouch(_axis))
+                else if (IsCouch(Axis))
                 {
                     // Check for 1000 wrap (mm or IEC offset)
                     diff = Normalize(diff, 1000);
@@ -120,7 +124,7 @@ namespace TrajectoryLogReader.Log.Axes
 
         public override IAxisAccessor WithScale(AxisScale scale)
         {
-            return new AxisAccessor(_log, _axis, _startIndex, _endIndex, scale);
+            return new AxisAccessor(_log, Axis, _startIndex, _endIndex, scale);
         }
 
         private float Normalize(float value, float period)
@@ -146,6 +150,8 @@ namespace TrajectoryLogReader.Log.Axes
                    axis == Axis.CouchLat;
         }
 
-        public VelocityAxisAccessor Velocity => new VelocityAxisAccessor(this, _log.Header.SamplingIntervalInMS);
+        public override AxisScale GetSourceScale() => _log.Header.AxisScale;
+
+        public override AxisScale GetEffectiveScale() => _targetScale;
     }
 }

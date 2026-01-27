@@ -11,6 +11,7 @@ namespace TrajectoryLogReader.Log.Axes
         private readonly int _endIndex;
         private readonly AxisScale _targetScale;
         public override int TimeInMs => (_endIndex - _startIndex) * _log.Header.SamplingIntervalInMS;
+        public override int SampleRateInMs => _log.Header.SamplingIntervalInMS;
 
         public int BankIndex => _bankIndex;
         public int LeafIndex => _leafIndex;
@@ -110,7 +111,10 @@ namespace TrajectoryLogReader.Log.Axes
 
         public IAxisAccessor GetVelocity()
         {
-            return new VelocityAxisAccessor(this, _log.Header.SamplingIntervalInMS);
+            return new DeltaAxisAccessor(this, _log.Header.SamplingIntervalInMS, TimeSpan.FromSeconds(1));
         }
+
+        public override AxisScale GetSourceScale() => _log.Header.AxisScale;
+        public override AxisScale GetEffectiveScale() => _targetScale;
     }
 }

@@ -10,6 +10,11 @@ namespace TrajectoryLogReader.Log.Axes
         private readonly IAxisAccessor _axis2;
         private readonly Func<float, float, float> _combiner;
         public override int TimeInMs => _axis1.TimeInMs;
+        public override int SampleRateInMs => _axis1.SampleRateInMs;
+        
+        public override AxisScale GetSourceScale() => _axis1.GetSourceScale();
+
+        public override AxisScale GetEffectiveScale() => _axis1.GetEffectiveScale();
 
         private float[]? _expected;
         private float[]? _actual;

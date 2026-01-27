@@ -16,6 +16,8 @@ namespace TrajectoryLogReader.Log.Axes
         private readonly Func<float, bool> _predicate;
 
         public override int TimeInMs => _source.TimeInMs;
+        public override int SampleRateInMs => _source.SampleRateInMs;
+        
 
         private float[]? _expected;
         private float[]? _actual;
@@ -90,5 +92,9 @@ namespace TrajectoryLogReader.Log.Axes
             return new FilteredAxisAccessor(_source.WithScale(scale), _filterAxis.WithScale(scale), _recordType,
                 _predicate);
         }
+        
+        public override AxisScale GetSourceScale() => _source.GetSourceScale();
+
+        public override AxisScale GetEffectiveScale() => _source.GetEffectiveScale();
     }
 }

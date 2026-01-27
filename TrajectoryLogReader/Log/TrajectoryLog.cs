@@ -7,7 +7,7 @@ using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.Log
 {
-    public class TrajectoryLog
+    public class TrajectoryLog : ILogDataContainer
     {
         /// <summary>
         /// Trajectory log header information

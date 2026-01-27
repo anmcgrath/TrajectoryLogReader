@@ -1,19 +1,35 @@
 using System.Linq;
+using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Log.Axes;
 
-internal class DeltaMuAxisAccessor : AxisAccessorBase
+internal class DeltaAxisAccessor : AxisAccessorBase
 {
-    private readonly IAxisAccessor _muAccessor;
-    public override int TimeInMs => _muAccessor.TimeInMs;
+    private readonly IAxisAccessor _innerAccessor;
+    private readonly double _sampleRateInMs;
+    private readonly TimeSpan? _timeSpan;
+    public override int TimeInMs => _innerAccessor.TimeInMs;
+    public override int SampleRateInMs => _innerAccessor.SampleRateInMs;
+
+    /// <summary>
+    /// The inner axis, if it has one
+    /// </summary>
+    private Axis? _innerAxis;
+
 
     private float[]? _expected;
     private float[]? _actual;
     private float[]? _errors;
+    private readonly float _deltaMultiplier;
 
-    public DeltaMuAxisAccessor(IAxisAccessor muAccessor)
+    public DeltaAxisAccessor(IAxisAccessor innerAccessor, double sampleRateInMs, TimeSpan? timeSpan = null)
     {
-        _muAccessor = muAccessor;
+        _innerAccessor = innerAccessor;
+        _sampleRateInMs = sampleRateInMs;
+        _timeSpan = timeSpan;
+        _deltaMultiplier = timeSpan == null ? 1 : (float)(timeSpan.Value.TotalMilliseconds / sampleRateInMs);
+        if (innerAccessor is IOriginalAxisAccessor o)
+            _innerAxis = o.Axis;
     }
 
     private IEnumerable<float> CalculateDeltaMu(IEnumerable<float> positions)
@@ -28,7 +44,12 @@ internal class DeltaMuAxisAccessor : AxisAccessorBase
         while (e.MoveNext())
         {
             float current = e.Current;
-            yield return current - prev;
+
+            var difference = _innerAxis == null
+                ? (current - prev)
+                : Scale.Delta(GetEffectiveScale(), prev, GetEffectiveScale(), current, _innerAxis.Value);
+
+            yield return difference * _deltaMultiplier;
             prev = current;
         }
     }
@@ -39,7 +60,7 @@ internal class DeltaMuAxisAccessor : AxisAccessorBase
         {
             if (_expected == null)
             {
-                _expected = CalculateDeltaMu(_muAccessor.ExpectedValues).ToArray();
+                _expected = CalculateDeltaMu(_innerAccessor.ExpectedValues).ToArray();
             }
 
             return _expected;
@@ -52,7 +73,7 @@ internal class DeltaMuAxisAccessor : AxisAccessorBase
         {
             if (_actual == null)
             {
-                _actual = CalculateDeltaMu(_muAccessor.ActualValues).ToArray();
+                _actual = CalculateDeltaMu(_innerAccessor.ActualValues).ToArray();
             }
 
             return _actual;
@@ -87,6 +108,10 @@ internal class DeltaMuAxisAccessor : AxisAccessorBase
     public override IAxisAccessor WithScale(AxisScale scale)
     {
         // mu is the same in all scales but return new to be consistent
-        return new DeltaMuAxisAccessor(_muAccessor.WithScale(scale));
+        return new DeltaAxisAccessor(_innerAccessor.WithScale(scale), _sampleRateInMs, _timeSpan);
     }
+
+    public override AxisScale GetSourceScale() => _innerAccessor.GetSourceScale();
+
+    public override AxisScale GetEffectiveScale() => _innerAccessor.GetEffectiveScale();
 }

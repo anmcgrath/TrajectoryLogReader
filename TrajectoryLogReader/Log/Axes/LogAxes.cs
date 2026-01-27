@@ -21,9 +21,15 @@ namespace TrajectoryLogReader.Log.Axes
         public IAxisAccessor Y2 => new AxisAccessor(_log, Axis.Y2, _startIndex, _endIndex);
 
         public IAxisAccessor MU => new AxisAccessor(_log, Axis.MU, _startIndex, _endIndex);
-        public IAxisAccessor DeltaMu => new DeltaMuAxisAccessor(MU);
+        public IAxisAccessor DeltaMu => new DeltaAxisAccessor(MU, _log.Header.SamplingIntervalInMS);
         public IAxisAccessor BeamHold => new AxisAccessor(_log, Axis.BeamHold, _startIndex, _endIndex);
         public IAxisAccessor ControlPoint => new AxisAccessor(_log, Axis.ControlPoint, _startIndex, _endIndex);
+
+        public IAxisAccessor GantrySpeed =>
+            new DeltaAxisAccessor(Gantry, _log.Header.SamplingIntervalInMS, TimeSpan.FromSeconds(1));
+
+        public IAxisAccessor DoseRate =>
+            new DeltaAxisAccessor(MU, _log.Header.SamplingIntervalInMS, TimeSpan.FromMinutes(1));
 
         /// <summary>
         /// Represents the X jaw field size 

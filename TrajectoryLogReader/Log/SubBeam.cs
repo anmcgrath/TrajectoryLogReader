@@ -9,7 +9,7 @@ namespace TrajectoryLogReader.Log
     /// <summary>
     /// A sub-beam is created when a series of treatment fields are made automatic.
     /// </summary>
-    public class SubBeam
+    public class SubBeam : ILogDataContainer
     {
         private readonly TrajectoryLog _log;
 

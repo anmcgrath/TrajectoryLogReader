@@ -280,7 +280,31 @@ public class Snapshot
     {
         get
         {
-            field ??= new DeltaMuRecord(_log, Axis.MU, _measIndex);
+            field ??= new DeltaRecord(_log, Axis.MU, _measIndex, 1f);
+            return field;
+        }
+    }
+
+    /// <summary>
+    /// The speed of the gantry, in degrees/second.
+    /// </summary>
+    public IScalarRecord GantrySpeed
+    {
+        get
+        {
+            field ??= GetDeltaRecord(Axis.GantryRtn, TimeSpan.FromSeconds(1));
+            return field;
+        }
+    }
+
+    /// <summary>
+    /// The dose rate, in MU per minute
+    /// </summary>
+    public IScalarRecord DoseRate
+    {
+        get
+        {
+            field ??= GetDeltaRecord(Axis.GantryRtn, TimeSpan.FromMinutes(1));
             return field;
         }
     }
@@ -311,6 +335,22 @@ public class Snapshot
             throw new Exception($"Cannot get scalar record for MLC. Use MLC to get MLC data.");
 
         return new ScalarRecord(_log, axis, _measIndex);
+    }
+
+    /// <summary>
+    /// Retrieves a delta axis, e.g DeltaMu or DeltaGantry
+    /// </summary>
+    /// <param name="axis">The scalar axis to retrieve.</param>
+    /// <param name="timeSpan">Specify a timespan to get a speed, e.g for doserate (MU/min) specify TimeSpan.FromMinutes(1)</param>
+    /// <returns>A delta record for the requested axis, with a speed if </returns>
+    /// <exception cref="Exception">Thrown when requesting <see cref="Axis.MLC"/>.</exception>
+    public IScalarRecord GetDeltaRecord(Axis axis, TimeSpan? timeSpan)
+    {
+        if (axis == Axis.MLC)
+            throw new Exception($"Cannot get scalar record for MLC. Use MLC to get MLC data.");
+
+        var msConverter = !timeSpan.HasValue ? 1 : timeSpan.Value.TotalMilliseconds / _log.Header.SamplingIntervalInMS;
+        return new DeltaRecord(_log, axis, _measIndex, (float)msConverter);
     }
 
     /// <summary>
