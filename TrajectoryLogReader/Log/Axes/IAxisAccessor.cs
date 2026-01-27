@@ -72,5 +72,13 @@ namespace TrajectoryLogReader.Log.Axes
         /// </summary>
         /// <returns></returns>
         internal AxisScale GetEffectiveScale();
+
+
+        /// <summary>
+        /// Gets the delta axis, in delta/timespan. If timespan is null, just returns the delta.
+        /// </summary>
+        /// <param name="timeSpan">Set the time interval if required, default is no timespan (just delta)</param>
+        /// <returns></returns>
+        public IAxisAccessor GetDelta(TimeSpan? timeSpan = null);
     }
 }
