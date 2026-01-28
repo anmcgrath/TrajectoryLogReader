@@ -6,7 +6,7 @@ namespace TrajectoryLogReader.Log.Axes
 {
     public class CombinedAxisAccessor : AxisAccessorBase
     {
-        private readonly IAxisAccessor _axis1;
+        private readonly IAxisAccessorInternal _axis1;
         private readonly IAxisAccessor _axis2;
         private readonly Func<float, float, float> _combiner;
         public override int TimeInMs => _axis1.TimeInMs;
@@ -22,7 +22,8 @@ namespace TrajectoryLogReader.Log.Axes
 
         public CombinedAxisAccessor(IAxisAccessor axis1, IAxisAccessor axis2, Func<float, float, float> combiner)
         {
-            _axis1 = axis1;
+            _axis1 = axis1 as IAxisAccessorInternal
+                ?? throw new ArgumentException("CombinedAxisAccessor requires an internal axis accessor.", nameof(axis1));
             _axis2 = axis2;
             _combiner = combiner;
         }

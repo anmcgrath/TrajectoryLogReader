@@ -10,7 +10,7 @@ namespace TrajectoryLogReader.Log.Axes
     /// </summary>
     public class FilteredAxisAccessor : AxisAccessorBase
     {
-        private readonly IAxisAccessor _source;
+        private readonly IAxisAccessorInternal _source;
         private readonly IAxisAccessor _filterAxis;
         private readonly RecordType _recordType;
         private readonly Func<float, bool> _predicate;
@@ -26,7 +26,8 @@ namespace TrajectoryLogReader.Log.Axes
         public FilteredAxisAccessor(IAxisAccessor source, IAxisAccessor filterAxis, RecordType recordType,
             Func<float, bool> predicate)
         {
-            _source = source;
+            _source = source as IAxisAccessorInternal
+                ?? throw new ArgumentException("FilteredAxisAccessor requires an internal axis accessor.", nameof(source));
             _filterAxis = filterAxis;
             _recordType = recordType;
             _predicate = predicate;

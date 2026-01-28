@@ -5,7 +5,7 @@ using TrajectoryLogReader.LogStatistics;
 
 namespace TrajectoryLogReader.Log.Axes
 {
-    public abstract class AxisAccessorBase : IAxisAccessor
+    public abstract class AxisAccessorBase : IAxisAccessorInternal
     {
         public abstract int TimeInMs { get; }
         public abstract int SampleRateInMs { get; }

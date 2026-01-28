@@ -1,10 +1,11 @@
+using System;
 using System.Linq;
 
 namespace TrajectoryLogReader.Log.Axes;
 
 internal class DeltaAxisAccessor : AxisAccessorBase
 {
-    private readonly IAxisAccessor _innerAccessor;
+    private readonly IAxisAccessorInternal _innerAccessor;
     private readonly double _sampleRateInMs;
     private readonly TimeSpan? _timeSpan;
     public override int TimeInMs => _innerAccessor.TimeInMs;
@@ -23,7 +24,8 @@ internal class DeltaAxisAccessor : AxisAccessorBase
 
     public DeltaAxisAccessor(IAxisAccessor innerAccessor, double sampleRateInMs, TimeSpan? timeSpan = null)
     {
-        _innerAccessor = innerAccessor;
+        _innerAccessor = innerAccessor as IAxisAccessorInternal
+            ?? throw new ArgumentException("DeltaAxisAccessor requires an internal axis accessor.", nameof(innerAccessor));
         _sampleRateInMs = sampleRateInMs;
         _timeSpan = timeSpan;
         _deltaMultiplier = timeSpan == null ? 1 : (float)(timeSpan.Value.TotalMilliseconds / sampleRateInMs);

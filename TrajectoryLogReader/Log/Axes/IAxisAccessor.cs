@@ -4,8 +4,6 @@ namespace TrajectoryLogReader.Log.Axes
 {
     public interface IAxisAccessor
     {
-        internal int SampleRateInMs { get; }
-
         /// <summary>
         /// The expected values of this axis
         /// </summary>
@@ -60,19 +58,6 @@ namespace TrajectoryLogReader.Log.Axes
         /// <param name="predicate">The filter condition (e.g., value => value > 0)</param>
         /// <returns>A new axis accessor with filtered values</returns>
         public IAxisAccessor WithFilter(IAxisAccessor filterAxis, RecordType recordType, Func<float, bool> predicate);
-
-        /// <summary>
-        /// The data's source scale
-        /// </summary>
-        /// <returns></returns>
-        internal AxisScale GetSourceScale();
-
-        /// <summary>
-        /// The scale we are converting to
-        /// </summary>
-        /// <returns></returns>
-        internal AxisScale GetEffectiveScale();
-
 
         /// <summary>
         /// Gets the delta axis, in delta/timespan. If timespan is null, just returns the delta.
