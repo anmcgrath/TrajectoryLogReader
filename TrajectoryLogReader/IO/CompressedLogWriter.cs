@@ -100,7 +100,7 @@ public static class CompressedLogWriter
     /// <param name="log">The trajectory log to write.</param>
     /// <param name="filePath">The destination file path.</param>
     /// <param name="useGzip">If true, applies GZip compression for additional space savings.</param>
-    public static void Write(TrajectoryLog log, string filePath, bool useGzip = false)
+    public static void Write(TrajectoryLog log, string filePath, bool useGzip = true)
     {
         if (log == null)
             throw new ArgumentNullException(nameof(log));
@@ -117,7 +117,7 @@ public static class CompressedLogWriter
     /// <param name="log">The trajectory log to write.</param>
     /// <param name="stream">The destination stream.</param>
     /// <param name="useGzip">If true, applies GZip compression for additional space savings.</param>
-    public static void Write(TrajectoryLog log, Stream stream, bool useGzip = false)
+    public static void Write(TrajectoryLog log, Stream stream, bool useGzip = true)
     {
         if (log == null)
             throw new ArgumentNullException(nameof(log));

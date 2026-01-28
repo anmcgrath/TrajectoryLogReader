@@ -1,123 +1,132 @@
-# Trajectory Log Reader
+# TrajectoryLogReader
 
-Reads Varian TrueBeam trajectory log files (*.bin). **This has only been tested with log-files of version 5.0.**
+A .NET library for parsing, analyzing, and compressing Varian TrueBeam trajectory log files (*.bin).
+Supports standard Version 5.0 logs.
 
-## Usage
+## Installation
 
-Install from NuGet
-
-```commandline
+```bash
 dotnet add package TrajectoryLogReader
 ```
 
-Load the log file:
+## Basic Usage
+
+### Reading Logs
 
 ```csharp
-TrajectoryLog log = LogReader.ReadBinary(filePath);
+using TrajectoryLogReader;
+using TrajectoryLogReader.IO;
+
+// Read standard binary log
+var log = LogReader.ReadBinary("path/to/file.bin");
 ```
 
-## Data access
+## Data Model
 
-Log-file data can be accessed through either a "column-based" (axes) or "row-based" (snapshots) approach.
+The `TrajectoryLog` object provides two primary views of the data: **Axes** (columnar) and **Snapshots** (row-based).
 
-### Axes data
+### 1. Columnar Access (Axes)
 
-```log.Axes``` provides a wrapper around the raw-data for each axis.
+Best for statistical analysis or plotting full time-series.
 
 ```csharp
-var expected = log.Axes.Gantry.ExpectedValues;
-var actual = log.Axes.Gantry.ActualValues;
-var errors = log.Axes.Gantry.ErrorValues;
-var expectedSubBeam1 = log.SubBeams.First().Axes.Gantry.ExpectedValues;
+// Access raw arrays (IEnumerable<float>)
+var gantryAngles = log.Axes.Gantry.ActualValues;
+var cumulativeMu = log.Axes.MU.ActualValues;
+var gantryErrors = log.Axes.Gantry.ErrorValues;
+
+// Derived rates
+var gantrySpeed = log.Axes.GantrySpeed.ActualValues; // deg/s
+var doseRate = log.Axes.DoseRate.ActualValues;   
 ```
 
-### Snapshots
+### 2. Temporal Access (Snapshots)
 
-Reading all snapshots can be done via:
+Best for sequential processing or state reconstruction.
 
 ```csharp
 foreach (var snapshot in log.Snapshots)
 {
-    Console.WriteLine(snapshot.X1.Actual);
-    Console.WriteLine(snapshot.X1.Expected);
+    var time = snapshot.Milliseconds;
+    var gantry = snapshot.Gantry.Actual;
+    
+    // Access MLC leaf positions with 0-based index [bankIndex, leafIndex]
+    var leafA1 = snapshot.Mlc.Leaves[0][0].Actual; 
 }
 ```
 
-The same can be performed for sub-beams:
+These can also be access for each sub-beam, e.g
 
 ```csharp
-foreach (var sub in log.SubBeams)
-{
-    foreach (var snapshot in sub.Snapshots)
-    {
-        Console.WriteLine(snapshot.X1.Actual);
-        Console.WriteLine(snapshot.X1.Expected);
-    }
-}
+log.SubBeams.First().Axes.Gantry.ExpectedValues;
+log.SubBeams.First().Snapshots.First().GantryRtn.Actual;
 ```
+
+## Analysis Features
 
 ### Interpolation
 
-There are some useful functions for interpolating data at various times. For example:
+Linear interpolation of machine state at any given time (ms).
 
 ```csharp
-int timeInMs = 20;
-var gantryExpected = log.InterpolateAxisData(Axis.Gantry, timeInMs, RecordType.ExpectedPosition);
-var gantryActual = log.InterpolateAxisData(Axis.Gantry, timeInMs, RecordType.ActualPosition);
+int timeMs = 150;
+// Axis position
+double gantryAtT = log.InterpolateAxisData(Axis.GantryRtn, timeMs, RecordType.ActualPosition);
+// Specific MLC leaf
+double leafPos = log.InterpolateMLCPosition(timeMs, bank: 0, leafIndex: 10, RecordType.ActualPosition);
 ```
 
-Data is linearly interpolated between sampling intervals.
+### Fluence Reconstruction
 
-MLC leaf positions can be interpolated at time t:
+Generates a 2D fluence map using Sutherland-Hodgman polygon clipping for accurate aperture area calculation.
 
 ```csharp
-int bankA = 0;
-int bankB = 1;
-int leafIndex = 0;
-int timeInMs = 25;
-double mlc = log.InterpolateMLCPosition(timeInMs, bankA, leafIndex, RecordType.Actual);
+var options = new FluenceOptions
+{
+    Rows = 512,
+    Cols = 512,
+    Width = 400, //mm
+    Height = 400, // mm
+};
+
+var fluenceGrid = log.CreateFluence(options, RecordType.ActualPosition);
+var fluenceGridBeam = log.SubBeams.First().CreateFluence(options, RecordType.ActualPosition);
 ```
 
-Or, a 2D array of MLC positions interpolated at time t can be extracted:
+### Gamma Analysis
+
+Implements 2D Gamma Index (Low et al., 1998). Uses interpolation of the eval grid, which is configurable. The search
+radius is also configurable.
 
 ```csharp
-int t = 25; // time in ms
-float[,] mlc = log.InterpolateMLCPositions(t, RecordType.Expected);
+var gammaParams = new GammaParameters2D(dtaTolMm: 1, doseTolPercent: 1, global: true);
+var result = GammaCalculator2D.Calculate(gammaParams, reference, evaluated);
+
+Console.WriteLine($"Passing Rate: {result.FracPass * 100:F1}%");
 ```
 
-## Fluence Reconstruction
+### Writing Compressed Logs
 
-The library reconstructs the delivered 2D fluence by temporally integrating the beam intensity over the course of the
-delivery. This provides a high-fidelity representation of the actual modulation delivered by the linac.
+The CompressedLogWriter will write the files to a compressed (***lossy***) format. Here we only store changes between
+each axis position as scaled 8/16 bit values.
+
+While there is some loss in precision, the maximum loss for each axis is:
+
+| Axis                  | Stream Type | Scale | Notes               |
+|-----------------------|-------------|-------|---------------------|
+| MLC (All)             | Small       | 1000  | 0.001 cm res        |
+| Jaws (X1, X2, Y1, Y2) | Small       | 1000  | 0.001 cm res        |
+| Couch Pitch / Roll    | Small       | 100   | 0.01 deg res        |
+| Couch Vrt / Lng / Lat | Large       | 100   | 0.01 cm res         |
+| Gantry Rtn            | Large       | 100   | 0.01 deg res, Wraps |
+| Collimator Rtn        | Large       | 100   | 0.01 deg res, Wraps |
+| Couch Rtn             | Large       | 100   | 0.01 deg res, Wraps |
+| MU                    | Large       | 1000  | 0.001 unit res      |
+| ControlPoint          | Large       | 1000  | 0.001 unit res      |
+
+Log file sizes are reduced by >90%, depending on the file.
 
 ```csharp
-var fluence = log.CreateFluence(options, RecordType.Actual); // for the entire log file
-var fluenceSubBeam = log.SubBeams.First().CreateFluence(options, RecordType.Actual); // just for this beam
+// Writes to .cbin
+CompressedLogWriter.Write(log, "path/to/output.cbin");
 ```
-
-**Dosimetric Principles:**
-
-* **Aperture Integration**: The total fluence is the summation of instantaneous apertures defined by the MLC and Jaws at
-  each control point, weighted by the incremental MU delivered.
-* **Geometric Accuracy**: The algorithm accounts for dynamic collimator rotation and asymmetric jaw tracking.
-* **Sub-pixel Resolution**: To accurately model high-modulation VMAT arcs and small stereotactic fields, the system uses
-  an exact area-intersection method (Sutherland-Hodgman) rather than simple center-point sampling. This eliminates
-  aliasing artifacts and partial-volume errors at the leaf edges.
-
-## Gamma Analysis
-
-The verification module implements the standard 2D Gamma Index analysis (Low et al., 1998) to quantify the agreement
-between the Reference (Plan) and Evaluated (Log) distributions.
-
-**Algorithm Specifics:**
-
-* **Grid Resampling**: To minimize discretization error in high-gradient regions (penumbra), the Reference distribution
-  is automatically upsampled. The resolution is set to ensure it is significantly smaller than the
-  Distance-to-Agreement (DTA) tolerance (default $\le \frac{1}{5} \text{DTA}$).
-* **Composite Metric**: The algorithm evaluates the generalized $\gamma$ function, combining dose
-  difference ($\Delta D$) and spatial distance ($\Delta d$) criteria. It supports both **Global Normalization** (
-  relative to $D_{max}$) and **Local Normalization**.
-* **Efficient Search**: A localized search window (default radius $2 \times \text{DTA}$) is used for each evaluated point to
-  find the minimum $\gamma$ value.
-
-
