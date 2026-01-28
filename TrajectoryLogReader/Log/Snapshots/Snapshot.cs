@@ -104,6 +104,36 @@ public class Snapshot
     }
 
     /// <summary>
+    /// Represents the X jaw field size (X1 + X2)
+    /// </summary>
+    public IScalarRecord JawsX
+    {
+        get
+        {
+            field ??= new CombinedScalarRecord(
+                X2.WithScale(AxisScale.ModifiedIEC61217),
+                X1.WithScale(AxisScale.ModifiedIEC61217),
+                (x2, x1) => x1 + x2);
+            return field;
+        }
+    }
+
+    /// <summary>
+    /// Represents the Y jaw field size (Y1 + Y2)
+    /// </summary>
+    public IScalarRecord JawsY
+    {
+        get
+        {
+            field ??= new CombinedScalarRecord(
+                Y2.WithScale(AxisScale.ModifiedIEC61217),
+                Y1.WithScale(AxisScale.ModifiedIEC61217),
+                (y2, y1) => y1 + y2);
+            return field;
+        }
+    }
+
+    /// <summary>
     /// Couch vertical position in centimeters.
     /// </summary>
     public IScalarRecord CouchVrt
