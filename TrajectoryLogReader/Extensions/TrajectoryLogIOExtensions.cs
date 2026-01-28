@@ -68,6 +68,75 @@ public static class TrajectoryLogIOExtensions
         }
 
         /// <summary>
+        /// Exports the sampled axes to a <see cref="TextWriter"/> using a delimited layout.
+        /// </summary>
+        /// <param name="writer">The text writer destination.</param>
+        /// <param name="includeHeaders">If true, writes column headers on the first line.</param>
+        /// <param name="delimiter">The delimiter separating values on each line.</param>
+        /// <param name="scale">The coordinate system to export.</param>
+        /// <param name="axes">The axes to export. When empty, all sampled axes are used.</param>
+        public void SaveToText(TextWriter writer, bool includeHeaders, char delimiter,
+            AxisScale scale = AxisScale.Default,
+            params Axis[] axes)
+        {
+            if (scale == AxisScale.Default)
+                scale = log.Header.AxisScale;
+
+            if (axes.Length == 0)
+                axes = log.Header.AxesSampled;
+
+            if (includeHeaders)
+            {
+                writer.Write($"time (ms){delimiter}");
+                for (var axisIndex = 0; axisIndex < axes.Length; axisIndex++)
+                {
+                    var axis = axes[axisIndex];
+                    var axisData = log.GetAxisData(axis);
+                    var numSamples = axisData.SamplesPerSnapshot;
+                    for (int i = 0; i < numSamples; i++)
+                    {
+                        writer.Write($"{axis}[{i}]");
+                        if (i != numSamples - 1)
+                            writer.Write(delimiter);
+                    }
+
+                    if (axisIndex != axes.Length - 1)
+                        writer.Write(delimiter);
+                }
+
+                writer.WriteLine();
+            }
+
+            for (int s = 0; s < log.Header.NumberOfSnapshots; s++)
+            {
+                int t = s * log.Header.SamplingIntervalInMS;
+
+                writer.Write($"{t}{delimiter}");
+                for (var axisIndex = 0; axisIndex < axes.Length; axisIndex++)
+                {
+                    var axis = axes[axisIndex];
+                    var axisData = log.GetAxisData(axis);
+                    var numSamples = axisData.SamplesPerSnapshot;
+                    var offset = s * numSamples;
+
+                    for (int i = 0; i < numSamples; i++)
+                    {
+                        var val = axisData.Data[offset + i];
+                        var converted = Scale.Convert(log.Header.AxisScale, scale, axis, val);
+                        writer.Write(converted);
+                        if (i != numSamples - 1)
+                            writer.Write(delimiter);
+                    }
+
+                    if (axisIndex != axes.Length - 1)
+                        writer.Write(delimiter);
+                }
+
+                writer.WriteLine();
+            }
+        }
+
+        /// <summary>
         /// Exports the sampled axes to a <see cref="StringBuilder"/> using a delimited layout.
         /// This overload is useful when you want to capture the output in-memory (for example,
         /// to attach to a report or feed into another tool).
@@ -81,63 +150,8 @@ public static class TrajectoryLogIOExtensions
             AxisScale scale = AxisScale.Default,
             params Axis[] axes)
         {
-            if (scale == AxisScale.Default)
-                scale = log.Header.AxisScale;
-
-            if (axes.Length == 0)
-                axes = log.Header.AxesSampled;
-
-            if (includeHeaders)
-            {
-                var headerLine = new StringBuilder();
-                headerLine.Append($"time (ms){delimiter}");
-                for (var axisIndex = 0; axisIndex < axes.Length; axisIndex++)
-                {
-                    var axis = axes[axisIndex];
-                    var axisData = log.GetAxisData(axis);
-                    var numSamples = axisData.SamplesPerSnapshot;
-                    for (int i = 0; i < numSamples; i++)
-                    {
-                        headerLine.Append($"{axis}[{i}]");
-                        if (i != numSamples - 1)
-                            headerLine.Append(delimiter);
-                    }
-
-                    if (axisIndex != axes.Length - 1)
-                        headerLine.Append(delimiter);
-                }
-
-                sb.AppendLine(headerLine.ToString());
-            }
-
-            for (int s = 0; s < log.Header.NumberOfSnapshots; s++)
-            {
-                int t = s * log.Header.SamplingIntervalInMS;
-
-                var line = new StringBuilder();
-                line.Append($"{t}{delimiter}");
-                for (var axisIndex = 0; axisIndex < axes.Length; axisIndex++)
-                {
-                    var axis = axes[axisIndex];
-                    var axisData = log.GetAxisData(axis);
-                    var numSamples = axisData.SamplesPerSnapshot;
-                    var offset = s * numSamples;
-
-                    for (int i = 0; i < numSamples; i++)
-                    {
-                        var val = axisData.Data[offset + i];
-                        var converted = Scale.Convert(log.Header.AxisScale, scale, axis, val);
-                        line.Append(converted);
-                        if (i != numSamples - 1)
-                            line.Append(delimiter);
-                    }
-
-                    if (axisIndex != axes.Length - 1)
-                        line.Append(delimiter);
-                }
-
-                sb.AppendLine(line.ToString());
-            }
+            using var writer = new StringWriter(sb);
+            log.SaveToText(writer, includeHeaders, delimiter, scale, axes);
         }
 
         /// <summary>
@@ -149,12 +163,10 @@ public static class TrajectoryLogIOExtensions
         /// <param name="scale">The coordinate system to export.</param>
         /// <param name="axes">The axes to export.</param>
         public void SaveToText(Stream stream, bool includeHeaders, char delimiter,
-            AxisScale scale, Axis[] axes)
+            AxisScale scale, params Axis[] axes)
         {
             using var sw = new StreamWriter(stream);
-            var sb = new StringBuilder();
-            log.SaveToText(sb, includeHeaders, delimiter, scale, axes);
-            sw.Write(sb);
+            log.SaveToText(sw, includeHeaders, delimiter, scale, axes);
         }
 
         /// <summary>
@@ -165,7 +177,7 @@ public static class TrajectoryLogIOExtensions
         /// <param name="scale">The coordinate system to export.</param>
         /// <param name="axes">The axes to export.</param>
         public void SaveToCsv(string fileName, bool includeHeaders, AxisScale scale,
-            Axis[] axes)
+            params Axis[] axes)
         {
             log.SaveToText(fileName, includeHeaders, ',', scale, axes);
         }
