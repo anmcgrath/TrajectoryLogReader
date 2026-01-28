@@ -210,4 +210,62 @@ public class GantryAndDoseRateTests
         velocities[1].ShouldBe(2f); // 360-358 = 2
         velocities[2].ShouldBe(2f); // 2-360 wraps to 2 (not -358)
     }
+
+    [Test]
+    public void GantryDeltaInMachineScaleUsesMachineScale()
+    {
+        var machineLog = new TrajectoryLog();
+        machineLog.Header = new Header();
+        machineLog.Header.SamplingIntervalInMS = 1000; // 1 second
+        machineLog.Header.NumberOfSnapshots = 2;
+        machineLog.Header.AxisScale = AxisScale.MachineScale;
+        machineLog.Header.AxesSampled = new[] { Axis.GantryRtn };
+        machineLog.Header.SamplesPerAxis = new[] { 2 };
+
+        var gantryData = new AxisData(2, 2);
+        gantryData.Data = new[]
+        {
+            // Exp, Act
+            350f, 350f, // T0
+            10f, 10f    // T1 -> delta should be +20 (wrap in machine scale)
+        };
+        machineLog.AxisData = new[] { gantryData };
+
+        var velocities = machineLog.Snapshots
+            .Select(x => x.GantryRtn.GetDelta(TimeSpan.FromSeconds(1)).Actual)
+            .ToArray();
+
+        velocities[0].ShouldBe(0f);
+        velocities[1].ShouldBe(20f);
+    }
+
+    [Test]
+    public void AccelerationDoesNotWrapForRotationalAxes()
+    {
+        var accelLog = new TrajectoryLog();
+        accelLog.Header = new Header();
+        accelLog.Header.SamplingIntervalInMS = 1000; // 1 second
+        accelLog.Header.NumberOfSnapshots = 3;
+        accelLog.Header.AxisScale = AxisScale.ModifiedIEC61217;
+        accelLog.Header.AxesSampled = new[] { Axis.GantryRtn };
+        accelLog.Header.SamplesPerAxis = new[] { 2 };
+
+        var gantryData = new AxisData(3, 2);
+        gantryData.Data = new[]
+        {
+            // Exp, Act
+            0f, 0f,    // T0
+            170f, 170f, // T1 -> velocity +170
+            0f, 0f      // T2 -> velocity -170
+        };
+        accelLog.AxisData = new[] { gantryData };
+
+        var accelerations = accelLog.Snapshots
+            .Select(x => x.GantryRtn.GetDelta(TimeSpan.FromSeconds(1)).GetDelta(TimeSpan.FromSeconds(1)).Actual)
+            .ToArray();
+
+        accelerations[0].ShouldBe(0f);
+        accelerations[1].ShouldBe(170f);
+        accelerations[2].ShouldBe(-340f);
+    }
 }

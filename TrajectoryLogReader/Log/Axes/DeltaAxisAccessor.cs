@@ -1,5 +1,4 @@
 using System.Linq;
-using TrajectoryLogReader.Util;
 
 namespace TrajectoryLogReader.Log.Axes;
 
@@ -32,7 +31,7 @@ internal class DeltaAxisAccessor : AxisAccessorBase
             _innerAxis = o.Axis;
     }
 
-    private IEnumerable<float> CalculateDeltaMu(IEnumerable<float> positions)
+    private IEnumerable<float> CalculateDelta(IEnumerable<float> positions)
     {
         using var e = positions.GetEnumerator();
         if (!e.MoveNext()) yield break;
@@ -45,9 +44,9 @@ internal class DeltaAxisAccessor : AxisAccessorBase
         {
             float current = e.Current;
 
-            var difference = _innerAxis == null
-                ? (current - prev)
-                : Scale.Delta(GetEffectiveScale(), prev, GetEffectiveScale(), current, _innerAxis.Value);
+            var difference = current - prev;
+            if (_innerAxis.HasValue && _innerAxis.Value.IsRotational())
+                difference = Normalize(difference, 360f);
 
             yield return difference * _deltaMultiplier;
             prev = current;
@@ -60,7 +59,7 @@ internal class DeltaAxisAccessor : AxisAccessorBase
         {
             if (_expected == null)
             {
-                _expected = CalculateDeltaMu(_innerAccessor.ExpectedValues).ToArray();
+                _expected = CalculateDelta(_innerAccessor.ExpectedValues).ToArray();
             }
 
             return _expected;
@@ -73,7 +72,7 @@ internal class DeltaAxisAccessor : AxisAccessorBase
         {
             if (_actual == null)
             {
-                _actual = CalculateDeltaMu(_innerAccessor.ActualValues).ToArray();
+                _actual = CalculateDelta(_innerAccessor.ActualValues).ToArray();
             }
 
             return _actual;
@@ -114,4 +113,12 @@ internal class DeltaAxisAccessor : AxisAccessorBase
     public override AxisScale GetSourceScale() => _innerAccessor.GetSourceScale();
 
     public override AxisScale GetEffectiveScale() => _innerAccessor.GetEffectiveScale();
+
+    private static float Normalize(float value, float period)
+    {
+        if (value > period / 2) return value - period;
+        if (value <= -period / 2) return value + period;
+        return value;
+    }
+
 }

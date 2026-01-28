@@ -92,6 +92,6 @@ public class MLCLeafRecord : IScalarRecord
         var msConverter = timeSpan.HasValue
             ? (float)(timeSpan.Value.TotalMilliseconds / _log.Header.SamplingIntervalInMS)
             : 1f;
-        return new DeltaRecord(previous, this, msConverter, Axis.MLC, _targetScale, _log);
+        return new DeltaRecord(previous, this, msConverter, Axis.MLC, false, _targetScale, _log);
     }
 }

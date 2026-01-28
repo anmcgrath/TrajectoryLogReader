@@ -106,7 +106,7 @@ namespace TrajectoryLogReader.Log.Axes
 
                 var diff = actConv - expConv;
 
-                if (IsRotational(Axis))
+                if (Axis.IsRotational())
                 {
                     diff = Normalize(diff, 360);
                 }
@@ -132,15 +132,6 @@ namespace TrajectoryLogReader.Log.Axes
             if (value > period / 2) return value - period;
             if (value <= -period / 2) return value + period;
             return value;
-        }
-
-        private bool IsRotational(Axis axis)
-        {
-            return axis == Axis.GantryRtn ||
-                   axis == Axis.CollRtn ||
-                   axis == Axis.CouchRtn ||
-                   axis == Axis.CouchPitch ||
-                   axis == Axis.CouchRoll;
         }
 
         private bool IsCouch(Axis axis)

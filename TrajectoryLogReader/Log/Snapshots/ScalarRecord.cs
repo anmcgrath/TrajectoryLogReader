@@ -131,6 +131,6 @@ public class ScalarRecord : IScalarRecord
         var msConverter = timeSpan.HasValue
             ? (float)(timeSpan.Value.TotalMilliseconds / _log.Header.SamplingIntervalInMS)
             : 1f;
-        return new DeltaRecord(previous, this, msConverter, _axis, _targetScale, _log);
+        return new DeltaRecord(previous, this, msConverter, _axis, true, _targetScale, _log);
     }
 }
