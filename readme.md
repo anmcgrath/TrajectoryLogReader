@@ -93,6 +93,8 @@ var fluenceGrid = log.CreateFluence(options, RecordType.ActualPosition);
 var fluenceGridBeam = log.SubBeams.First().CreateFluence(options, RecordType.ActualPosition);
 ```
 
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/738b82fc-f0a6-43d3-bbd5-4a9b6b266bb6" />
+
 ### Gamma Analysis
 
 Implements 2D Gamma Index (Low et al., 1998). Uses interpolation of the eval grid, which is configurable. The search
@@ -104,6 +106,17 @@ var result = GammaCalculator2D.Calculate(gammaParams, reference, evaluated);
 
 Console.WriteLine($"Passing Rate: {result.FracPass * 100:F1}%");
 ```
+
+### Output
+
+Output a log-file to TSV or CSV
+
+```csharp
+log.SaveToCsv("/out/log.csv", includeHeaders: true, AxisScale.IEC61217);
+```
+
+<img width="50%" alt="image" src="https://github.com/user-attachments/assets/9f72a8e7-bc61-4f14-87a8-289dc80334cb" />
+
 
 ### Writing Compressed Logs
 
