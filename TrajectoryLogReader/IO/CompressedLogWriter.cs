@@ -26,7 +26,7 @@ public static class CompressedLogWriter
     /// <summary>
     /// Version string for compressed format.
     /// </summary>
-    private const string FormatVersion = "1.0";
+    private const string FormatVersion = "2.0";
 
     /// <summary>
     /// Size of the signature block in bytes.
@@ -45,26 +45,19 @@ public static class CompressedLogWriter
     private const short EscapeCode16 = short.MinValue; // 0x8000
 
     /// <summary>
-    /// Quantization scale for small position values (cm to 0.001 cm = 0.01 mm).
-    /// Used for MLC leaves, jaws - range ±32 cm fits in 16-bit.
+    /// Default scale used when a stream has no deltas (constant values).
     /// </summary>
-    private const float SmallPositionScale = 1000.0f;
+    private const float DefaultScale = 1000.0f;
 
     /// <summary>
-    /// Quantization scale for large position values (cm to 0.01 cm = 0.1 mm).
-    /// Used for couch positions - range ±21474 cm fits in 32-bit.
+    /// Minimum scale to avoid precision loss for very small deltas.
     /// </summary>
-    private const float LargePositionScale = 100.0f;
+    private const float MinScale = 10.0f;
 
     /// <summary>
-    /// Quantization scale for angle values (degrees to 0.01 degrees).
+    /// Maximum scale to avoid overflow for very small ranges.
     /// </summary>
-    private const float AngleScale = 100.0f;
-
-    /// <summary>
-    /// Quantization scale for MU/ControlPoint values (to 0.001 units).
-    /// </summary>
-    private const float LargeValueScale = 1000.0f;
+    private const float MaxScale = 100000.0f;
 
     /// <summary>
     /// Axes that represent 360-degree angular values and need wraparound handling.
@@ -192,6 +185,31 @@ public static class CompressedLogWriter
     {
         var header = log.Header;
 
+        // First pass: calculate optimal scales for each stream
+        var scales = new List<float>();
+        for (int axisIndex = 0; axisIndex < header.NumAxesSampled; axisIndex++)
+        {
+            var axis = header.AxesSampled[axisIndex];
+            var axisData = log.AxisData[axisIndex];
+            var isLargeValue = LargeValueAxes.Contains(axis);
+            var isFullRotation = FullRotationAxes.Contains(axis);
+
+            for (int sampleOffset = 0; sampleOffset < axisData.SamplesPerSnapshot; sampleOffset++)
+            {
+                float scale = CalculateOptimalScale(
+                    axisData, sampleOffset, header.NumberOfSnapshots,
+                    axisData.SamplesPerSnapshot, isLargeValue, isFullRotation);
+                scales.Add(scale);
+            }
+        }
+
+        // Write scale table
+        bw.Write(scales.Count);
+        foreach (var scale in scales)
+            bw.Write(scale);
+
+        // Second pass: write compressed data using calculated scales
+        int scaleIndex = 0;
         for (int axisIndex = 0; axisIndex < header.NumAxesSampled; axisIndex++)
         {
             var axis = header.AxesSampled[axisIndex];
@@ -199,10 +217,11 @@ public static class CompressedLogWriter
             var samplesPerSnapshot = axisData.SamplesPerSnapshot;
             var isFullRotation = FullRotationAxes.Contains(axis);
             var isLargeValue = LargeValueAxes.Contains(axis);
-            var scale = GetScaleForAxis(axis);
 
             for (int sampleOffset = 0; sampleOffset < samplesPerSnapshot; sampleOffset++)
             {
+                var scale = scales[scaleIndex++];
+
                 if (isLargeValue)
                 {
                     WriteLargeValueStream(bw, axisData, sampleOffset, header.NumberOfSnapshots,
@@ -215,6 +234,121 @@ public static class CompressedLogWriter
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Calculates the optimal quantization scale for a data stream based on actual delta values.
+    /// Uses outlier detection (> 5 standard deviations) to optimize for typical movement patterns.
+    /// Also ensures absolute values fit in the base storage type.
+    /// </summary>
+    private static float CalculateOptimalScale(
+        AxisData axisData,
+        int sampleOffset,
+        int numSnapshots,
+        int stride,
+        bool isLargeValue,
+        bool isFullRotation)
+    {
+        if (numSnapshots == 0)
+            return DefaultScale;
+
+        // Find the maximum absolute value to ensure it fits in base storage
+        float maxAbsValue = 0;
+        for (int snapshot = 0; snapshot < numSnapshots; snapshot++)
+        {
+            int dataIndex = snapshot * stride + sampleOffset;
+            float absValue = Math.Abs(axisData.Data[dataIndex]);
+            maxAbsValue = Math.Max(maxAbsValue, absValue);
+        }
+
+        // Calculate maximum scale that allows absolute values to fit in base storage
+        // Leave 5% headroom for safety
+        float baseStorageMax = isLargeValue ? int.MaxValue * 0.95f : short.MaxValue * 0.95f;
+        float maxScaleForAbsValues = maxAbsValue > 1e-6f ? baseStorageMax / maxAbsValue : MaxScale;
+
+        // Collect all deltas
+        var deltas = CollectDeltas(axisData, sampleOffset, numSnapshots, stride, isFullRotation);
+
+        if (deltas.Count == 0)
+        {
+            // Constant values - use max scale allowed by absolute values
+            return Math.Max(MinScale, Math.Min(MaxScale, maxScaleForAbsValues));
+        }
+
+        // Calculate mean and standard deviation
+        float mean = deltas.Average();
+        float variance = deltas.Select(d => (d - mean) * (d - mean)).Average();
+        float stdDev = (float)Math.Sqrt(variance);
+
+        // Find max delta excluding outliers (> 5 SD from mean)
+        float outlierThreshold = Math.Abs(mean) + 5 * stdDev;
+        float maxNormalDelta = deltas
+            .Where(d => Math.Abs(d) <= outlierThreshold)
+            .DefaultIfEmpty(0)
+            .Max(d => Math.Abs(d));
+
+        // If all deltas are negligible, use max scale allowed by absolute values
+        if (maxNormalDelta < 1e-6f)
+            return Math.Max(MinScale, Math.Min(MaxScale, maxScaleForAbsValues));
+
+        // Calculate scale to fit normal deltas in available delta range
+        // Leave 10% headroom for quantization rounding
+        float deltaRange = isLargeValue ? 32767 * 0.9f : 127 * 0.9f;
+        float scaleForDeltas = deltaRange / maxNormalDelta;
+
+        // Use the minimum of delta-based scale and absolute-value-based scale
+        float scale = Math.Min(scaleForDeltas, maxScaleForAbsValues);
+
+        // Clamp to reasonable bounds
+        return Math.Max(MinScale, Math.Min(MaxScale, scale));
+    }
+
+    /// <summary>
+    /// Collects all delta values from a data stream for scale calculation.
+    /// </summary>
+    private static List<float> CollectDeltas(
+        AxisData axisData,
+        int sampleOffset,
+        int numSnapshots,
+        int stride,
+        bool isFullRotation)
+    {
+        var deltas = new List<float>(numSnapshots > 0 ? numSnapshots - 1 : 0);
+
+        if (numSnapshots <= 1) return deltas;
+
+        float previousValue = axisData.Data[sampleOffset];
+
+        for (int snapshot = 1; snapshot < numSnapshots; snapshot++)
+        {
+            int dataIndex = snapshot * stride + sampleOffset;
+            float currentValue = axisData.Data[dataIndex];
+
+            float delta = currentValue - previousValue;
+
+            // For full rotation angles, normalize delta to handle 0/360 wraparound
+            if (isFullRotation)
+            {
+                delta = NormalizeAngularDeltaFloat(delta);
+            }
+
+            deltas.Add(delta);
+            previousValue = currentValue;
+        }
+
+        return deltas;
+    }
+
+    /// <summary>
+    /// Normalizes an angular delta to the range [-180, 180] degrees.
+    /// </summary>
+    private static float NormalizeAngularDeltaFloat(float delta)
+    {
+        while (delta > 180)
+            delta -= 360;
+        while (delta < -180)
+            delta += 360;
+        return delta;
     }
 
     /// <summary>
@@ -344,22 +478,4 @@ public static class CompressedLogWriter
         return delta;
     }
 
-    private static float GetScaleForAxis(Axis axis)
-    {
-        return axis switch
-        {
-            // Full rotation angles: 0.01° resolution
-            Axis.GantryRtn or Axis.CollRtn or Axis.CouchRtn => AngleScale,
-
-            // Small tilt angles: 0.01° resolution (not full rotation)
-            Axis.CouchPitch or Axis.CouchRoll => AngleScale,
-
-            // Large value axes: 0.01 unit resolution
-            Axis.CouchVrt or Axis.CouchLng or Axis.CouchLat => LargePositionScale,
-            Axis.MU or Axis.ControlPoint => LargeValueScale,
-
-            // All other axes (MLC, jaws, etc.): 0.001 cm resolution
-            _ => SmallPositionScale
-        };
-    }
 }

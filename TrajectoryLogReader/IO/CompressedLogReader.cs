@@ -36,26 +36,6 @@ public static class CompressedLogReader
     private const short EscapeCode16 = short.MinValue; // 0x8000
 
     /// <summary>
-    /// Quantization scale for small position values.
-    /// </summary>
-    private const float SmallPositionScale = 1000.0f;
-
-    /// <summary>
-    /// Quantization scale for large position values.
-    /// </summary>
-    private const float LargePositionScale = 100.0f;
-
-    /// <summary>
-    /// Quantization scale for angle values.
-    /// </summary>
-    private const float AngleScale = 100.0f;
-
-    /// <summary>
-    /// Quantization scale for MU/ControlPoint values.
-    /// </summary>
-    private const float LargeValueScale = 1000.0f;
-
-    /// <summary>
     /// Axes that require 32-bit storage.
     /// </summary>
     private static readonly HashSet<Axis> LargeValueAxes = new()
@@ -248,16 +228,25 @@ public static class CompressedLogReader
     {
         var header = log.Header;
 
+        // Read scale table
+        int scaleCount = br.ReadInt32();
+        var scales = new float[scaleCount];
+        for (int i = 0; i < scaleCount; i++)
+            scales[i] = br.ReadSingle();
+
+        // Read axis data using per-stream scales
+        int scaleIndex = 0;
         for (int axisIndex = 0; axisIndex < header.NumAxesSampled; axisIndex++)
         {
             var axis = header.AxesSampled[axisIndex];
             var axisData = log.AxisData[axisIndex];
             var samplesPerSnapshot = axisData.SamplesPerSnapshot;
             var isLargeValue = LargeValueAxes.Contains(axis);
-            var scale = GetScaleForAxis(axis);
 
             for (int sampleOffset = 0; sampleOffset < samplesPerSnapshot; sampleOffset++)
             {
+                var scale = scales[scaleIndex++];
+
                 if (isLargeValue)
                 {
                     ReadLargeValueStream(br, axisData, sampleOffset, header.NumberOfSnapshots,
@@ -363,17 +352,5 @@ public static class CompressedLogReader
     private static float DequantizeFromInt(int quantized, float scale)
     {
         return quantized / scale;
-    }
-
-    private static float GetScaleForAxis(Axis axis)
-    {
-        return axis switch
-        {
-            Axis.GantryRtn or Axis.CollRtn or Axis.CouchRtn => AngleScale,
-            Axis.CouchPitch or Axis.CouchRoll => AngleScale,
-            Axis.CouchVrt or Axis.CouchLng or Axis.CouchLat => LargePositionScale,
-            Axis.MU or Axis.ControlPoint => LargeValueScale,
-            _ => SmallPositionScale
-        };
     }
 }

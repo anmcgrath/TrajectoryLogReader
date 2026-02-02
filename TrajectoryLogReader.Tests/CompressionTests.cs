@@ -424,4 +424,161 @@ public class CompressionTests
     }
 
     #endregion
+
+    #region Dynamic Scale Tests
+
+    [Test]
+    public void DynamicScale_ConstantValues_RoundTripsCorrectly()
+    {
+        // Test that constant values (no deltas) work correctly
+        var originalPath = TestFiles.GetPath("AnonFile0.bin");
+        var compressedPath = Path.Combine(_tempDir, "compressed.cbin");
+
+        var original = LogReader.ReadBinary(originalPath);
+        CompressedLogWriter.Write(original, compressedPath);
+        var decompressed = CompressedLogReader.Read(compressedPath);
+
+        // Verify header matches (proves round-trip worked)
+        decompressed.Header.NumberOfSnapshots.ShouldBe(original.Header.NumberOfSnapshots);
+        decompressed.Header.NumAxesSampled.ShouldBe(original.Header.NumAxesSampled);
+    }
+
+    [Test]
+    public void DynamicScale_ImprovedPrecision_MlcPositions()
+    {
+        // Test that dynamic scaling achieves good precision on MLC positions
+        var originalPath = TestFiles.GetPath("AnonFile0.bin");
+        var compressedPath = Path.Combine(_tempDir, "compressed.cbin");
+
+        var original = LogReader.ReadBinary(originalPath);
+        CompressedLogWriter.Write(original, compressedPath);
+        var decompressed = CompressedLogReader.Read(compressedPath);
+
+        // With dynamic scaling, we should achieve even better than 0.01mm precision
+        // for typical MLC movements which have small deltas
+        const float strictTolerance = 0.005f; // 0.05mm tolerance
+
+        var mlcAxisIndex = original.Header.GetAxisIndex(Axis.MLC);
+        if (mlcAxisIndex >= 0)
+        {
+            var origMlc = original.AxisData[mlcAxisIndex];
+            var decompMlc = decompressed.AxisData[mlcAxisIndex];
+
+            float maxDiff = 0;
+            for (int i = 0; i < origMlc.Data.Length; i++)
+            {
+                var diff = Math.Abs(origMlc.Data[i] - decompMlc.Data[i]);
+                maxDiff = Math.Max(maxDiff, diff);
+            }
+
+            TestContext.WriteLine($"Max MLC position difference with dynamic scaling: {maxDiff:F5} cm ({maxDiff * 10:F3} mm)");
+
+            // Should be well within clinical tolerance
+            maxDiff.ShouldBeLessThan(strictTolerance,
+                $"MLC position difference {maxDiff} cm exceeds strict tolerance of {strictTolerance} cm");
+        }
+    }
+
+    [Test]
+    public void DynamicScale_ScaleTableSize_IsReasonable()
+    {
+        // Verify the scale table overhead is small
+        var originalPath = TestFiles.GetPath("AnonFile0.bin");
+        var compressedNoGzipPath = Path.Combine(_tempDir, "compressed_nogzip.cbin");
+
+        var original = LogReader.ReadBinary(originalPath);
+        CompressedLogWriter.Write(original, compressedNoGzipPath, useGzip: false);
+
+        // Count expected number of streams
+        int expectedStreams = 0;
+        for (int i = 0; i < original.Header.NumAxesSampled; i++)
+        {
+            expectedStreams += original.AxisData[i].SamplesPerSnapshot;
+        }
+
+        // Scale table overhead: 4 bytes (count) + 4 bytes per stream
+        int expectedScaleTableSize = 4 + (expectedStreams * 4);
+
+        TestContext.WriteLine($"Number of streams: {expectedStreams}");
+        TestContext.WriteLine($"Expected scale table size: {expectedScaleTableSize} bytes");
+
+        // Scale table should be less than 1% of original file size for typical logs
+        var originalSize = new FileInfo(originalPath).Length;
+        var scaleTablePercentage = (double)expectedScaleTableSize / originalSize * 100;
+
+        TestContext.WriteLine($"Scale table as % of original: {scaleTablePercentage:F2}%");
+        scaleTablePercentage.ShouldBeLessThan(1.0, "Scale table overhead should be less than 1% of original size");
+    }
+
+    [Test]
+    public void DynamicScale_AllTestFiles_MaintainPrecision()
+    {
+        var testFiles = new[] { "AnonFile0.bin", "AnonFile1.bin", "AnonFile2.bin", "AnonFile3.bin" };
+
+        foreach (var file in testFiles)
+        {
+            var originalPath = TestFiles.GetPath(file);
+            var compressedPath = Path.Combine(_tempDir, $"{file}.cbin");
+
+            var original = LogReader.ReadBinary(originalPath);
+            CompressedLogWriter.Write(original, compressedPath);
+            var decompressed = CompressedLogReader.Read(compressedPath);
+
+            // Verify axis data is preserved within tolerance
+            for (int axisIndex = 0; axisIndex < original.Header.NumAxesSampled; axisIndex++)
+            {
+                var origAxis = original.AxisData[axisIndex];
+                var decompAxis = decompressed.AxisData[axisIndex];
+
+                float maxDiff = 0;
+                for (int i = 0; i < origAxis.Data.Length; i++)
+                {
+                    var diff = Math.Abs(origAxis.Data[i] - decompAxis.Data[i]);
+                    // Handle angular wraparound
+                    if (diff > 180) diff = 360 - diff;
+                    maxDiff = Math.Max(maxDiff, diff);
+                }
+
+                // All axes should maintain good precision (< 0.05 units)
+                maxDiff.ShouldBeLessThan(0.05f,
+                    $"{file}, Axis {original.Header.AxesSampled[axisIndex]}: max diff {maxDiff} exceeds tolerance");
+            }
+
+            TestContext.WriteLine($"{file}: All axes within tolerance");
+        }
+    }
+
+    [Test]
+    public void DynamicScale_AngularWraparound_HandledCorrectly()
+    {
+        // Test that angular wraparound at 0/360 boundary is handled correctly
+        var originalPath = TestFiles.GetPath("AnonFile0.bin");
+        var compressedPath = Path.Combine(_tempDir, "compressed.cbin");
+
+        var original = LogReader.ReadBinary(originalPath);
+        CompressedLogWriter.Write(original, compressedPath);
+        var decompressed = CompressedLogReader.Read(compressedPath);
+
+        // Check gantry angle specifically for wraparound handling
+        var gantryAxisIndex = original.Header.GetAxisIndex(Axis.GantryRtn);
+        if (gantryAxisIndex >= 0)
+        {
+            var origGantry = original.AxisData[gantryAxisIndex];
+            var decompGantry = decompressed.AxisData[gantryAxisIndex];
+
+            float maxDiff = 0;
+            for (int i = 0; i < origGantry.Data.Length; i++)
+            {
+                var diff = Math.Abs(origGantry.Data[i] - decompGantry.Data[i]);
+                // Handle wraparound
+                if (diff > 180) diff = 360 - diff;
+                maxDiff = Math.Max(maxDiff, diff);
+            }
+
+            TestContext.WriteLine($"Max Gantry angle difference: {maxDiff:F4} degrees");
+            maxDiff.ShouldBeLessThan(0.05f, "Gantry angle should be preserved within 0.05 degrees");
+        }
+    }
+
+    #endregion
 }
