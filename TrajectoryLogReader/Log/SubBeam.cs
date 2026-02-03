@@ -1,4 +1,5 @@
-﻿using TrajectoryLogReader.Complexity;
+﻿using System.Data;
+using TrajectoryLogReader.Complexity;
 using TrajectoryLogReader.Fluence;
 using TrajectoryLogReader.Log.Axes;
 using TrajectoryLogReader.Log.Snapshots;
@@ -50,7 +51,7 @@ namespace TrajectoryLogReader.Log
         {
             get
             {
-                if (field < 0)
+                if (field < 0) // yet to be calculated
                     field = CalculateStartIndex();
                 return field;
             }
@@ -63,7 +64,7 @@ namespace TrajectoryLogReader.Log
         {
             get
             {
-                if (field < 0)
+                if (field < 0) // yet to be calculated
                     field = CalculateEndIndex();
                 return field;
             }
@@ -126,14 +127,18 @@ namespace TrajectoryLogReader.Log
 
         private int CalculateStartIndex()
         {
+            if (ControlPoint == 0)
+                return 0;
+
             var cpData = _log.GetAxisData(Axis.ControlPoint);
             var stride = cpData.SamplesPerSnapshot;
+
 
             for (int i = 0; i < cpData.NumSnapshots; i++)
             {
                 var cp = cpData.Data[i * stride + 0];
                 if (cp >= ControlPoint)
-                    return i;
+                    return i + 1; // +1 as the prev beam must get to the cp index
             }
 
             return -2;
