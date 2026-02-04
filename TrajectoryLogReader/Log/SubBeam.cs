@@ -132,7 +132,7 @@ namespace TrajectoryLogReader.Log
             for (int i = 0; i < cpData.NumSnapshots; i++)
             {
                 var cp = cpData.Data[i * stride + 0];
-                if (cp >= ControlPoint)
+                if (cp > ControlPoint) // beam ends at same cp
                     return i;
             }
 
