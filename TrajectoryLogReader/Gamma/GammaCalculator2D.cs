@@ -84,8 +84,8 @@ public static class GammaCalculator2D
 
         var samplingRate = Math.Min(parameters.SamplingRate, 10);
 
-        var xSearchRes = parameters.DtaTolMm / samplingRate;
-        var ySearchRes = parameters.DtaTolMm / samplingRate;
+        var xSearchRes = samplingRate == 0 ? compared.XRes : parameters.DtaTolMm / samplingRate;
+        var ySearchRes = samplingRate == 0 ? compared.YRes : parameters.DtaTolMm / samplingRate;
 
         // Calculate resampling multipliers
         // mx or my = the number of spaces between original dose points
@@ -376,9 +376,9 @@ public static class GammaCalculator2D
                     foreach (var offset in offsets)
                     {
                         // Early termination: offsets are sorted by distance
-                        double distComponent = offset.DistSquared / dtaCriteriaSq;
-                        //if (!double.IsNaN(minGammaSquared) && distComponent >= minGammaSquared)
-                        //    break;
+                        double distComponentSq = offset.DistSquared / dtaCriteriaSq;
+                        if (!double.IsNaN(minGammaSquared) && distComponentSq >= minGammaSquared)
+                            break;
 
                         var xiRef = offset.XIndexOffset + xi * mx;
                         var yiRef = offset.YIndexOffset + yi * my;
@@ -400,7 +400,7 @@ public static class GammaCalculator2D
                             doseDifference = 100 * (comparedDose - refDose) / refDose;
                         }
 
-                        var gammaSq = (doseDifference * doseDifference) / doseCriteriaSq + distComponent;
+                        var gammaSq = (doseDifference * doseDifference) / doseCriteriaSq + distComponentSq;
 
                         if (double.IsNaN(minGammaSquared) || gammaSq < minGammaSquared)
                             minGammaSquared = gammaSq;
