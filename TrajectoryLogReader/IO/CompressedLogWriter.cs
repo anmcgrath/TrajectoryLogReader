@@ -266,26 +266,21 @@ public static class CompressedLogWriter
         float baseStorageMax = isLargeValue ? int.MaxValue * 0.95f : short.MaxValue * 0.95f;
         float maxScaleForAbsValues = maxAbsValue > 1e-6f ? baseStorageMax / maxAbsValue : MaxScale;
 
-        // Collect all deltas
-        var deltas = CollectDeltas(axisData, sampleOffset, numSnapshots, stride, isFullRotation);
-
-        if (deltas.Count == 0)
+        if (numSnapshots <= 1)
         {
             // Constant values - use max scale allowed by absolute values
             return Math.Max(MinScale, Math.Min(MaxScale, maxScaleForAbsValues));
         }
 
-        // Calculate mean and standard deviation
-        float mean = deltas.Average();
-        float variance = deltas.Select(d => (d - mean) * (d - mean)).Average();
-        float stdDev = (float)Math.Sqrt(variance);
+        // Collect deltas and calculate statistics in combined passes (no LINQ, no intermediate list)
+        var (deltaCount, mean, variance, maxNormalDelta) = CalculateDeltaStatistics(
+            axisData, sampleOffset, numSnapshots, stride, isFullRotation);
 
-        // Find max delta excluding outliers (> 5 SD from mean)
-        float outlierThreshold = Math.Abs(mean) + 5 * stdDev;
-        float maxNormalDelta = deltas
-            .Where(d => Math.Abs(d) <= outlierThreshold)
-            .DefaultIfEmpty(0)
-            .Max(d => Math.Abs(d));
+        if (deltaCount == 0)
+        {
+            // Constant values - use max scale allowed by absolute values
+            return Math.Max(MinScale, Math.Min(MaxScale, maxScaleForAbsValues));
+        }
 
         // If all deltas are negligible, use max scale allowed by absolute values
         if (maxNormalDelta < 1e-6f)
@@ -304,39 +299,89 @@ public static class CompressedLogWriter
     }
 
     /// <summary>
-    /// Collects all delta values from a data stream for scale calculation.
+    /// Calculates delta statistics in two passes without allocations.
+    /// Pass 1: Collect deltas and compute sum for mean.
+    /// Pass 2: Compute variance and find max non-outlier delta.
     /// </summary>
-    private static List<float> CollectDeltas(
+    private static (int count, float mean, float variance, float maxNormalDelta) CalculateDeltaStatistics(
         AxisData axisData,
         int sampleOffset,
         int numSnapshots,
         int stride,
         bool isFullRotation)
     {
-        var deltas = new List<float>(numSnapshots > 0 ? numSnapshots - 1 : 0);
+        int deltaCount = numSnapshots - 1;
+        if (deltaCount <= 0)
+            return (0, 0, 0, 0);
 
-        if (numSnapshots <= 1) return deltas;
-
+        // Pass 1: Calculate sum and collect deltas into a temporary span
+        // We need to store deltas for pass 2, but use stackalloc for small counts
+        float sum = 0;
         float previousValue = axisData.Data[sampleOffset];
+
+        // For large snapshot counts, we'll do two separate iterations
+        // For small counts, we could use stackalloc, but the threshold varies by platform
+        // Instead, we'll iterate twice which is still faster than LINQ due to no allocations
+
+        // First pass: compute mean
+        for (int snapshot = 1; snapshot < numSnapshots; snapshot++)
+        {
+            int dataIndex = snapshot * stride + sampleOffset;
+            float currentValue = axisData.Data[dataIndex];
+            float delta = currentValue - previousValue;
+
+            if (isFullRotation)
+                delta = NormalizeAngularDeltaFloat(delta);
+
+            sum += delta;
+            previousValue = currentValue;
+        }
+
+        float mean = sum / deltaCount;
+
+        // Second pass: compute variance
+        float varianceSum = 0;
+        previousValue = axisData.Data[sampleOffset];
 
         for (int snapshot = 1; snapshot < numSnapshots; snapshot++)
         {
             int dataIndex = snapshot * stride + sampleOffset;
             float currentValue = axisData.Data[dataIndex];
-
             float delta = currentValue - previousValue;
 
-            // For full rotation angles, normalize delta to handle 0/360 wraparound
             if (isFullRotation)
-            {
                 delta = NormalizeAngularDeltaFloat(delta);
-            }
 
-            deltas.Add(delta);
+            float diff = delta - mean;
+            varianceSum += diff * diff;
             previousValue = currentValue;
         }
 
-        return deltas;
+        float variance = varianceSum / deltaCount;
+        float stdDev = (float)Math.Sqrt(variance);
+        float outlierThreshold = Math.Abs(mean) + 5 * stdDev;
+
+        // Third pass: find max non-outlier delta
+        float maxNormalDelta = 0;
+        previousValue = axisData.Data[sampleOffset];
+
+        for (int snapshot = 1; snapshot < numSnapshots; snapshot++)
+        {
+            int dataIndex = snapshot * stride + sampleOffset;
+            float currentValue = axisData.Data[dataIndex];
+            float delta = currentValue - previousValue;
+
+            if (isFullRotation)
+                delta = NormalizeAngularDeltaFloat(delta);
+
+            float absD = Math.Abs(delta);
+            if (absD <= outlierThreshold && absD > maxNormalDelta)
+                maxNormalDelta = absD;
+
+            previousValue = currentValue;
+        }
+
+        return (deltaCount, mean, variance, maxNormalDelta);
     }
 
     /// <summary>

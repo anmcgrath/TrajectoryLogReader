@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.IO.Compression;
 using System.Text;
 using TrajectoryLogReader.Log;
@@ -101,12 +102,8 @@ public static class CompressedLogReader
 
         if (magic[0] == GzipMagic1 && magic[1] == GzipMagic2)
         {
-            // GZip compressed - decompress first
-            using var gzipStream = new GZipStream(stream, CompressionMode.Decompress, leaveOpen: true);
-            using var decompressed = new MemoryStream();
-            gzipStream.CopyTo(decompressed);
-            decompressed.Position = 0;
-            var log = ReadFromStream(decompressed);
+            // GZip compressed - decompress using pooled buffers
+            var log = DecompressAndRead(stream);
             log.CompressionFormat = CompressionFormat.CompressedDeltaGZip;
             return log;
         }
@@ -115,6 +112,51 @@ public static class CompressedLogReader
             var log = ReadFromStream(stream);
             log.CompressionFormat = CompressionFormat.CompressedDelta;
             return log;
+        }
+    }
+
+    /// <summary>
+    /// Decompresses GZip stream using pooled buffers to reduce allocations.
+    /// </summary>
+    private static TrajectoryLog DecompressAndRead(Stream compressedStream)
+    {
+        const int initialBufferSize = 64 * 1024; // 64KB initial
+        const int chunkSize = 32 * 1024; // 32KB chunks
+
+        using var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress, leaveOpen: true);
+
+        // Use a pooled buffer for reading
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(initialBufferSize);
+        int totalBytesRead = 0;
+
+        try
+        {
+            while (true)
+            {
+                // Ensure we have space for the next chunk
+                if (totalBytesRead + chunkSize > buffer.Length)
+                {
+                    // Need to grow - rent a larger buffer
+                    byte[] newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
+                    Buffer.BlockCopy(buffer, 0, newBuffer, 0, totalBytesRead);
+                    ArrayPool<byte>.Shared.Return(buffer);
+                    buffer = newBuffer;
+                }
+
+                int bytesRead = gzipStream.Read(buffer, totalBytesRead, chunkSize);
+                if (bytesRead == 0)
+                    break;
+
+                totalBytesRead += bytesRead;
+            }
+
+            // Create a MemoryStream over the exact data (no copy, just wraps the buffer)
+            using var ms = new MemoryStream(buffer, 0, totalBytesRead, writable: false);
+            return ReadFromStream(ms);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 
@@ -263,7 +305,7 @@ public static class CompressedLogReader
 
     /// <summary>
     /// Reads a stream using 16-bit base values and 8-bit deltas.
-    /// Used for MLC, jaws, small tilt angles (pitch/roll).
+    /// Uses batch reading to reduce per-value syscall overhead.
     /// </summary>
     private static void ReadSmallValueStream(
         BinaryReader br,
@@ -275,37 +317,87 @@ public static class CompressedLogReader
     {
         if (numSnapshots == 0) return;
 
+        // Read base value
         short firstQuantized = br.ReadInt16();
-        float firstValue = DequantizeFromShort(firstQuantized, scale);
-        axisData.Data[sampleOffset] = firstValue;
+        float invScale = 1.0f / scale;
+        axisData.Data[sampleOffset] = firstQuantized * invScale;
+
+        if (numSnapshots == 1) return;
 
         short previousQuantized = firstQuantized;
+        int deltasToRead = numSnapshots - 1;
 
-        for (int snapshot = 1; snapshot < numSnapshots; snapshot++)
+        // Worst case: each delta is escape (1 byte) + absolute (2 bytes) = 3 bytes per snapshot
+        // Best case: 1 byte per delta
+        // Read in batches to reduce syscall overhead while handling escapes
+        const int batchSize = 4096;
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(batchSize);
+
+        try
         {
-            int dataIndex = snapshot * stride + sampleOffset;
+            int snapshot = 1;
+            int bufferPos = 0;
+            int bufferLen = 0;
 
-            sbyte deltaOrEscape = br.ReadSByte();
-
-            short currentQuantized;
-            if (deltaOrEscape == EscapeCode8)
+            while (snapshot < numSnapshots)
             {
-                currentQuantized = br.ReadInt16();
-            }
-            else
-            {
-                int delta = deltaOrEscape;
-                currentQuantized = (short)(previousQuantized + delta);
+                // Refill buffer if needed
+                if (bufferPos >= bufferLen)
+                {
+                    bufferLen = br.Read(buffer, 0, batchSize);
+                    bufferPos = 0;
+                    if (bufferLen == 0)
+                        throw new EndOfStreamException("Unexpected end of stream reading small value deltas.");
+                }
+
+                sbyte deltaOrEscape = (sbyte)buffer[bufferPos++];
+
+                short currentQuantized;
+                if (deltaOrEscape == EscapeCode8)
+                {
+                    // Need 2 more bytes for absolute value
+                    if (bufferPos + 2 > bufferLen)
+                    {
+                        // Push back the bytes we need and refill
+                        int remaining = bufferLen - bufferPos;
+                        if (remaining > 0)
+                            Buffer.BlockCopy(buffer, bufferPos, buffer, 0, remaining);
+                        int additionalRead = br.Read(buffer, remaining, batchSize - remaining);
+                        bufferLen = remaining + additionalRead;
+                        bufferPos = 0;
+                        if (bufferLen < 2)
+                            throw new EndOfStreamException("Unexpected end of stream reading absolute value.");
+                    }
+                    currentQuantized = (short)(buffer[bufferPos] | (buffer[bufferPos + 1] << 8));
+                    bufferPos += 2;
+                }
+                else
+                {
+                    currentQuantized = (short)(previousQuantized + deltaOrEscape);
+                }
+
+                int dataIndex = snapshot * stride + sampleOffset;
+                axisData.Data[dataIndex] = currentQuantized * invScale;
+                previousQuantized = currentQuantized;
+                snapshot++;
             }
 
-            axisData.Data[dataIndex] = DequantizeFromShort(currentQuantized, scale);
-            previousQuantized = currentQuantized;
+            // If we read more than needed, seek back
+            int unusedBytes = bufferLen - bufferPos;
+            if (unusedBytes > 0 && br.BaseStream.CanSeek)
+            {
+                br.BaseStream.Seek(-unusedBytes, SeekOrigin.Current);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 
     /// <summary>
     /// Reads a stream using 32-bit base values and 16-bit deltas.
-    /// Used for couch positions, MU, ControlPoint, and full-rotation angles.
+    /// Uses batch reading to reduce per-value syscall overhead.
     /// </summary>
     private static void ReadLargeValueStream(
         BinaryReader br,
@@ -317,40 +409,84 @@ public static class CompressedLogReader
     {
         if (numSnapshots == 0) return;
 
+        // Read base value
         int firstQuantized = br.ReadInt32();
-        float firstValue = DequantizeFromInt(firstQuantized, scale);
-        axisData.Data[sampleOffset] = firstValue;
+        float invScale = 1.0f / scale;
+        axisData.Data[sampleOffset] = firstQuantized * invScale;
+
+        if (numSnapshots == 1) return;
 
         int previousQuantized = firstQuantized;
 
-        for (int snapshot = 1; snapshot < numSnapshots; snapshot++)
+        // Worst case: each delta is escape (2 bytes) + absolute (4 bytes) = 6 bytes per snapshot
+        // Best case: 2 bytes per delta
+        const int batchSize = 4096;
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(batchSize);
+
+        try
         {
-            int dataIndex = snapshot * stride + sampleOffset;
+            int snapshot = 1;
+            int bufferPos = 0;
+            int bufferLen = 0;
 
-            short deltaOrEscape = br.ReadInt16();
-
-            int currentQuantized;
-            if (deltaOrEscape == EscapeCode16)
+            while (snapshot < numSnapshots)
             {
-                currentQuantized = br.ReadInt32();
-            }
-            else
-            {
-                currentQuantized = previousQuantized + deltaOrEscape;
+                // Refill buffer if needed (need at least 2 bytes for delta)
+                if (bufferPos + 2 > bufferLen)
+                {
+                    int remaining = bufferLen - bufferPos;
+                    if (remaining > 0)
+                        Buffer.BlockCopy(buffer, bufferPos, buffer, 0, remaining);
+                    int additionalRead = br.Read(buffer, remaining, batchSize - remaining);
+                    bufferLen = remaining + additionalRead;
+                    bufferPos = 0;
+                    if (bufferLen < 2)
+                        throw new EndOfStreamException("Unexpected end of stream reading large value deltas.");
+                }
+
+                short deltaOrEscape = (short)(buffer[bufferPos] | (buffer[bufferPos + 1] << 8));
+                bufferPos += 2;
+
+                int currentQuantized;
+                if (deltaOrEscape == EscapeCode16)
+                {
+                    // Need 4 more bytes for absolute value
+                    if (bufferPos + 4 > bufferLen)
+                    {
+                        int remaining = bufferLen - bufferPos;
+                        if (remaining > 0)
+                            Buffer.BlockCopy(buffer, bufferPos, buffer, 0, remaining);
+                        int additionalRead = br.Read(buffer, remaining, batchSize - remaining);
+                        bufferLen = remaining + additionalRead;
+                        bufferPos = 0;
+                        if (bufferLen < 4)
+                            throw new EndOfStreamException("Unexpected end of stream reading absolute value.");
+                    }
+                    currentQuantized = buffer[bufferPos] | (buffer[bufferPos + 1] << 8) |
+                                       (buffer[bufferPos + 2] << 16) | (buffer[bufferPos + 3] << 24);
+                    bufferPos += 4;
+                }
+                else
+                {
+                    currentQuantized = previousQuantized + deltaOrEscape;
+                }
+
+                int dataIndex = snapshot * stride + sampleOffset;
+                axisData.Data[dataIndex] = currentQuantized * invScale;
+                previousQuantized = currentQuantized;
+                snapshot++;
             }
 
-            axisData.Data[dataIndex] = DequantizeFromInt(currentQuantized, scale);
-            previousQuantized = currentQuantized;
+            // If we read more than needed, seek back
+            int unusedBytes = bufferLen - bufferPos;
+            if (unusedBytes > 0 && br.BaseStream.CanSeek)
+            {
+                br.BaseStream.Seek(-unusedBytes, SeekOrigin.Current);
+            }
         }
-    }
-
-    private static float DequantizeFromShort(short quantized, float scale)
-    {
-        return quantized / scale;
-    }
-
-    private static float DequantizeFromInt(int quantized, float scale)
-    {
-        return quantized / scale;
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 }
