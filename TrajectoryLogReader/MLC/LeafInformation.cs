@@ -6,14 +6,14 @@
         /// Returns the Y position (in mm) of the centre of the leaf.
         /// Position increases towards the gun and is zero at the machine iso.
         /// </summary>
-        public float YInMm { get; }
+        public double YInMm { get; }
 
         /// <summary>
         /// The width of the MLC leaf in mm.
         /// </summary>
-        public float WidthInMm { get; }
+        public double WidthInMm { get; }
 
-        public LeafInformation(float yInMm, float widthInMm)
+        public LeafInformation(double yInMm, double widthInMm)
         {
             YInMm = yInMm;
             WidthInMm = widthInMm;

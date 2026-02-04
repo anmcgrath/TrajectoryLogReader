@@ -128,7 +128,7 @@ public class FluenceCreator
         var sin = (float)Math.Sin(angleRadians);
         var cos = (float)Math.Cos(angleRadians);
 #endif
-        Span<Vector2> corners = stackalloc Vector2[4];
+        Span<Point2d> corners = stackalloc Point2d[4];
         var leafPairCount = mlc.GetNumberOfLeafPairs();
 
         for (int i = 0; i < leafPairCount; i++)
@@ -171,7 +171,7 @@ public class FluenceCreator
             var yRot = xCenter * sin + yCenter * cos;
 
             RotatedRect.GetRotatedRectAndBounds(
-                new Vector2(xRot, yRot),
+                new Point2d(xRot, yRot),
                 width,
                 height,
                 cos, sin, corners, out var leafBounds);

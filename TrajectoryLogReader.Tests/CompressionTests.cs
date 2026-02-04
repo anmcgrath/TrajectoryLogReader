@@ -109,7 +109,8 @@ public class CompressionTests
         var ratio = (double)compressedSize / originalSize;
 
         // We expect at least 50% compression (ratio < 0.5)
-        ratio.ShouldBeLessThan(0.5, $"Compression ratio {ratio:P1} is worse than expected. Original: {originalSize}, Compressed: {compressedSize}");
+        ratio.ShouldBeLessThan(0.5,
+            $"Compression ratio {ratio:P1} is worse than expected. Original: {originalSize}, Compressed: {compressedSize}");
 
         TestContext.WriteLine($"Original: {originalSize:N0} bytes");
         TestContext.WriteLine($"Compressed: {compressedSize:N0} bytes");
@@ -264,7 +265,7 @@ public class CompressionTests
     [Test]
     public void CompressAndDecompress_MlcPositions_WithinClinicalTolerance()
     {
-        var originalPath = TestFiles.GetPath("AnonFile0.bin");
+        var originalPath = TestFiles.GetPath("AnonFile2.bin");
         var compressedPath = Path.Combine(_tempDir, "compressed.cbin");
 
         var original = LogReader.ReadBinary(originalPath);
@@ -288,14 +289,15 @@ public class CompressionTests
             }
 
             TestContext.WriteLine($"Max MLC position difference: {maxDiff:F4} cm ({maxDiff * 10:F2} mm)");
-            maxDiff.ShouldBeLessThan(clinicalTolerance, $"MLC position difference {maxDiff} cm exceeds clinical tolerance of {clinicalTolerance} cm");
+            maxDiff.ShouldBeLessThan(clinicalTolerance,
+                $"MLC position difference {maxDiff} cm exceeds clinical tolerance of {clinicalTolerance} cm");
         }
     }
 
     [Test]
     public void CompressAndDecompress_GantryAngle_WithinClinicalTolerance()
     {
-        var originalPath = TestFiles.GetPath("AnonFile0.bin");
+        var originalPath = TestFiles.GetPath("AnonFile2.bin");
         var compressedPath = Path.Combine(_tempDir, "compressed.cbin");
 
         var original = LogReader.ReadBinary(originalPath);
@@ -321,7 +323,8 @@ public class CompressionTests
             }
 
             TestContext.WriteLine($"Max Gantry angle difference: {maxDiff:F4} degrees");
-            maxDiff.ShouldBeLessThan(clinicalTolerance, $"Gantry angle difference {maxDiff} degrees exceeds clinical tolerance of {clinicalTolerance} degrees");
+            maxDiff.ShouldBeLessThan(clinicalTolerance,
+                $"Gantry angle difference {maxDiff} degrees exceeds clinical tolerance of {clinicalTolerance} degrees");
         }
     }
 
@@ -471,7 +474,8 @@ public class CompressionTests
                 maxDiff = Math.Max(maxDiff, diff);
             }
 
-            TestContext.WriteLine($"Max MLC position difference with dynamic scaling: {maxDiff:F5} cm ({maxDiff * 10:F3} mm)");
+            TestContext.WriteLine(
+                $"Max MLC position difference with dynamic scaling: {maxDiff:F5} cm ({maxDiff * 10:F3} mm)");
 
             // Should be well within clinical tolerance
             maxDiff.ShouldBeLessThan(strictTolerance,

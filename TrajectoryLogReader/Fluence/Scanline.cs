@@ -5,15 +5,15 @@ namespace TrajectoryLogReader.Fluence;
 internal class Scanline
 {
     public static void ProcessScanlines(
-        ReadOnlySpan<Vector2> corners, // The 4 corners from previous step
+        ReadOnlySpan<Point2d> corners, // The 4 corners from previous step
         int clipMinY, // Top of the clipping viewport/grid
         int clipMaxY, // Bottom of the clipping viewport/grid
-        Action<int, float, float> onScanline) // Callback: (y, startX, endX)
+        Action<int, double, double> onScanline) // Callback: (y, startX, endX)
     {
         // 1. Find the Top Vertex (Min Y)
         // We only need the index, no sorting required for just 4 items.
         int topIdx = 0;
-        float minY = corners[0].Y;
+        var minY = corners[0].Y;
         for (int i = 1; i < 4; i++)
         {
             if (corners[i].Y < minY)
@@ -46,16 +46,16 @@ internal class Scanline
 
         // 3. Initialize Walkers
         // Left Side
-        Vector2 vLeftTop = corners[topIdx];
-        Vector2 vLeftBot = corners[leftIdx];
-        float leftSlope = (vLeftBot.X - vLeftTop.X) / (vLeftBot.Y - vLeftTop.Y);
-        float currentLeftX = vLeftTop.X;
+        Point2d vLeftTop = corners[topIdx];
+        Point2d vLeftBot = corners[leftIdx];
+        var leftSlope = (vLeftBot.X - vLeftTop.X) / (vLeftBot.Y - vLeftTop.Y);
+        var currentLeftX = vLeftTop.X;
 
         // Right Side
-        Vector2 vRightTop = corners[topIdx];
-        Vector2 vRightBot = corners[rightIdx];
-        float rightSlope = (vRightBot.X - vRightTop.X) / (vRightBot.Y - vRightTop.Y);
-        float currentRightX = vRightTop.X;
+        Point2d vRightTop = corners[topIdx];
+        Point2d vRightBot = corners[rightIdx];
+        var rightSlope = (vRightBot.X - vRightTop.X) / (vRightBot.Y - vRightTop.Y);
+        var currentRightX = vRightTop.X;
 
         // 4. Loop Logic
         int startY = (int)Math.Ceiling(minY);
@@ -77,18 +77,18 @@ internal class Scanline
 
 
     private static void ScanlineCore(
-        ReadOnlySpan<Vector2> corners,
+        ReadOnlySpan<Point2d> corners,
         int topIdx, int leftIdx, int rightIdx,
         int currentY, int clipMinY, int clipMaxY,
-        Action<int, float, float> callback)
+        Action<int, double, double> callback)
     {
         // Helper to get next vertex index down the chain
         // direction: -1 for left side (usually), +1 for right side
         int NextVert(int idx, int dir) => (idx + dir + 4) % 4;
 
         // Setup Left Edge
-        Vector2 vL1 = corners[topIdx];
-        Vector2 vL2 = corners[leftIdx];
+        Point2d vL1 = corners[topIdx];
+        Point2d vL2 = corners[leftIdx];
 
         // Handle horizontal top edge on Left
         while (vL2.Y <= vL1.Y)
@@ -99,11 +99,11 @@ internal class Scanline
             if (leftIdx == topIdx) return;
         }
 
-        float slopeL = (vL2.X - vL1.X) / (vL2.Y - vL1.Y);
+        var slopeL = (vL2.X - vL1.X) / (vL2.Y - vL1.Y);
 
         // Setup Right Edge
-        Vector2 vR1 = corners[topIdx];
-        Vector2 vR2 = corners[rightIdx];
+        Point2d vR1 = corners[topIdx];
+        Point2d vR2 = corners[rightIdx];
 
         // Handle horizontal top edge on Right
         while (vR2.Y <= vR1.Y)
@@ -114,18 +114,18 @@ internal class Scanline
             if (rightIdx == topIdx) return;
         }
 
-        float slopeR = (vR2.X - vR1.X) / (vR2.Y - vR1.Y);
+        var slopeR = (vR2.X - vR1.X) / (vR2.Y - vR1.Y);
 
         // Correction for the first sub-pixel step
-        float xL = vL1.X + (currentY - vL1.Y) * slopeL;
-        float xR = vR1.X + (currentY - vR1.Y) * slopeR;
+        var xL = vL1.X + (currentY - vL1.Y) * slopeL;
+        var xR = vR1.X + (currentY - vR1.Y) * slopeR;
 
         // We need the bottom-most Y to know when to stop globally
         // But we just loop until both sides are exhausted.
         // For a rect, we have 3 stages max (Top triangle, Middle, Bottom triangle).
 
         // Find the global bottom Y to stop the loop
-        float totalMaxY = corners[0].Y;
+        var totalMaxY = corners[0].Y;
         for (int i = 1; i < 4; i++)
             if (corners[i].Y > totalMaxY)
                 totalMaxY = corners[i].Y;

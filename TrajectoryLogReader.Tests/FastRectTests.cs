@@ -11,13 +11,13 @@ public class FastRectTests
     [Test]
     public void GetRotatedRectAndBounds_NoRotation_ReturnsCorrectCornersAndBounds()
     {
-        var center = new Vector2(10, 10);
-        float width = 4;
-        float height = 2;
-        float cos = 1; // 0 degrees
-        float sin = 0;
+        var center = new Point2d(10, 10);
+        double width = 4;
+        double height = 2;
+        double cos = 1; // 0 degrees
+        double sin = 0;
         
-        Span<Vector2> corners = stackalloc Vector2[4];
+        Span<Point2d> corners = stackalloc Point2d[4];
         RotatedRect.GetRotatedRectAndBounds(center, width, height, cos, sin, corners, out var bounds);
         
         // Expected corners:
@@ -49,10 +49,10 @@ public class FastRectTests
         TL: (10 - 2 - 0, 10 - 0 - 1) = (8, 9)
         */
 
-        corners[0].ShouldBe(new Vector2(12, 9));
-        corners[1].ShouldBe(new Vector2(12, 11));
-        corners[2].ShouldBe(new Vector2(8, 11));
-        corners[3].ShouldBe(new Vector2(8, 9));
+        corners[0].ShouldBe(new Point2d(12, 9));
+        corners[1].ShouldBe(new Point2d(12, 11));
+        corners[2].ShouldBe(new Point2d(8, 11));
+        corners[3].ShouldBe(new Point2d(8, 9));
         
         // Bounds should encompass all
         bounds.MinX.ShouldBe(8);
@@ -64,14 +64,14 @@ public class FastRectTests
     [Test]
     public void GetRotatedRectAndBounds_90DegRotation_ReturnsSwappedDims()
     {
-        var center = new Vector2(0, 0);
-        float width = 4; // hw = 2
-        float height = 2; // hh = 1
+        var center = new Point2d(0, 0);
+        double width = 4; // hw = 2
+        double height = 2; // hh = 1
         // 90 deg: cos=0, sin=1
-        float cos = 0;
-        float sin = 1;
+        double cos = 0;
+        double sin = 1;
         
-        Span<Vector2> corners = stackalloc Vector2[4];
+        Span<Point2d> corners = stackalloc Point2d[4];
         RotatedRect.GetRotatedRectAndBounds(center, width, height, cos, sin, corners, out var bounds);
         
         // hwX = 2 * 0 = 0
@@ -84,10 +84,10 @@ public class FastRectTests
         // BL: (0 - 0 + (-1), 0 - 2 + 0) = (-1, -2)
         // TL: (0 - 0 - (-1), 0 - 2 - 0) = (1, -2)
         
-        corners[0].ShouldBe(new Vector2(1, 2));
-        corners[1].ShouldBe(new Vector2(-1, 2));
-        corners[2].ShouldBe(new Vector2(-1, -2));
-        corners[3].ShouldBe(new Vector2(1, -2));
+        corners[0].ShouldBe(new Point2d(1, 2));
+        corners[1].ShouldBe(new Point2d(-1, 2));
+        corners[2].ShouldBe(new Point2d(-1, -2));
+        corners[3].ShouldBe(new Point2d(1, -2));
         
         bounds.MinX.ShouldBe(-1);
         bounds.MaxX.ShouldBe(1);
