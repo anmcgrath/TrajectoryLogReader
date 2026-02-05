@@ -56,7 +56,7 @@ public class CompressionTests
         CompressedLogWriter.Write(original, compressedPath);
         var decompressed = CompressedLogReader.Read(compressedPath);
 
-        var result = TrajectoryLogComparer.Compare(original, decompressed, floatTolerance: 0.02f);
+        var result = TrajectoryLogComparer.Compare(original, decompressed, floatTolerance: 0.01f);
 
         result.AreEqual.ShouldBeTrue(result.ToString());
     }
@@ -71,7 +71,7 @@ public class CompressionTests
         CompressedLogWriter.Write(original, compressedPath);
         var decompressed = CompressedLogReader.Read(compressedPath);
 
-        var result = TrajectoryLogComparer.Compare(original, decompressed, floatTolerance: 0.02f);
+        var result = TrajectoryLogComparer.Compare(original, decompressed, floatTolerance: 0.01f);
 
         result.AreEqual.ShouldBeTrue(result.ToString());
     }
@@ -86,7 +86,7 @@ public class CompressionTests
         CompressedLogWriter.Write(original, compressedPath);
         var decompressed = CompressedLogReader.Read(compressedPath);
 
-        var result = TrajectoryLogComparer.Compare(original, decompressed, floatTolerance: 0.02f);
+        var result = TrajectoryLogComparer.Compare(original, decompressed, floatTolerance: 0.01f);
 
         result.AreEqual.ShouldBeTrue(result.ToString());
     }
@@ -109,7 +109,8 @@ public class CompressionTests
         var ratio = (double)compressedSize / originalSize;
 
         // We expect at least 50% compression (ratio < 0.5)
-        ratio.ShouldBeLessThan(0.5, $"Compression ratio {ratio:P1} is worse than expected. Original: {originalSize}, Compressed: {compressedSize}");
+        ratio.ShouldBeLessThan(0.5,
+            $"Compression ratio {ratio:P1} is worse than expected. Original: {originalSize}, Compressed: {compressedSize}");
 
         TestContext.WriteLine($"Original: {originalSize:N0} bytes");
         TestContext.WriteLine($"Compressed: {compressedSize:N0} bytes");
@@ -271,8 +272,7 @@ public class CompressionTests
         CompressedLogWriter.Write(original, compressedPath);
         var decompressed = CompressedLogReader.Read(compressedPath);
 
-        // Clinical tolerance for MLC is typically 0.5mm = 0.05cm
-        const float clinicalTolerance = 0.05f;
+        const float clinicalTolerance = 0.005f;
 
         var mlcAxisIndex = original.Header.GetAxisIndex(Axis.MLC);
         if (mlcAxisIndex >= 0)
@@ -288,7 +288,8 @@ public class CompressionTests
             }
 
             TestContext.WriteLine($"Max MLC position difference: {maxDiff:F4} cm ({maxDiff * 10:F2} mm)");
-            maxDiff.ShouldBeLessThan(clinicalTolerance, $"MLC position difference {maxDiff} cm exceeds clinical tolerance of {clinicalTolerance} cm");
+            maxDiff.ShouldBeLessThan(clinicalTolerance,
+                $"MLC position difference {maxDiff} cm exceeds clinical tolerance of {clinicalTolerance} cm");
         }
     }
 
@@ -321,8 +322,37 @@ public class CompressionTests
             }
 
             TestContext.WriteLine($"Max Gantry angle difference: {maxDiff:F4} degrees");
-            maxDiff.ShouldBeLessThan(clinicalTolerance, $"Gantry angle difference {maxDiff} degrees exceeds clinical tolerance of {clinicalTolerance} degrees");
+            maxDiff.ShouldBeLessThan(clinicalTolerance,
+                $"Gantry angle difference {maxDiff} degrees exceeds clinical tolerance of {clinicalTolerance} degrees");
         }
+    }
+
+    [Test]
+    public void CompressAndDecompress_ControlPoints_WithinClinicalTolerance()
+    {
+        var originalPath = TestFiles.GetPath("AnonFile1.bin");
+        var compressedPath = Path.Combine(_tempDir, "compressed.cbin");
+
+        var original = LogReader.ReadBinary(originalPath);
+        CompressedLogWriter.Write(original, compressedPath);
+        var decompressed = CompressedLogReader.Read(compressedPath);
+
+        // Clinical tolerance for gantry is typically 0.1 degrees
+        const float clinicalTolerance = 0.001f;
+
+        var origCps = original.Axes.ControlPoint.ActualValues.ToList();
+        var compressedCps = decompressed.Axes.ControlPoint.ActualValues.ToList();
+
+        compressedCps.Count.ShouldBe(origCps.Count, "Should be the same number of control points");
+
+        var maxDiff = 0f;
+        for (int i = 0; i < origCps.Count; i++)
+        {
+            maxDiff = Math.Max(maxDiff, Math.Abs(origCps[i] - compressedCps[i]));
+        }
+
+        Console.WriteLine($"Max difference is {maxDiff}");
+        maxDiff.ShouldBeLessThan(clinicalTolerance, $"ControlPoint difference {maxDiff} cm");
     }
 
     #endregion
