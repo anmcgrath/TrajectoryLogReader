@@ -32,4 +32,5 @@ internal class SnapshotDataAdapter : IFieldData
     }
 
     public float DeltaMu => _data.MU.GetRecord(_recordType) - _prevMu;
+    public bool IsBeamHold() => _data.BeamHold.Actual > 0.001f;
 }

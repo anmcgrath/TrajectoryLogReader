@@ -38,6 +38,7 @@ public class FluenceGoldStandardTests
 
         var log = LogReader.ReadBinary(binFilePath);
         var goldStandard = FluenceSerializer.DeserializeFromFile(expectedFluencePath);
+        goldStandard.Options.ExcludeBeamHolds = false;
 
         var calculated = log.CreateFluence(goldStandard.Options, RecordType.ExpectedPosition);
 
@@ -55,6 +56,7 @@ public class FluenceGoldStandardTests
 
         var log = LogReader.ReadBinary(binFilePath);
         var goldStandard = FluenceSerializer.DeserializeFromFile(actualFluencePath);
+        goldStandard.Options.ExcludeBeamHolds = false;
 
         var calculated = log.CreateFluence(goldStandard.Options, RecordType.ActualPosition);
 

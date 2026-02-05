@@ -35,4 +35,6 @@ public class BeamFieldDataAdapter : IFieldData
     }
 
     public float DeltaMu => _deltaMu;
+    
+    public bool IsBeamHold() => _deltaMu == 0; // no beam-holds in dicom
 }

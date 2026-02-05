@@ -73,6 +73,11 @@ public class FluenceOptions
     }
 
     /// <summary>
+    /// Don't accumulate fluence when in beam-hold (default is true.)
+    /// </summary>
+    public bool ExcludeBeamHolds { get; set; } = true;
+
+    /// <summary>
     /// Creates options using the default grid resolution and bounds behavior.
     /// </summary>
     public FluenceOptions()

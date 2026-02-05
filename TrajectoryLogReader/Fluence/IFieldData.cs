@@ -59,4 +59,6 @@ public interface IFieldData
     /// is used as the dose-weight for fluence accumulation.
     /// </summary>
     float DeltaMu { get; }
+
+    bool IsBeamHold();
 }

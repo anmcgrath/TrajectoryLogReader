@@ -83,7 +83,7 @@ public class FluenceCreator
 
         foreach (var s in data)
         {
-            if (s.DeltaMu > options.MinDeltaMu)
+            if (s.DeltaMu > options.MinDeltaMu && (!options.ExcludeBeamHolds || !s.IsBeamHold()))
                 workItems.Add((s, s.DeltaMu));
         }
 
@@ -123,7 +123,7 @@ public class FluenceCreator
         var angleRadians = (float)(coll * Math.PI / 180);
 
 #if NET7_0_OR_GREATER
-                var (sin, cos) = MathF.SinCos(angleRadians);
+        var (sin, cos) = MathF.SinCos(angleRadians);
 #else
         var sin = (float)Math.Sin(angleRadians);
         var cos = (float)Math.Cos(angleRadians);
