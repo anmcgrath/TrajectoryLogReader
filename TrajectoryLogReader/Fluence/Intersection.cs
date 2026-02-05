@@ -15,15 +15,15 @@ internal class Intersection
 #if NET7_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
 #endif
-    public static float GetIntersectionArea(AABB clipRect, ReadOnlySpan<Vector2> subjectPoly)
+    public static double GetIntersectionArea(AABB clipRect, ReadOnlySpan<Point> subjectPoly)
     {
         // 1. Prepare buffers on the stack to avoid GC.
         // A rect-rect intersection produces at most 8 vertices.
         const int maxVertices = 16;
 
         // Double buffering: 'input' is the geometry to clip, 'output' is the result of a clip stage.
-        Span<Vector2> buffer1 = stackalloc Vector2[maxVertices];
-        Span<Vector2> buffer2 = stackalloc Vector2[maxVertices];
+        Span<Point> buffer1 = stackalloc Point[maxVertices];
+        Span<Point> buffer2 = stackalloc Point[maxVertices];
 
         // Copy initial rotated rect into buffer1
         if (subjectPoly.Length > maxVertices) return 0; // Should not happen for a rectangle
@@ -48,16 +48,16 @@ internal class Intersection
                 {
                     if (!isPrevIn) // Out -> In: Add Intersection
                     {
-                        float t = (clipRect.MinX - prev.X) / (curr.X - prev.X);
-                        buffer2[outputCount++] = new Vector2(clipRect.MinX, prev.Y + t * (curr.Y - prev.Y));
+                        var t = (clipRect.MinX - prev.X) / (curr.X - prev.X);
+                        buffer2[outputCount++] = new Point(clipRect.MinX, prev.Y + t * (curr.Y - prev.Y));
                     }
 
                     buffer2[outputCount++] = curr; // In -> In: Add Current
                 }
                 else if (isPrevIn) // In -> Out: Add Intersection
                 {
-                    float t = (clipRect.MinX - prev.X) / (curr.X - prev.X);
-                    buffer2[outputCount++] = new Vector2(clipRect.MinX, prev.Y + t * (curr.Y - prev.Y));
+                    var t = (clipRect.MinX - prev.X) / (curr.X - prev.X);
+                    buffer2[outputCount++] = new Point(clipRect.MinX, prev.Y + t * (curr.Y - prev.Y));
                 }
 
                 prev = curr;
@@ -82,16 +82,16 @@ internal class Intersection
                 {
                     if (!isPrevIn)
                     {
-                        float t = (clipRect.MaxX - prev.X) / (curr.X - prev.X);
-                        buffer1[outputCount++] = new Vector2(clipRect.MaxX, prev.Y + t * (curr.Y - prev.Y));
+                        var t = (clipRect.MaxX - prev.X) / (curr.X - prev.X);
+                        buffer1[outputCount++] = new Point(clipRect.MaxX, prev.Y + t * (curr.Y - prev.Y));
                     }
 
                     buffer1[outputCount++] = curr;
                 }
                 else if (isPrevIn)
                 {
-                    float t = (clipRect.MaxX - prev.X) / (curr.X - prev.X);
-                    buffer1[outputCount++] = new Vector2(clipRect.MaxX, prev.Y + t * (curr.Y - prev.Y));
+                    var t = (clipRect.MaxX - prev.X) / (curr.X - prev.X);
+                    buffer1[outputCount++] = new Point(clipRect.MaxX, prev.Y + t * (curr.Y - prev.Y));
                 }
 
                 prev = curr;
@@ -115,16 +115,16 @@ internal class Intersection
                 {
                     if (!isPrevIn)
                     {
-                        float t = (clipRect.MinY - prev.Y) / (curr.Y - prev.Y);
-                        buffer2[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), clipRect.MinY);
+                        var t = (clipRect.MinY - prev.Y) / (curr.Y - prev.Y);
+                        buffer2[outputCount++] = new Point(prev.X + t * (curr.X - prev.X), clipRect.MinY);
                     }
 
                     buffer2[outputCount++] = curr;
                 }
                 else if (isPrevIn)
                 {
-                    float t = (clipRect.MinY - prev.Y) / (curr.Y - prev.Y);
-                    buffer2[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), clipRect.MinY);
+                    var t = (clipRect.MinY - prev.Y) / (curr.Y - prev.Y);
+                    buffer2[outputCount++] = new Point(prev.X + t * (curr.X - prev.X), clipRect.MinY);
                 }
 
                 prev = curr;
@@ -132,7 +132,7 @@ internal class Intersection
         }
 
         inputCount = outputCount;
-        if (inputCount == 0) return 0f;
+        if (inputCount == 0) return 0;
 
         // --- Stage 4: Clip against MaxY (Top) ---
         outputCount = 0;
@@ -148,16 +148,16 @@ internal class Intersection
                 {
                     if (!isPrevIn)
                     {
-                        float t = (clipRect.MaxY - prev.Y) / (curr.Y - prev.Y);
-                        buffer1[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), clipRect.MaxY);
+                        var t = (clipRect.MaxY - prev.Y) / (curr.Y - prev.Y);
+                        buffer1[outputCount++] = new Point(prev.X + t * (curr.X - prev.X), clipRect.MaxY);
                     }
 
                     buffer1[outputCount++] = curr;
                 }
                 else if (isPrevIn)
                 {
-                    float t = (clipRect.MaxY - prev.Y) / (curr.Y - prev.Y);
-                    buffer1[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), clipRect.MaxY);
+                    var t = (clipRect.MaxY - prev.Y) / (curr.Y - prev.Y);
+                    buffer1[outputCount++] = new Point(prev.X + t * (curr.X - prev.X), clipRect.MaxY);
                 }
 
                 prev = curr;
@@ -165,11 +165,11 @@ internal class Intersection
         }
 
         inputCount = outputCount;
-        if (inputCount < 3) return 0f;
+        if (inputCount < 3) return 0;
 
         // 3. Calculate Area (Shoelace Formula)
         // Area = 0.5 * |sum(x_i * y_{i+1} - x_{i+1} * y_i)|
-        float area = 0f;
+        var area = 0d;
         var last = buffer1[inputCount - 1];
         for (int i = 0; i < inputCount; i++)
         {
@@ -194,18 +194,18 @@ internal class Intersection
 #else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-    public static float GetIntersectionAreaPixel(int col, int row, ReadOnlySpan<Vector2> subjectPoly)
+    public static double GetIntersectionAreaPixel(int col, int row, ReadOnlySpan<Point> subjectPoly)
     {
         // Pixel bounds
-        float minX = col;
-        float maxX = col + 1;
-        float minY = row;
-        float maxY = row + 1;
+        double minX = col;
+        double maxX = col + 1;
+        double minY = row;
+        double maxY = row + 1;
 
         // 1. Prepare buffers on the stack
         const int maxVertices = 16;
-        Span<Vector2> buffer1 = stackalloc Vector2[maxVertices];
-        Span<Vector2> buffer2 = stackalloc Vector2[maxVertices];
+        Span<Point> buffer1 = stackalloc Point[maxVertices];
+        Span<Point> buffer2 = stackalloc Point[maxVertices];
 
         // Copy initial polygon
         subjectPoly.CopyTo(buffer1);
@@ -227,24 +227,26 @@ internal class Intersection
                 {
                     if (!isPrevIn)
                     {
-                        float invDx = 1f / (curr.X - prev.X);
-                        float t = (minX - prev.X) * invDx;
-                        buffer2[outputCount++] = new Vector2(minX, prev.Y + t * (curr.Y - prev.Y));
+                        var invDx = 1d / (curr.X - prev.X);
+                        var t = (minX - prev.X) * invDx;
+                        buffer2[outputCount++] = new Point(minX, prev.Y + t * (curr.Y - prev.Y));
                     }
+
                     buffer2[outputCount++] = curr;
                 }
                 else if (isPrevIn)
                 {
-                    float invDx = 1f / (curr.X - prev.X);
-                    float t = (minX - prev.X) * invDx;
-                    buffer2[outputCount++] = new Vector2(minX, prev.Y + t * (curr.Y - prev.Y));
+                    var invDx = 1d / (curr.X - prev.X);
+                    var t = (minX - prev.X) * invDx;
+                    buffer2[outputCount++] = new Point(minX, prev.Y + t * (curr.Y - prev.Y));
                 }
+
                 prev = curr;
             }
         }
 
         inputCount = outputCount;
-        if (inputCount == 0) return 0f;
+        if (inputCount == 0) return 0;
 
         // --- Stage 2: Clip against MaxX (Right) ---
         outputCount = 0;
@@ -260,24 +262,26 @@ internal class Intersection
                 {
                     if (!isPrevIn)
                     {
-                        float invDx = 1f / (curr.X - prev.X);
-                        float t = (maxX - prev.X) * invDx;
-                        buffer1[outputCount++] = new Vector2(maxX, prev.Y + t * (curr.Y - prev.Y));
+                        var invDx = 1d / (curr.X - prev.X);
+                        var t = (maxX - prev.X) * invDx;
+                        buffer1[outputCount++] = new Point(maxX, prev.Y + t * (curr.Y - prev.Y));
                     }
+
                     buffer1[outputCount++] = curr;
                 }
                 else if (isPrevIn)
                 {
-                    float invDx = 1f / (curr.X - prev.X);
-                    float t = (maxX - prev.X) * invDx;
-                    buffer1[outputCount++] = new Vector2(maxX, prev.Y + t * (curr.Y - prev.Y));
+                    var invDx = 1d / (curr.X - prev.X);
+                    var t = (maxX - prev.X) * invDx;
+                    buffer1[outputCount++] = new Point(maxX, prev.Y + t * (curr.Y - prev.Y));
                 }
+
                 prev = curr;
             }
         }
 
         inputCount = outputCount;
-        if (inputCount == 0) return 0f;
+        if (inputCount == 0) return 0;
 
         // --- Stage 3: Clip against MinY (Bottom) ---
         outputCount = 0;
@@ -293,24 +297,26 @@ internal class Intersection
                 {
                     if (!isPrevIn)
                     {
-                        float invDy = 1f / (curr.Y - prev.Y);
-                        float t = (minY - prev.Y) * invDy;
-                        buffer2[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), minY);
+                        var invDy = 1d / (curr.Y - prev.Y);
+                        var t = (minY - prev.Y) * invDy;
+                        buffer2[outputCount++] = new Point(prev.X + t * (curr.X - prev.X), minY);
                     }
+
                     buffer2[outputCount++] = curr;
                 }
                 else if (isPrevIn)
                 {
-                    float invDy = 1f / (curr.Y - prev.Y);
-                    float t = (minY - prev.Y) * invDy;
-                    buffer2[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), minY);
+                    var invDy = 1d / (curr.Y - prev.Y);
+                    var t = (minY - prev.Y) * invDy;
+                    buffer2[outputCount++] = new Point(prev.X + t * (curr.X - prev.X), minY);
                 }
+
                 prev = curr;
             }
         }
 
         inputCount = outputCount;
-        if (inputCount == 0) return 0f;
+        if (inputCount == 0) return 0;
 
         // --- Stage 4: Clip against MaxY (Top) ---
         outputCount = 0;
@@ -326,27 +332,29 @@ internal class Intersection
                 {
                     if (!isPrevIn)
                     {
-                        float invDy = 1f / (curr.Y - prev.Y);
-                        float t = (maxY - prev.Y) * invDy;
-                        buffer1[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), maxY);
+                        var invDy = 1d / (curr.Y - prev.Y);
+                        var t = (maxY - prev.Y) * invDy;
+                        buffer1[outputCount++] = new Point(prev.X + t * (curr.X - prev.X), maxY);
                     }
+
                     buffer1[outputCount++] = curr;
                 }
                 else if (isPrevIn)
                 {
-                    float invDy = 1f / (curr.Y - prev.Y);
-                    float t = (maxY - prev.Y) * invDy;
-                    buffer1[outputCount++] = new Vector2(prev.X + t * (curr.X - prev.X), maxY);
+                    var invDy = 1d / (curr.Y - prev.Y);
+                    var t = (maxY - prev.Y) * invDy;
+                    buffer1[outputCount++] = new Point(prev.X + t * (curr.X - prev.X), maxY);
                 }
+
                 prev = curr;
             }
         }
 
         inputCount = outputCount;
-        if (inputCount < 3) return 0f;
+        if (inputCount < 3) return 0;
 
         // 3. Calculate Area (Shoelace Formula)
-        float area = 0f;
+        var area = 0d;
         var last = buffer1[inputCount - 1];
         for (int i = 0; i < inputCount; i++)
         {
@@ -355,6 +363,6 @@ internal class Intersection
             last = curr;
         }
 
-        return Math.Abs(area) * 0.5f;
+        return Math.Abs(area) * 0.5;
     }
 }

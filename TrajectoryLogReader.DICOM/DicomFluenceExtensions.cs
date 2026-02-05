@@ -22,7 +22,7 @@ public static class DicomFluenceExtensions
     /// <param name="patientName">Patient name to embed in the DICOM header.</param>
     /// <param name="patientId">Patient identifier to embed in the DICOM header.</param>
     public static void SaveToDicom(this FieldFluence fluence, string fileName, string patientName, string patientId)
-        => fluence.Grid.SaveToDicom(patientName, patientId, fileName);
+        => fluence.Grid.SaveToDicom(fileName, patientName, patientId);
 
     /// <summary>
     /// Saves a numeric grid as a DICOM RT Image. Pixel values are linearly rescaled into

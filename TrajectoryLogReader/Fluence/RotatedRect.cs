@@ -9,30 +9,30 @@ internal class RotatedRect
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
     public static void GetRotatedRectAndBounds(
-        Vector2 center, float width, float height, float cos, float sin,
-        Span<Vector2> corners, out AABB bounds)
+        Point center, double width, double height, double cos, double sin,
+        Span<Point> corners, out AABB bounds)
     {
         // 1. Calculate Half-Axes (Same as before)
-        float hw = width * 0.5f;
-        float hwX = hw * cos;
-        float hwY = hw * sin;
+        var hw = width * 0.5;
+        var hwX = hw * cos;
+        var hwY = hw * sin;
 
-        float hh = height * 0.5f;
-        float hhX = -hh * sin;
-        float hhY = hh * cos;
+        var hh = height * 0.5;
+        var hhX = -hh * sin;
+        var hhY = hh * cos;
 
         // 2. Generate Corners (Same as before)
         // Top-Right
-        corners[0] = new Vector2(center.X + hwX - hhX, center.Y + hwY - hhY);
+        corners[0] = new Point(center.X + hwX - hhX, center.Y + hwY - hhY);
         // Bottom-Right
-        corners[1] = new Vector2(center.X + hwX + hhX, center.Y + hwY + hhY);
+        corners[1] = new Point(center.X + hwX + hhX, center.Y + hwY + hhY);
         // Bottom-Left
-        corners[2] = new Vector2(center.X - hwX + hhX, center.Y - hwY + hhY);
+        corners[2] = new Point(center.X - hwX + hhX, center.Y - hwY + hhY);
         // Top-Left
-        corners[3] = new Vector2(center.X - hwX - hhX, center.Y - hwY - hhY);
+        corners[3] = new Point(center.X - hwX - hhX, center.Y - hwY - hhY);
 
-        float xExtent = Math.Abs(hwX) + Math.Abs(hhX);
-        float yExtent = Math.Abs(hwY) + Math.Abs(hhY);
+        var xExtent = Math.Abs(hwX) + Math.Abs(hhX);
+        var yExtent = Math.Abs(hwY) + Math.Abs(hhY);
 
         bounds = new AABB(
             center.X - xExtent,

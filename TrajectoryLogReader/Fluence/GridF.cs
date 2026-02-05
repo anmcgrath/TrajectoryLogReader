@@ -189,7 +189,7 @@ public class GridF : IGrid<float>
         }
     }
 
-    internal void DrawData(Span<Vector2> corners, AABB bounds, float value, bool useApproximate)
+    internal void DrawData(Span<Point> corners, AABB bounds, float value, bool useApproximate)
     {
         if (useApproximate)
         {
@@ -201,15 +201,15 @@ public class GridF : IGrid<float>
         }
     }
 
-    private void DrawDataFastApproximate(Span<Vector2> corners, AABB bounds, float value)
+    private void DrawDataFastApproximate(Span<Point> corners, AABB bounds, float value)
     {
         // 1. Convert Corners to Grid Space (Pixels)
-        Span<Vector2> gridCorners = stackalloc Vector2[4];
+        Span<Point> gridCorners = stackalloc Point[4];
         for (int i = 0; i < 4; i++)
         {
-            float gx = (float)((corners[i].X - Bounds.X) / XRes);
-            float gy = (float)((corners[i].Y - Bounds.Y) / YRes);
-            gridCorners[i] = new Vector2(gx, gy);
+            var gx = (corners[i].X - Bounds.X) / XRes;
+            var gy = (corners[i].Y - Bounds.Y) / YRes;
+            gridCorners[i] = new Point(gx, gy);
         }
 
         // 2. Calculate Clipping Bounds in Grid Space (Pixels)
@@ -244,40 +244,40 @@ public class GridF : IGrid<float>
                 // Segment is [startX, endX]
 
                 // Intersection of [x, x+1] and [startX, endX]
-                float segMin = Math.Max(x, startX);
-                float segMax = Math.Min(x + 1, endX);
+                var segMin = Math.Max(x, startX);
+                var segMax = Math.Min(x + 1, endX);
 
-                float coverage = segMax - segMin;
+                var coverage = segMax - segMin;
 
                 if (coverage > 0)
                 {
-                    Data[rowOffset + x] += value * coverage;
+                    Data[rowOffset + x] += (float)(value * coverage);
                 }
             }
         });
     }
 
-    private void DrawDataFastExact(Span<Vector2> corners, AABB bounds, float value)
+    private void DrawDataFastExact(Span<Point> corners, AABB bounds, float value)
     {
         // 1. Convert Corners to Grid Space (Pixels)
-        Span<Vector2> gridCorners = stackalloc Vector2[4];
-        float invXRes = (float)(1.0 / XRes);
-        float invYRes = (float)(1.0 / YRes);
-        float offsetX = (float)Bounds.X;
-        float offsetY = (float)Bounds.Y;
+        Span<Point> gridCorners = stackalloc Point[4];
+        var invXRes = (1.0 / XRes);
+        var invYRes = (1.0 / YRes);
+        var offsetX = Bounds.X;
+        var offsetY = Bounds.Y;
 
         for (int i = 0; i < 4; i++)
         {
-            gridCorners[i] = new Vector2(
+            gridCorners[i] = new Point(
                 (corners[i].X - offsetX) * invXRes,
                 (corners[i].Y - offsetY) * invYRes);
         }
 
         // 2. Pre-compute edge equations for interior detection
         // For a convex quad, a point is inside if it's on the correct side of all 4 edges
-        Span<float> edgeA = stackalloc float[4]; // edge normal X component
-        Span<float> edgeB = stackalloc float[4]; // edge normal Y component
-        Span<float> edgeC = stackalloc float[4]; // edge distance from origin
+        Span<double> edgeA = stackalloc double[4]; // edge normal X component
+        Span<double> edgeB = stackalloc double[4]; // edge normal Y component
+        Span<double> edgeC = stackalloc double[4]; // edge distance from origin
 
         for (int i = 0; i < 4; i++)
         {
@@ -285,8 +285,8 @@ public class GridF : IGrid<float>
             var p2 = gridCorners[(i + 1) & 3]; // & 3 is faster than % 4
 
             // Edge direction
-            float dx = p2.X - p1.X;
-            float dy = p2.Y - p1.Y;
+            var dx = p2.X - p1.X;
+            var dy = p2.Y - p1.Y;
 
             // Outward normal (perpendicular, pointing right of edge direction)
             // For CCW winding: normal = (-dy, dx)
@@ -298,10 +298,10 @@ public class GridF : IGrid<float>
         }
 
         // Determine winding by checking if center is "inside" with current normals
-        float centerX = (gridCorners[0].X + gridCorners[2].X) * 0.5f;
-        float centerY = (gridCorners[0].Y + gridCorners[2].Y) * 0.5f;
-        float testSign = edgeA[0] * centerX + edgeB[0] * centerY + edgeC[0];
-        float windingSign = testSign >= 0 ? 1f : -1f;
+        var centerX = (gridCorners[0].X + gridCorners[2].X) * 0.5f;
+        var centerY = (gridCorners[0].Y + gridCorners[2].Y) * 0.5f;
+        var testSign = edgeA[0] * centerX + edgeB[0] * centerY + edgeC[0];
+        var windingSign = testSign >= 0 ? 1d : -1d;
 
         // Flip normals if needed so "inside" is always positive
         if (windingSign < 0)
@@ -315,8 +315,8 @@ public class GridF : IGrid<float>
         }
 
         // 3. Determine Row Range
-        float boundsMinY = (bounds.MinY - offsetY) * invYRes;
-        float boundsMaxY = (bounds.MaxY - offsetY) * invYRes;
+        var boundsMinY = (bounds.MinY - offsetY) * invYRes;
+        var boundsMaxY = (bounds.MaxY - offsetY) * invYRes;
 
         int y0 = Math.Max(0, (int)Math.Floor(boundsMinY));
         int y1 = Math.Min(Rows - 1, (int)Math.Ceiling(boundsMaxY));
@@ -326,14 +326,14 @@ public class GridF : IGrid<float>
         // 4. Pre-compute row-edge intersections
         // For each edge, compute where it crosses each horizontal line y = row and y = row + 1
         int numRows = y1 - y0 + 1;
-        Span<float> rowMinX = stackalloc float[numRows];
-        Span<float> rowMaxX = stackalloc float[numRows];
+        Span<double> rowMinX = stackalloc double[numRows];
+        Span<double> rowMaxX = stackalloc double[numRows];
 
         // Initialize with extreme values
         for (int i = 0; i < numRows; i++)
         {
-            rowMinX[i] = float.MaxValue;
-            rowMaxX[i] = float.MinValue;
+            rowMinX[i] = double.MaxValue;
+            rowMaxX[i] = double.MinValue;
         }
 
         // Process each edge
@@ -342,13 +342,13 @@ public class GridF : IGrid<float>
             var p1 = gridCorners[e];
             var p2 = gridCorners[(e + 1) & 3];
 
-            float minEdgeY = Math.Min(p1.Y, p2.Y);
-            float maxEdgeY = Math.Max(p1.Y, p2.Y);
+            var minEdgeY = Math.Min(p1.Y, p2.Y);
+            var maxEdgeY = Math.Max(p1.Y, p2.Y);
 
             // Skip horizontal edges (they don't contribute to X range)
             if (maxEdgeY - minEdgeY < 1e-6f) continue;
 
-            float invDy = 1f / (p2.Y - p1.Y);
+            var invDy = 1d / (p2.Y - p1.Y);
 
             // For each row this edge might affect
             int edgeRowStart = Math.Max(y0, (int)Math.Floor(minEdgeY));
@@ -359,8 +359,8 @@ public class GridF : IGrid<float>
                 int ri = row - y0;
 
                 // Check if edge crosses this row's vertical band [row, row+1]
-                float rowTop = row + 1;
-                float rowBot = row;
+                var rowTop = row + 1;
+                var rowBot = row;
 
                 // Include vertex contributions
                 if (p1.Y >= rowBot && p1.Y <= rowTop)
@@ -372,7 +372,7 @@ public class GridF : IGrid<float>
                 // Intersection with y = rowBot
                 if ((p1.Y < rowBot && p2.Y > rowBot) || (p1.Y > rowBot && p2.Y < rowBot))
                 {
-                    float x = p1.X + (rowBot - p1.Y) * (p2.X - p1.X) * invDy;
+                    var x = p1.X + (rowBot - p1.Y) * (p2.X - p1.X) * invDy;
                     if (x < rowMinX[ri]) rowMinX[ri] = x;
                     if (x > rowMaxX[ri]) rowMaxX[ri] = x;
                 }
@@ -380,7 +380,7 @@ public class GridF : IGrid<float>
                 // Intersection with y = rowTop
                 if ((p1.Y < rowTop && p2.Y > rowTop) || (p1.Y > rowTop && p2.Y < rowTop))
                 {
-                    float x = p1.X + (rowTop - p1.Y) * (p2.X - p1.X) * invDy;
+                    var x = p1.X + (rowTop - p1.Y) * (p2.X - p1.X) * invDy;
                     if (x < rowMinX[ri]) rowMinX[ri] = x;
                     if (x > rowMaxX[ri]) rowMaxX[ri] = x;
                 }
@@ -447,34 +447,20 @@ public class GridF : IGrid<float>
                 // Clip left edge pixels
                 for (int col = startCol; col < interiorStart; col++)
                 {
-                    float area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
+                    var area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
                     if (area > 0)
                     {
-                        if (area >= 0.999999f)
-                        {
-                            Data[rowOffset + col] += value;
-                        }
-                        else
-                        {
-                            Data[rowOffset + col] += value * area;
-                        }
+                        Data[rowOffset + col] += (float)(value * area);
                     }
                 }
 
                 // Clip right edge pixels
                 for (int col = interiorEnd + 1; col <= endCol; col++)
                 {
-                    float area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
+                    var area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
                     if (area > 0)
                     {
-                        if (area >= 0.999999f)
-                        {
-                            Data[rowOffset + col] += value;
-                        }
-                        else
-                        {
-                            Data[rowOffset + col] += value * area;
-                        }
+                        Data[rowOffset + col] += (float)(value * area);
                     }
                 }
             }
@@ -483,17 +469,10 @@ public class GridF : IGrid<float>
                 // No interior pixels - clip all
                 for (int col = startCol; col <= endCol; col++)
                 {
-                    float area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
+                    var area = Intersection.GetIntersectionAreaPixel(col, row, gridCorners);
                     if (area > 0)
                     {
-                        if (area >= 0.999999f)
-                        {
-                            Data[rowOffset + col] += value;
-                        }
-                        else
-                        {
-                            Data[rowOffset + col] += value * area;
-                        }
+                        Data[rowOffset + col] += (float)(value * area);
                     }
                 }
             }
@@ -505,21 +484,21 @@ public class GridF : IGrid<float>
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsPixelFullyInside(int col, int row,
-        ReadOnlySpan<float> edgeA, ReadOnlySpan<float> edgeB, ReadOnlySpan<float> edgeC)
+        ReadOnlySpan<double> edgeA, ReadOnlySpan<double> edgeB, ReadOnlySpan<double> edgeC)
     {
         // Check all 4 corners of the pixel
-        float x0 = col, x1 = col + 1;
-        float y0 = row, y1 = row + 1;
+        double x0 = col, x1 = col + 1;
+        double y0 = row, y1 = row + 1;
 
         // Small epsilon to handle floating-point precision issues at polygon boundaries
-        const float epsilon = 1e-5f;
+        const double epsilon = 1e-6d;
 
         // A point (x,y) is inside if edgeA[i]*x + edgeB[i]*y + edgeC[i] >= -epsilon for all edges
         for (int i = 0; i < 4; i++)
         {
-            float a = edgeA[i];
-            float b = edgeB[i];
-            float c = edgeC[i];
+            var a = edgeA[i];
+            var b = edgeB[i];
+            var c = edgeC[i];
 
             // Check all 4 corners - if any is outside this edge, pixel is not fully inside
             if (a * x0 + b * y0 + c < -epsilon) return false;

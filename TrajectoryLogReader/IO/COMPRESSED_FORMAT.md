@@ -1,14 +1,17 @@
 # Compressed Trajectory Log Format Specification
 
-**Version:** 1.0  
-**Signature:** "VOSTLC"  
+**Version:** 2.0
+**Signature:** "VOSTLC"
 **Extension:** `.cbin` (suggested)
 
 ## Overview
 
 The VOS Compressed Trajectory Log format is a *lossless* binary format designed to store Varian Trajectory Logs efficiently. It
-utilizes delta encoding and quantization to reduce file size significantly (typically >90%),
-while maintaining clinical accuracy.
+utilizes delta encoding and dynamic per-stream quantization to reduce file size significantly (typically >90%),
+while maximizing clinical accuracy.
+
+**Version 2.0** introduces dynamic scale calculation - scales are calculated per-stream based on actual data patterns,
+maximizing precision by using the full delta range available.
 
 The format supports an optional GZip wrapper for further compression.
 
@@ -20,7 +23,8 @@ The file consists of the following sections in order:
 2. **Header** (Metadata about the scan)
 3. **Metadata** (Patient/Plan info block)
 4. **SubBeams** (Beam definitions)
-5. **Compressed Axis Data** (The actual log samples)
+5. **Per-Stream Scale Table** (NEW in v2.0)
+6. **Compressed Axis Data** (The actual log samples)
 
 ### 0. GZip Wrapper (Optional)
 
@@ -29,13 +33,40 @@ the stream is decompressed transparently before parsing the structure below.
 
 ### 1. File Identification
 
-Same as trajectory log format, but with VOSTC as identifier.
+| Offset | Size | Type | Description |
+|--------|------|------|-------------|
+| 0 | 16 | string | Signature: "VOSTLC" (null-padded) |
+| 16 | 16 | string | Format Version: "2.0" (null-padded) |
 
 ### 2. Header - SubBeam info
 
 Matches the standard Varian Trajectory Log structure for compatibility.
 
-### 3. Compressed Axis Data
+### 3. Per-Stream Scale Table (NEW in v2.0)
+
+The scale table stores one float per data stream (axis × samples_per_snapshot).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| ScaleCount | int32 | Number of scales (total streams) |
+| Scales[] | float32[] | Scale factor for each stream |
+
+**Scale Calculation:**
+
+For each stream, the optimal scale is calculated by:
+1. Collecting all delta values in the stream
+2. Computing mean and standard deviation
+3. Identifying outliers (> 5 standard deviations from mean)
+4. Finding the maximum "normal" delta (excluding outliers)
+5. Calculating scale = (delta_range × 0.9) / max_normal_delta
+   - delta_range is 127 for small streams, 32767 for large streams
+   - 10% headroom prevents quantization overflow
+
+This approach optimizes precision for typical movement patterns while using escape codes for rare large deltas.
+
+**Typical Overhead:** ~130 axes × 1 sample × 4 bytes = 520 bytes (negligible vs MB file sizes)
+
+### 4. Compressed Axis Data
 
 The data is organized by **Axis**, then by **Sample Index**, then by **Snapshot**.
 This means we write the entire timeline for "Gantry" before moving to "Collimator".
@@ -48,14 +79,8 @@ This means we write the entire timeline for "Gantry" before moving to "Collimato
 
 #### Stream Types
 
-Data is quantized (converted to integer) and delta-encoded. There are two stream types based on the data range required.
-
-**Quantization Scales:**
-
-* **Small Position (MLC, Jaws):** `1000.0` (0.001 cm resolution)
-* **Large Position (Couch X/Y/Z):** `100.0` (0.01 cm resolution)
-* **Angles (Gantry, Coll, Pitch, etc.):** `100.0` (0.01 degree resolution)
-* **MU / ControlPoint:** `1000.0` (0.001 unit resolution)
+Data is quantized (converted to integer) using the per-stream scale from the scale table, then delta-encoded.
+There are two stream types based on the data range required.
 
 ---
 
@@ -99,14 +124,28 @@ Data is quantized (converted to integer) and delta-encoded. There are two stream
 
 ## Axis Data Classification
 
-| Axis                  | Stream Type | Scale | Notes               |
-|-----------------------|-------------|-------|---------------------|
-| MLC (All)             | Small       | 1000  | 0.001 cm res        |
-| Jaws (X1, X2, Y1, Y2) | Small       | 1000  | 0.001 cm res        |
-| Couch Pitch / Roll    | Small       | 100   | 0.01 deg res        |
-| Couch Vrt / Lng / Lat | Large       | 100   | 0.01 cm res         |
-| Gantry Rtn            | Large       | 100   | 0.01 deg res, Wraps |
-| Collimator Rtn        | Large       | 100   | 0.01 deg res, Wraps |
-| Couch Rtn             | Large       | 100   | 0.01 deg res, Wraps |
-| MU                    | Large       | 1000  | 0.001 unit res      |
-| ControlPoint          | Large       | 1000  | 0.001 unit res      |
+| Axis                  | Stream Type | Notes                        |
+|-----------------------|-------------|------------------------------|
+| MLC (All)             | Small       | Dynamic scale per leaf       |
+| Jaws (X1, X2, Y1, Y2) | Small       | Dynamic scale                |
+| Couch Pitch / Roll    | Small       | Dynamic scale                |
+| Couch Vrt / Lng / Lat | Large       | Dynamic scale                |
+| Gantry Rtn            | Large       | Dynamic scale, Wraps at 360° |
+| Collimator Rtn        | Large       | Dynamic scale, Wraps at 360° |
+| Couch Rtn             | Large       | Dynamic scale, Wraps at 360° |
+| MU                    | Large       | Dynamic scale                |
+| ControlPoint          | Large       | Dynamic scale                |
+
+## Dynamic Scale Benefits
+
+**Fixed Scale (v1.0):**
+- MLC uses scale 1000 → 0.01mm precision
+- If max delta is 0.05cm, uses 50 of ±127 range → wasted precision
+
+**Dynamic Scale (v2.0):**
+- Scan data to find actual max delta per stream
+- Calculate scale = delta_range / max_delta
+- Example: max_delta 0.05cm → scale 2540 → 0.004mm precision
+
+Outlier detection ensures that rare large movements don't degrade precision for the entire stream.
+These outliers are handled via the existing escape code mechanism.

@@ -3,12 +3,12 @@ namespace TrajectoryLogReader.Fluence;
 // A simple struct to represent the Axis Aligned Rect
 internal struct AABB
 {
-    public float MinX;
-    public float MinY;
-    public float MaxX;
-    public float MaxY;
+    public readonly double MinX;
+    public readonly double MinY;
+    public readonly double MaxX;
+    public readonly double MaxY;
 
-    public AABB(float minX, float minY, float maxX, float maxY)
+    public AABB(double minX, double minY, double maxX, double maxY)
     {
         MinX = minX;
         MinY = minY;
