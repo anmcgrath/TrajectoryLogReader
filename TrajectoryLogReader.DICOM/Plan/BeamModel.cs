@@ -19,5 +19,5 @@ public class BeamModel
     public List<WedgeModel> Wedges { get; set; } = new();
     public List<ControlPointData> ControlPoints { get; set; } = new();
     public float MU { get; set; }
-    public IMLCModel Mlc { get; set; }
+    public IMLCModel? Mlc { get; set; }
 }

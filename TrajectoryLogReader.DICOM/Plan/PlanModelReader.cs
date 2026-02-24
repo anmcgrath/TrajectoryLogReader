@@ -5,8 +5,10 @@ namespace TrajectoryLogReader.DICOM.Plan;
 
 public class PlanModelReader
 {
-    private const string JawTypeX = "ASYMX";
-    private const string JawTypeY = "ASYMY";
+    private const string JawTypeAsymX = "ASYMX";
+    private const string JawTypeX = "X";
+    private const string JawTypeAsymY = "ASYMY";
+    private const string JawTypeY = "Y";
     private const string MLCX = "MLCX";
     private const string MLCY = "MLCY";
 
@@ -75,6 +77,11 @@ public class PlanModelReader
     private static List<BeamModel> ReadBeams(DicomDataset dataset)
     {
         var beams = new List<BeamModel>();
+        if (!dataset.Contains(DicomTag.BeamSequence))
+        {
+            return beams;
+        }
+
         var beamSequences = dataset.GetSequence(DicomTag.BeamSequence);
         foreach (var beamSeq in beamSequences)
         {
@@ -143,9 +150,15 @@ public class PlanModelReader
 
     private static void ReadFluenceMode(DicomDataset beamSeq, BeamModel beam)
     {
-        var fluenceModeSeq = beamSeq.GetSequence(DicomTag.PrimaryFluenceModeSequence);
-        if (fluenceModeSeq != null && fluenceModeSeq.Items.Count > 0)
+        if (beamSeq.Contains(DicomTag.PrimaryFluenceModeSequence))
         {
+            var fluenceModeSeq = beamSeq.GetSequence(DicomTag.PrimaryFluenceModeSequence);
+            if (fluenceModeSeq.Items.Count == 0)
+            {
+                beam.PrimaryFluenceMode = FluenceMode.Standard;
+                return;
+            }
+
             var modeId = fluenceModeSeq.First().GetSingleValueOrDefault(DicomTag.FluenceModeID, string.Empty);
             if (string.IsNullOrEmpty(modeId))
             {
@@ -286,14 +299,17 @@ public class PlanModelReader
                 var vals = beamLimitSeq.GetValues<float>(DicomTag.LeafJawPositions);
                 switch (type)
                 {
+                    case JawTypeAsymX:
                     case JawTypeX:
                         cpData.X1 = vals[0];
                         cpData.X2 = vals[1];
                         break;
+                    case JawTypeAsymY:
                     case JawTypeY:
                         cpData.Y1 = vals[0];
                         cpData.Y2 = vals[1];
                         break;
+                    case MLCY:
                     case MLCX:
                         cpData.MlcData = new float[2, vals.Length / 2];
                         for (int i = 0; i < vals.Length / 2; i++)
@@ -307,7 +323,7 @@ public class PlanModelReader
 
                         break;
                     default:
-                        throw new ApplicationException("Unknown type: " + type);
+                        break;
                 }
             }
         }
@@ -329,7 +345,7 @@ public class PlanModelReader
                 {
                     foreach (var beamSeq in fractionSeq.GetSequence(DicomTag.ReferencedBeamSequence))
                     {
-                        var mu = beamSeq.GetSingleValue<float>(DicomTag.BeamMeterset);
+                        var mu = beamSeq.GetSingleValueOrDefault<float>(DicomTag.BeamMeterset, 0f);
                         var refBeamNum = beamSeq.GetSingleValue<int>(DicomTag.ReferencedBeamNumber);
                         var beam = plan.Beams.FirstOrDefault(x => x.BeamNumber == refBeamNum);
                         if (beam != null)
