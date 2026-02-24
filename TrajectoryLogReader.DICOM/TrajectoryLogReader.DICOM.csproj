@@ -16,7 +16,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="fo-dicom.NetCore" Version="4.0.8" />
+      <PackageReference Include="fo-dicom" Version="5.2.5" />
       <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
     </ItemGroup>
 

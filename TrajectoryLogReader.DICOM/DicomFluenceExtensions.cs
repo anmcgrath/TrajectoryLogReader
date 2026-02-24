@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
-using Dicom;
-using Dicom.Imaging;
-using Dicom.IO.Buffer;
+using FellowOakDicom;
+using FellowOakDicom.Imaging;
+using FellowOakDicom.IO.Buffer;
 using TrajectoryLogReader.DICOM.FluenceAdapters;
 using TrajectoryLogReader.DICOM.Plan;
 using TrajectoryLogReader.Fluence;
