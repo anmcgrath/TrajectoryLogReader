@@ -349,17 +349,6 @@ namespace TrajectoryLogReader.Log
             return AxisData[axisIndex];
         }
 
-        /// <summary>
-        /// Calculates the Average Leaf Pair Opening (ALPO) for the entire trajectory log.
-        /// ALPO measures the average gap between opposing MLC leaves for leaf pairs within the jaw opening.
-        /// </summary>
-        /// <param name="options">Calculation options. If null, default options are used.</param>
-        /// <returns>The average leaf pair opening in centimeters.</returns>
-        public double CalculateAverageLeafPairOpening(AverageLeafPairOpeningOptions? options = null)
-        {
-            return AverageLeafPairOpeningCalculator.Calculate(Snapshots, options);
-        }
-
         public ComparisonResult CompareTo(TrajectoryLog other, float tolerance)
         {
             return TrajectoryLogComparer.Compare(this, other, tolerance);

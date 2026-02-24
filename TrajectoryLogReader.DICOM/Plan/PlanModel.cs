@@ -15,17 +15,17 @@ public class PlanModel
     public DateTime? PlanTimestamp { get; set; }
     public string PlanDescription { get; set; }
     public string TreatmentSite { get; set; }
-    
+
     /// <summary>
     /// List of fraction groups.
     /// </summary>
     public List<FractionModel> Fractions { get; set; } = new();
-    
+
     /// <summary>
     /// List of beams.
     /// </summary>
     public List<BeamModel> Beams { get; set; } = new();
-    
+
     /// <summary>
     /// List of prescriptions.
     /// </summary>

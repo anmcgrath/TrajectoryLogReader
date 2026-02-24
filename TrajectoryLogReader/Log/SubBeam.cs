@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using TrajectoryLogReader.Complexity;
 using TrajectoryLogReader.Fluence;
+using TrajectoryLogReader.Fluence.Adapters;
 using TrajectoryLogReader.Log.Axes;
 using TrajectoryLogReader.Log.Snapshots;
 using TrajectoryLogReader.LogStatistics;
@@ -120,9 +121,12 @@ namespace TrajectoryLogReader.Log
         /// </summary>
         /// <param name="options">Calculation options. If null, default options are used.</param>
         /// <returns>The average leaf pair opening in centimeters.</returns>
-        public double CalculateAverageLeafPairOpening(AverageLeafPairOpeningOptions? options = null)
+        public double CalculateAverageLeafPairOpening(RecordType recordType = RecordType.ExpectedPosition, AverageLeafPairOpeningOptions? options = null)
         {
-            return AverageLeafPairOpeningCalculator.Calculate(Snapshots, options);
+            var alpoOptions = options ?? new AverageLeafPairOpeningOptions();
+            var adapter = new MeasurementDataCollectionAdapter(Snapshots, recordType, _log.Header.SamplingIntervalInMS);
+            return AverageLeafPairOpeningCalculator
+                .Calculate(adapter, options);
         }
 
         private int CalculateStartIndex()

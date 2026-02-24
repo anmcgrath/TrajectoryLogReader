@@ -1,3 +1,5 @@
+using TrajectoryLogReader.Complexity;
+using TrajectoryLogReader.DICOM.FluenceAdapters;
 using TrajectoryLogReader.MLC;
 
 namespace TrajectoryLogReader.DICOM.Plan;
@@ -20,4 +22,17 @@ public class BeamModel
     public List<ControlPointData> ControlPoints { get; set; } = new();
     public float MU { get; set; }
     public IMLCModel? Mlc { get; set; }
+
+    /// <summary>
+    /// Calculates the Average Leaf Pair Opening (ALPO) for this sub-beam.
+    /// ALPO measures the average gap between opposing MLC leaves for leaf pairs within the jaw opening.
+    /// </summary>
+    /// <param name="options">Calculation options. If null, default options are used.</param>
+    /// <returns>The average leaf pair opening in centimeters.</returns>
+    public double CalculateAverageLeafPairOpening(AverageLeafPairOpeningOptions? options)
+    {
+        var alpoOptions = options ?? new AverageLeafPairOpeningOptions();
+        var adapter = new BeamCollectionAdapter(this, 1);
+        return AverageLeafPairOpeningCalculator.Calculate(adapter, alpoOptions);
+    }
 }

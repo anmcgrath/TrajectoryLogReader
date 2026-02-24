@@ -1,5 +1,3 @@
-using TrajectoryLogReader.Log;
-
 namespace TrajectoryLogReader.Complexity;
 
 /// <summary>
@@ -18,10 +16,4 @@ public class AverageLeafPairOpeningOptions
     /// Default is false (excludes beam hold snapshots).
     /// </summary>
     public bool IncludeBeamHold { get; set; } = false;
-
-    /// <summary>
-    /// The record type to use for calculations (Expected or Actual positions).
-    /// Default is ActualPosition.
-    /// </summary>
-    public RecordType RecordType { get; set; } = RecordType.ActualPosition;
 }

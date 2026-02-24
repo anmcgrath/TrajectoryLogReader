@@ -9,7 +9,7 @@ namespace TrajectoryLogReader.DICOM.FluenceAdapters;
 /// </summary>
 public class BeamCollectionAdapter : IFieldDataCollection
 {
-    public BeamModel _beam;
+    private readonly BeamModel _beam;
     private readonly double _cpDelta;
 
     /// <summary>
@@ -33,6 +33,9 @@ public class BeamCollectionAdapter : IFieldDataCollection
         if (_beam.NumberOfControlPoints == 0)
             yield break;
 
+        if (_cpDelta == 0)
+            throw new InvalidOperationException($"Control point delta must be > 0");
+
         float prevMu = 0;
         var cpFrac = 0d;
         var maxIndex = _beam.NumberOfControlPoints - 1;
@@ -41,7 +44,7 @@ public class BeamCollectionAdapter : IFieldDataCollection
         while (cpFrac < maxIndex)
         {
             int index = (int)cpFrac;
-            
+
             // Ensure we don't go out of bounds (though while loop should prevent this)
             if (index >= maxIndex)
                 break;
@@ -51,9 +54,9 @@ public class BeamCollectionAdapter : IFieldDataCollection
 
             var cpInterp = ControlPointInterpolator.Interpolate(cp0, cp1, cpFrac);
             var mu = cpInterp.CumulativeMetersetWeight * _beam.MU;
-            
+
             yield return new BeamFieldDataAdapter(cpInterp, mu - prevMu, _beam);
-            
+
             prevMu = mu;
             cpFrac += _cpDelta;
         }
@@ -61,7 +64,7 @@ public class BeamCollectionAdapter : IFieldDataCollection
         // Include the final control point to ensure we account for the total dose
         var cpLast = _beam.ControlPoints[maxIndex];
         var muLast = cpLast.CumulativeMetersetWeight * _beam.MU;
-        
+
         // Only yield if there is remaining MU or if it's the only point (to show static fields correctly)
         // However, for consistency, we always yield the final state to reach the total MU.
         yield return new BeamFieldDataAdapter(cpLast, muLast - prevMu, _beam);

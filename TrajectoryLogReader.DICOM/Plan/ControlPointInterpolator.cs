@@ -9,10 +9,12 @@ public class ControlPointInterpolator
     /// Interpolates control point data at a fractional index.
     /// </summary>
     /// <param name="controlPoint1">The first <see cref="ControlPointData"/></param>
-    /// <param name="cp2">The second <see cref="ControlPointData"/></param>
+    /// <param name="controlPoint2"></param>
     /// <param name="fractionalControlPoint">The fractional control point index.</param>
     /// <returns>Interpolated control point data.</returns>
-    public static ControlPointData Interpolate(ControlPointData controlPoint1, ControlPointData controlPoint2,
+    public static ControlPointData Interpolate(
+        ControlPointData controlPoint1,
+        ControlPointData controlPoint2,
         double fractionalControlPoint)
     {
         if (controlPoint1.ControlPointIndex == controlPoint2.ControlPointIndex)
