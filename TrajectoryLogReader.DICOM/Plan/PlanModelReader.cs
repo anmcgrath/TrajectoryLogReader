@@ -282,6 +282,17 @@ public class PlanModelReader
                     cpData.GantryAngle = gantryAngle;
 
                     ReadBeamLimitingDevices(cp, cpData);
+                    if (cpIndex > 1)
+                    {
+                        // when jaws are static
+                        // -2 because cpIndex is 1-based
+                        cpData.X1 ??= beam.ControlPoints[cpIndex - 2].X1;
+                        cpData.X2 ??= beam.ControlPoints[cpIndex - 2].X2;
+                        cpData.Y2 ??= beam.ControlPoints[cpIndex - 2].Y2;
+                        cpData.Y1 ??= beam.ControlPoints[cpIndex - 2].Y1;
+                        cpData.MlcData ??= beam.ControlPoints[cpIndex - 2].MlcData;
+                    }
+
                     beam.ControlPoints.Add(cpData);
                 }
             }

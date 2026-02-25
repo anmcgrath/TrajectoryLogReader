@@ -22,6 +22,15 @@ public class ControlPointInterpolator
             return controlPoint1;
         }
 
+        if (controlPoint1.AreJawsInvalid() || controlPoint2.AreJawsInvalid())
+            throw new Exception($"Invalid jaws");
+
+        if (controlPoint1.GantryAngle == null || controlPoint2.GantryAngle == null)
+            throw new Exception($"Invalid gantry angle");
+
+        if (controlPoint1.CollimatorAngle == null || controlPoint2.CollimatorAngle == null)
+            throw new Exception($"Invalid collimator angle");
+
         float t = (float)(fractionalControlPoint - controlPoint1.ControlPointIndex) /
                   (float)(controlPoint2.ControlPointIndex - controlPoint1.ControlPointIndex);
 
@@ -30,12 +39,13 @@ public class ControlPointInterpolator
             ControlPointIndex = (int)Math.Round(fractionalControlPoint),
             CumulativeMetersetWeight = Lerp(controlPoint1.CumulativeMetersetWeight,
                 controlPoint2.CumulativeMetersetWeight, t),
-            GantryAngle = Lerp(controlPoint1.GantryAngle, controlPoint2.GantryAngle, t),
-            CollimatorAngle = Lerp(controlPoint1.CollimatorAngle, controlPoint2.CollimatorAngle, t),
-            X1 = Lerp(controlPoint1.X1, controlPoint2.X1, t),
-            X2 = Lerp(controlPoint1.X2, controlPoint2.X2, t),
-            Y1 = Lerp(controlPoint1.Y1, controlPoint2.Y1, t),
-            Y2 = Lerp(controlPoint1.Y2, controlPoint2.Y2, t)
+            GantryAngle = Lerp(controlPoint1.GantryAngle.Value, controlPoint2.GantryAngle.Value, t),
+            CollimatorAngle = Lerp(controlPoint1.CollimatorAngle.Value, controlPoint2.CollimatorAngle.Value, t),
+
+            X1 = Lerp(controlPoint1.X1!.Value, controlPoint2.X1!.Value, t),
+            X2 = Lerp(controlPoint1.X2!.Value, controlPoint2.X2!.Value, t),
+            Y1 = Lerp(controlPoint1.Y1!.Value, controlPoint2.Y1!.Value, t),
+            Y2 = Lerp(controlPoint1.Y2!.Value, controlPoint2.Y2!.Value, t)
         };
 
         int banks = controlPoint1.MlcData.GetLength(0);
