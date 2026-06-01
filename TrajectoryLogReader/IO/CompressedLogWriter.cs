@@ -14,7 +14,7 @@ namespace TrajectoryLogReader.IO;
 /// - Small axes (MLC, jaws, angles): 16-bit base + 8-bit deltas
 /// - Large axes (couch positions, MU, ControlPoint): 32-bit base + 16-bit deltas
 /// - Escape codes signal when a full absolute value follows
-/// - Angular axes (Gantry, Collimator, CouchRtn) use normalized deltas for wraparound
+/// - Angular axes (Gantry, Collimator, CouchRtn) use absolute escape values at 0/360 wraparound
 /// </remarks>
 public static class CompressedLogWriter
 {
@@ -467,16 +467,15 @@ public static class CompressedLogWriter
             int currentQuantized = QuantizeToInt(currentValue, scale);
 
             long delta = (long)currentQuantized - previousQuantized;
+            var requiresAbsoluteValue = false;
 
-            // For full rotation angles, normalize delta to handle 0/360 wraparound
-            if (isFullRotation)
-            {
-                delta = NormalizeAngularDeltaLong(delta, scale);
-            }
+            // Preserve the original 0-360 representation by writing wraparounds as absolutes.
+            if (isFullRotation && NormalizeAngularDeltaLong(delta, scale) != delta)
+                requiresAbsoluteValue = true;
 
             // Check if delta fits in signed short range [-32767, 32767]
             // Reserve -32768 as escape code
-            if (delta >= -32767 && delta <= 32767)
+            if (!requiresAbsoluteValue && delta >= -32767 && delta <= 32767)
             {
                 bw.Write((short)delta);
             }

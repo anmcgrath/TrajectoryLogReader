@@ -114,8 +114,9 @@ There are two stream types based on the data range required.
 1. **First Value:** `int32` (Quantized Absolute Value)
 2. **Next Values** (`N_Snaps - 1` times):
     * Calculate `Delta = CurrentQuantized - PreviousQuantized`.
-    * **Angular Handling:** If the axis is Gantry, Collimator, or Couch Rtn, the delta is normalized to the shortest
-      path (e.g., 359° -> 1° becomes +2°, not -358°).
+    * **Angular Handling:** If the axis is Gantry, Collimator, or Couch Rtn and the movement crosses the 0/360°
+      boundary, write the current value as an absolute escape value. This preserves the original angle representation
+      (for example, `359° -> 1°` round-trips as `1°`, not `361°`).
     * **If** `Delta` is within `[-32767, 32767]`:
         * Write `int16` = `Delta`.
     * **Else (Escape):**

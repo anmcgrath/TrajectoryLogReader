@@ -611,5 +611,63 @@ public class CompressionTests
         }
     }
 
+    [Test]
+    public void CompressAndDecompress_GantryWraparound_PreservesOriginalAngleValues()
+    {
+        var original = CreateGantryWraparoundLog();
+        using var stream = new MemoryStream();
+
+        CompressedLogWriter.Write(original, stream, useGzip: false);
+        stream.Position = 0;
+
+        var decompressed = CompressedLogReader.Read(stream);
+        var gantryData = decompressed.AxisData[0].Data;
+
+        gantryData[0].ShouldBe(359f, 0.001f);
+        gantryData[1].ShouldBe(1f, 0.001f);
+        gantryData[2].ShouldBe(1f, 0.001f);
+        gantryData[3].ShouldBe(359f, 0.001f);
+        gantryData[4].ShouldBe(359f, 0.001f);
+        gantryData[5].ShouldBe(1f, 0.001f);
+        gantryData[6].ShouldBe(1f, 0.001f);
+        gantryData[7].ShouldBe(359f, 0.001f);
+    }
+
     #endregion
+
+    private static TrajectoryLog CreateGantryWraparoundLog()
+    {
+        var log = new TrajectoryLog
+        {
+            Header = new Header
+            {
+                Version = 5,
+                SamplingIntervalInMS = 20,
+                NumAxesSampled = 1,
+                AxesSampled = new[] { Axis.GantryRtn },
+                SamplesPerAxis = new[] { 1 },
+                AxisScale = AxisScale.ModifiedIEC61217,
+                NumberOfSubBeams = 0,
+                IsTruncated = false,
+                NumberOfSnapshots = 4,
+                MlcModel = MLCModel.NDS120
+            },
+            MetaData = new MetaData(),
+            AxisData = new AxisData[1]
+        };
+
+        // One scalar axis sample has two records per snapshot: expected and actual.
+        var gantry = new AxisData(4, 2);
+        gantry.Data[0] = 359f;
+        gantry.Data[1] = 1f;
+        gantry.Data[2] = 1f;
+        gantry.Data[3] = 359f;
+        gantry.Data[4] = 359f;
+        gantry.Data[5] = 1f;
+        gantry.Data[6] = 1f;
+        gantry.Data[7] = 359f;
+
+        log.AxisData[0] = gantry;
+        return log;
+    }
 }
