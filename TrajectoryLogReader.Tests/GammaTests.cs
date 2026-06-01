@@ -18,7 +18,8 @@ public class GammaTests
             .Calculate(gParams, g1, g2);
         res.FracPass.ShouldBe(1);
 
-        var diff = 100 * (100.5 - 100) / 100.5;
+        // Global gamma normalises to the reference dose distribution (g1, max 100), not max(ref, compared).
+        var diff = 100 * (100.5 - 100) / 100;
 
         for (int i = 0; i < g1.Rows; i++)
         {

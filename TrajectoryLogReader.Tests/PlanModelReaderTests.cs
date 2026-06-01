@@ -55,6 +55,19 @@ public class PlanModelReaderTests
         plan.Beams[0].Mlc.ShouldBeNull();
     }
 
+    [Test]
+    public void Read_WhenControlPointContainsRotationDirections_ParsesDirections()
+    {
+        var plan = ReadPlan(CreatePlanDataset(CreateBeamDataset(
+            Array.Empty<DicomDataset>(),
+            gantryRotationDirection: "CW",
+            beamLimitingDeviceRotationDirection: "CC")));
+
+        var cpData = plan.Beams[0].ControlPoints[0];
+        cpData.GantryRotationDirection.ShouldBe(ControlPointRotationDirection.Clockwise);
+        cpData.CollimatorRotationDirection.ShouldBe(ControlPointRotationDirection.CounterClockwise);
+    }
+
     private static PlanModel ReadPlan(DicomDataset dataset)
     {
         var file = new DicomFile(dataset);
@@ -83,6 +96,14 @@ public class PlanModelReaderTests
 
     private static DicomDataset CreateBeamDataset(params DicomDataset[] beamLimitingDevicePositions)
     {
+        return CreateBeamDataset(beamLimitingDevicePositions, null, null);
+    }
+
+    private static DicomDataset CreateBeamDataset(
+        DicomDataset[] beamLimitingDevicePositions,
+        string? gantryRotationDirection = null,
+        string? beamLimitingDeviceRotationDirection = null)
+    {
         var beam = new DicomDataset();
         beam.Add(DicomTag.BeamName, "Beam 1");
         beam.Add(DicomTag.BeamNumber, 1);
@@ -94,7 +115,17 @@ public class PlanModelReaderTests
         var cp = new DicomDataset();
         cp.Add(DicomTag.CumulativeMetersetWeight, 0f);
 
-        if (beamLimitingDevicePositions.Length > 0)
+        if (gantryRotationDirection != null)
+        {
+            cp.Add(DicomTag.GantryRotationDirection, gantryRotationDirection);
+        }
+
+        if (beamLimitingDeviceRotationDirection != null)
+        {
+            cp.Add(DicomTag.BeamLimitingDeviceRotationDirection, beamLimitingDeviceRotationDirection);
+        }
+
+        if (beamLimitingDevicePositions is { Length: > 0 })
         {
             cp.Add(new DicomSequence(DicomTag.BeamLimitingDevicePositionSequence, beamLimitingDevicePositions));
         }

@@ -30,7 +30,24 @@ public class ControlPointData
     public float? GantryAngle { get; set; }
 
     /// <summary>
+    /// Gantry rotation direction for the segment starting at this control point.
+    /// </summary>
+    public ControlPointRotationDirection? GantryRotationDirection { get; set; }
+
+    /// <summary>
     /// Collimator angle in degrees.
     /// </summary>
     public float? CollimatorAngle { get; set; }
+
+    /// <summary>
+    /// Collimator rotation direction for the segment starting at this control point.
+    /// </summary>
+    public ControlPointRotationDirection? CollimatorRotationDirection { get; set; }
+}
+
+public enum ControlPointRotationDirection
+{
+    None,
+    Clockwise,
+    CounterClockwise
 }

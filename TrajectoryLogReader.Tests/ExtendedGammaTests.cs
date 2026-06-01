@@ -83,6 +83,38 @@ public class PhysicistGammaTests
     }
 
     [Test]
+    public void Gamma_Global_Normalizes_To_Reference_Max_Not_Compared_Max()
+    {
+        var refGrid = CreateGrid(5, 5, (_, _) => 50f);
+        var evalGrid = CreateGrid(5, 5, (_, _) => 51f);
+        evalGrid.SetData(0, 0, 100f); // hotspot raises the compared max above the reference max
+
+        var p = new GammaParameters2D(1, 1.5, global: true, thresholdPercent: 10);
+        var res = GammaCalculator2D.Calculate(p, refGrid, evalGrid);
+
+        // 2% diff / 1.5% tol at zero distance -> gamma = 1.333...
+        res.Grid.Data[2 * 5 + 2].ShouldBe(1.3333f, 0.01);
+        res.Grid.Data[2 * 5 + 2].ShouldBeGreaterThan(1.0f);
+    }
+
+    [Test]
+    public void Gamma_Compared_Larger_Than_Reference_Excludes_OutOfDomain_Points()
+    { 
+        var refGrid = CreateGrid(4, 4, (_, _) => 100f);
+        var evalGrid = CreateGrid(8, 8, (_, _) => 100f);
+
+        var p = new GammaParameters2D(1, 2, global: true, thresholdPercent: 10);
+        var res = GammaCalculator2D.Calculate(p, refGrid, evalGrid);
+
+        // A point well inside the overlap is evaluated against the reference (perfect match -> 0).
+        res.Grid.Data[1 * 8 + 1].ShouldBe(0f, 0.001);
+        // The far corner (7,7) is ~5.7 mm from the nearest reference sample, well beyond the 2 mm
+        // search radius, so it has no reference coverage and must remain unevaluated (-1).
+        // An edge-clamping implementation would instead have scored it (0, a perfect match to the edge).
+        res.Grid.Data[7 * 8 + 7].ShouldBe(-1f);
+    }
+
+    [Test]
     public void Gamma_Threshold_Ignores_Low_Dose_Points()
     {
         var refGrid = CreateGrid(5, 5, (_, _) => 1f);

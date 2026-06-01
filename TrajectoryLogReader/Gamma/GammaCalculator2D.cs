@@ -61,6 +61,11 @@ public static class GammaCalculator2D
         public int RefCols;
         public float[]? RefData;
 
+        // Whether each resampled coordinate lies within the reference grid's domain.
+        // Resampled points outside the reference extent are not evaluable and are excluded.
+        public bool[] XInDomain;
+        public bool[] YInDomain;
+
         // Column bounds for resampled grid
         public int[] MinCol;
         public int[] MaxCol;
@@ -121,7 +126,8 @@ public static class GammaCalculator2D
             My = my,
             ResampledSizeX = resampledSizeX,
             ResampledSizeY = resampledSizeY,
-            MaxRefDose = Math.Max(comparedMax, referenceMax),
+            // Global gamma normalises to the reference dose distribution (see GammaParameters2D.Global).
+            MaxRefDose = referenceMax,
             ThreshDose = comparedMax * (parameters.ThresholdPercent / 100),
             ResampledX = resampledX,
             ResampledY = resampledY,
@@ -130,6 +136,8 @@ public static class GammaCalculator2D
             XWeights = new double[resampledSizeX],
             YIndices = new int[resampledSizeY],
             YWeights = new double[resampledSizeY],
+            XInDomain = new bool[resampledSizeX],
+            YInDomain = new bool[resampledSizeY],
             RefCols = reference.Cols,
             RefData = reference.Flatten(),
             MinCol = new int[resampledSizeY],
@@ -159,6 +167,8 @@ public static class GammaCalculator2D
         {
             double x = ctx.ResampledX[i];
             double colF = (x - refXMin) / refXRes;
+            // In-domain when the point lies between the first and last reference sample.
+            ctx.XInDomain[i] = colF >= 0 && colF <= refCols - 1;
             int col = (int)colF;
             if (col < 0)
             {
@@ -179,6 +189,7 @@ public static class GammaCalculator2D
         {
             double y = ctx.ResampledY[j];
             double rowF = (y - refYMin) / refYRes;
+            ctx.YInDomain[j] = rowF >= 0 && rowF <= refRows - 1;
             int row = (int)rowF;
             if (row < 0)
             {
@@ -354,6 +365,8 @@ public static class GammaCalculator2D
         var doseCriteriaSq = ctx.DoseCriteriaSq;
         var dtaCriteriaSq = ctx.DtaCriteriaSq;
         var isGlobal = parameters.Global;
+        var xInDomain = ctx.XInDomain;
+        var yInDomain = ctx.YInDomain;
 
         Parallel.For(0, compared.Rows, () => (0, 0), (yi, _, localCounters) =>
             {
@@ -370,8 +383,8 @@ public static class GammaCalculator2D
                     if (comparedDose < threshDose)
                         continue;
 
-                    localCounters.Item2++;
                     double minGammaSquared = double.NaN;
+                    bool hasRefCoverage = false;
 
                     foreach (var offset in offsets)
                     {
@@ -385,6 +398,14 @@ public static class GammaCalculator2D
 
                         if (xiRef < 0 || yiRef < 0 || xiRef > resampledSizeX - 1 || yiRef > resampledSizeY - 1)
                             continue;
+
+                        // Skip reference samples outside the reference grid's domain. When the
+                        // compared map is larger than the reference, these points have no valid
+                        // reference to compare against and must not be scored.
+                        if (!xInDomain[xiRef] || !yInDomain[yiRef])
+                            continue;
+
+                        hasRefCoverage = true;
 
                         var refDose = resampledRefDose[yiRef, xiRef];
 
@@ -405,6 +426,13 @@ public static class GammaCalculator2D
                         if (double.IsNaN(minGammaSquared) || gammaSq < minGammaSquared)
                             minGammaSquared = gammaSq;
                     }
+
+                    // A compared point with no in-domain reference coverage is not evaluable:
+                    // leave gamma = -1 and exclude it from the pass/total counts.
+                    if (!hasRefCoverage)
+                        continue;
+
+                    localCounters.Item2++;
 
                     if (minGammaSquared <= 1)
                         localCounters.Item1++;

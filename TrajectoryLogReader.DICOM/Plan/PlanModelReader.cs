@@ -253,6 +253,8 @@ public class PlanModelReader
     {
         float colAngle = 0;
         float gantryAngle = 0;
+        ControlPointRotationDirection? colRotationDirection = null;
+        ControlPointRotationDirection? gantryRotationDirection = null;
 
         if (beamSeq.Contains(DicomTag.ControlPointSequence))
         {
@@ -273,13 +275,27 @@ public class PlanModelReader
                         colAngle = cp.GetSingleValue<float>(DicomTag.BeamLimitingDeviceAngle);
                     }
 
+                    if (cp.Contains(DicomTag.BeamLimitingDeviceRotationDirection))
+                    {
+                        colRotationDirection = ParseRotationDirection(
+                            cp.GetSingleValue<string>(DicomTag.BeamLimitingDeviceRotationDirection));
+                    }
+
                     if (cp.Contains(DicomTag.GantryAngle))
                     {
                         gantryAngle = cp.GetSingleValue<float>(DicomTag.GantryAngle);
                     }
 
+                    if (cp.Contains(DicomTag.GantryRotationDirection))
+                    {
+                        gantryRotationDirection = ParseRotationDirection(
+                            cp.GetSingleValue<string>(DicomTag.GantryRotationDirection));
+                    }
+
                     cpData.CollimatorAngle = colAngle;
+                    cpData.CollimatorRotationDirection = colRotationDirection;
                     cpData.GantryAngle = gantryAngle;
+                    cpData.GantryRotationDirection = gantryRotationDirection;
 
                     ReadBeamLimitingDevices(cp, cpData);
                     if (cpIndex > 1)
@@ -297,6 +313,17 @@ public class PlanModelReader
                 }
             }
         }
+    }
+
+    private static ControlPointRotationDirection? ParseRotationDirection(string value)
+    {
+        return value.Trim().ToUpperInvariant() switch
+        {
+            "CW" => ControlPointRotationDirection.Clockwise,
+            "CC" => ControlPointRotationDirection.CounterClockwise,
+            "NONE" => ControlPointRotationDirection.None,
+            _ => null
+        };
     }
 
     private static void ReadBeamLimitingDevices(DicomDataset cp, ControlPointData cpData)

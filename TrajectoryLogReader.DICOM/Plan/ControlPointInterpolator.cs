@@ -39,8 +39,12 @@ public class ControlPointInterpolator
             ControlPointIndex = (int)Math.Round(fractionalControlPoint),
             CumulativeMetersetWeight = Lerp(controlPoint1.CumulativeMetersetWeight,
                 controlPoint2.CumulativeMetersetWeight, t),
-            GantryAngle = Lerp(controlPoint1.GantryAngle.Value, controlPoint2.GantryAngle.Value, t),
-            CollimatorAngle = Lerp(controlPoint1.CollimatorAngle.Value, controlPoint2.CollimatorAngle.Value, t),
+            GantryAngle = LerpAngle(controlPoint1.GantryAngle.Value, controlPoint2.GantryAngle.Value, t,
+                controlPoint1.GantryRotationDirection),
+            GantryRotationDirection = controlPoint1.GantryRotationDirection,
+            CollimatorAngle = LerpAngle(controlPoint1.CollimatorAngle.Value, controlPoint2.CollimatorAngle.Value, t,
+                controlPoint1.CollimatorRotationDirection),
+            CollimatorRotationDirection = controlPoint1.CollimatorRotationDirection,
 
             X1 = Lerp(controlPoint1.X1!.Value, controlPoint2.X1!.Value, t),
             X2 = Lerp(controlPoint1.X2!.Value, controlPoint2.X2!.Value, t),
@@ -70,5 +74,39 @@ public class ControlPointInterpolator
     private static float Lerp(float v0, float v1, float t)
     {
         return v0 + t * (v1 - v0);
+    }
+
+    private static float LerpAngle(
+        float a0,
+        float a1,
+        float t,
+        ControlPointRotationDirection? rotationDirection)
+    {
+        if (rotationDirection == null)
+            return NormalizeAngle(Lerp(a0, a1, t));
+
+        if (rotationDirection == ControlPointRotationDirection.None)
+            return NormalizeAngle(a0);
+
+        var forwardDelta = NormalizeAngle(a1 - a0);
+        var delta = rotationDirection == ControlPointRotationDirection.Clockwise
+            ? forwardDelta
+            : forwardDelta - 360f;
+
+        if (delta == 0)
+        {
+            delta = rotationDirection == ControlPointRotationDirection.Clockwise
+                ? 360f
+                : -360f;
+        }
+
+        return NormalizeAngle(a0 + t * delta);
+    }
+
+    private static float NormalizeAngle(float angle)
+    {
+        angle %= 360f;
+        if (angle < 0) angle += 360f;
+        return angle;
     }
 }
