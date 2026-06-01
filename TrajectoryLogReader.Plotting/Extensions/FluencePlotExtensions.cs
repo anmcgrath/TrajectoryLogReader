@@ -29,7 +29,7 @@ public static class FluencePlotExtensions
         {
             for (int j = 0; j < grid.Cols; j++)
             {
-                coords[i, j] = new Coordinates3d(grid.GetX(i), grid.GetY(i), grid.GetData(j, i));
+                coords[i, j] = new Coordinates3d(grid.GetX(j), grid.GetY(i), grid.GetData(j, i));
             }
         }
 
