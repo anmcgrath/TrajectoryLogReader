@@ -79,11 +79,12 @@ public static class AverageLeafPairOpeningCalculator
                 continue;
 
             // Get leaf positions for both banks (in mm, IEC scale)
-            var bankBPos = fieldData.GetLeafPositionInMm(0, leafIndex);
-            var bankAPos = fieldData.GetLeafPositionInMm(1, leafIndex);
+            // In IEC, Bank A (bank index 0) is on the positive X side,
+            // Bank B (bank index 1) is on the negative X side.
+            var bankAPos = fieldData.GetLeafPositionInMm(0, leafIndex);
+            var bankBPos = fieldData.GetLeafPositionInMm(1, leafIndex);
 
             // Calculate opening: distance between leaf tips
-            // In IEC, Bank A is on positive X side, Bank B is on negative X side
             // Opening = BankA position - BankB position
             var opening = bankAPos - bankBPos;
 

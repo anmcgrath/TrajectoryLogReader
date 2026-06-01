@@ -22,8 +22,8 @@ public class AverageLeafPairOpeningCalculatorTests
             y2InMm: 6,
             deltaMu: 1,
             isBeamHold: false,
-            bank0Positions: new[] { 0f, -2f, 3f },
-            bank1Positions: new[] { 10f, 8f, 1f });
+            bank0Positions: new[] { 10f, 8f, 1f },
+            bank1Positions: new[] { 0f, -2f, 3f });
 
         var result = AverageLeafPairOpeningCalculator.Calculate(new FakeFieldDataCollection(snapshot));
 
@@ -35,9 +35,9 @@ public class AverageLeafPairOpeningCalculatorTests
     {
         var mlc = new FakeMlcModel(new LeafInformation(0, 5));
 
-        var zeroMu = new FakeFieldData(mlc, -5, 5, 0, false, new[] { 0f }, new[] { 20f });
-        var beamHold = new FakeFieldData(mlc, -5, 5, 1, true, new[] { 0f }, new[] { 30f });
-        var delivering = new FakeFieldData(mlc, -5, 5, 1, false, new[] { 0f }, new[] { 10f });
+        var zeroMu = new FakeFieldData(mlc, -5, 5, 0, false, new[] { 20f }, new[] { 0f });
+        var beamHold = new FakeFieldData(mlc, -5, 5, 1, true, new[] { 30f }, new[] { 0f });
+        var delivering = new FakeFieldData(mlc, -5, 5, 1, false, new[] { 10f }, new[] { 0f });
 
         var collection = new FakeFieldDataCollection(zeroMu, beamHold, delivering);
 
@@ -51,9 +51,9 @@ public class AverageLeafPairOpeningCalculatorTests
     {
         var mlc = new FakeMlcModel(new LeafInformation(0, 5));
 
-        var zeroMu = new FakeFieldData(mlc, -5, 5, 0, false, new[] { 0f }, new[] { 20f });
-        var beamHold = new FakeFieldData(mlc, -5, 5, 1, true, new[] { 0f }, new[] { 30f });
-        var delivering = new FakeFieldData(mlc, -5, 5, 1, false, new[] { 0f }, new[] { 10f });
+        var zeroMu = new FakeFieldData(mlc, -5, 5, 0, false, new[] { 20f }, new[] { 0f });
+        var beamHold = new FakeFieldData(mlc, -5, 5, 1, true, new[] { 30f }, new[] { 0f });
+        var delivering = new FakeFieldData(mlc, -5, 5, 1, false, new[] { 10f }, new[] { 0f });
 
         var collection = new FakeFieldDataCollection(zeroMu, beamHold, delivering);
         var options = new AverageLeafPairOpeningOptions
@@ -77,8 +77,8 @@ public class AverageLeafPairOpeningCalculatorTests
             y2InMm: -10,
             deltaMu: 1,
             isBeamHold: false,
-            bank0Positions: new[] { -5f },
-            bank1Positions: new[] { 10f });
+            bank0Positions: new[] { 10f },
+            bank1Positions: new[] { -5f });
 
         var result = AverageLeafPairOpeningCalculator.Calculate(new FakeFieldDataCollection(snapshot));
 
@@ -103,8 +103,8 @@ public class AverageLeafPairOpeningCalculatorTests
             y2InMm: 5,
             deltaMu: 1,
             isBeamHold: false,
-            bank0Positions: new[] { 0f },
-            bank1Positions: new[] { 10f });
+            bank0Positions: new[] { 10f },
+            bank1Positions: new[] { 0f });
 
         var result = AverageLeafPairOpeningCalculator.Calculate(new FakeFieldDataCollection(snapshot));
 
@@ -121,8 +121,8 @@ public class AverageLeafPairOpeningCalculatorTests
             y2InMm: 5,
             deltaMu: 1,
             isBeamHold: false,
-            bank0Positions: new[] { 5f },
-            bank1Positions: new[] { 2f });
+            bank0Positions: new[] { 2f },
+            bank1Positions: new[] { 5f });
 
         var result = AverageLeafPairOpeningCalculator.Calculate(new FakeFieldDataCollection(snapshot));
 
@@ -156,9 +156,9 @@ public class AverageLeafPairOpeningCalculatorTests
         private readonly float[] _bank1Positions;
         private readonly bool _isBeamHold;
 
-        // bank0 = Bank B (negative X side, index 0 in GetLeafPositionInMm)
-        // bank1 = Bank A (positive X side, index 1 in GetLeafPositionInMm)
-        // Opening = bank1[i] - bank0[i]
+        // bank0 = Bank A (positive X side, index 0 in GetLeafPositionInMm)
+        // bank1 = Bank B (negative X side, index 1 in GetLeafPositionInMm)
+        // Opening = bank0[i] - bank1[i]
         public FakeFieldData(
             IMLCModel mlc,
             float y1InMm,
