@@ -22,6 +22,14 @@ public class FluenceOptions
     public int Rows { get; set; } = 100;
 
     /// <summary>
+    /// If set, the pixel size (in mm) of square grid pixels, and <see cref="Cols"/> and <see cref="Rows"/> are ignored.
+    /// The grid is expanded so that pixel centres lie on multiples of this size (including the origin),
+    /// so fluences created with the same pixel size share pixel positions, e.g. plan and log fluences
+    /// that are to be compared with a gamma analysis.
+    /// </summary>
+    public double? PixelSizeMm { get; set; } = null;
+
+    /// <summary>
     /// The total grid size (in mm) in the x-direction.
     /// If left as the default, the size will be calculated from the max field size.
     /// </summary>
@@ -60,6 +68,15 @@ public class FluenceOptions
     /// Sets how many processors to use for fluence creation
     /// </summary>
     public int MaxParallelism { get; set; } = Environment.ProcessorCount;
+
+    /// <summary>
+    /// Creates options with square pixels of the given size (in mm).
+    /// </summary>
+    /// <param name="pixelSizeMm">The pixel size (in mm).</param>
+    public FluenceOptions(double pixelSizeMm)
+    {
+        PixelSizeMm = pixelSizeMm;
+    }
 
     /// <summary>
     /// Creates options with an explicit grid resolution.

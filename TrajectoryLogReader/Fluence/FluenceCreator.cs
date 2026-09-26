@@ -54,7 +54,18 @@ public class FluenceCreator
     public FieldFluence Create(FluenceOptions options, IFieldDataCollection fieldData)
     {
         var data = fieldData.ToList();
-        var maxExtent = CalculateMaxExtent(data, out var jawOutlines, options);
+
+        var workItems = new List<(IFieldData s, float deltaMu)>();
+
+        foreach (var s in data)
+        {
+            if (s.DeltaMu > options.MinDeltaMu && (!options.ExcludeBeamHolds || !s.IsBeamHold()))
+                workItems.Add((s, s.DeltaMu));
+        }
+
+        // Only snapshots that deliver fluence determine the grid extent, unless there are none
+        var extentData = workItems.Count > 0 ? workItems.Select(x => x.s) : data;
+        var maxExtent = CalculateMaxExtent(extentData, out var jawOutlines, options);
 
         // Apply margin to the calculated bounds
         var bounds = new Rect(
@@ -76,16 +87,13 @@ public class FluenceCreator
             bounds.Height = options.Height;
         }
 
-        var grid = new GridF(bounds, options.Cols, options.Rows);
+        var cols = options.Cols;
+        var rows = options.Rows;
 
-        // Prepare work items
-        var workItems = new List<(IFieldData s, float deltaMu)>();
+        if (options.PixelSizeMm is { } pixelSize)
+            bounds = SnapToPixelLattice(bounds, pixelSize, out cols, out rows);
 
-        foreach (var s in data)
-        {
-            if (s.DeltaMu > options.MinDeltaMu && (!options.ExcludeBeamHolds || !s.IsBeamHold()))
-                workItems.Add((s, s.DeltaMu));
-        }
+        var grid = new GridF(bounds, cols, rows);
 
         var useApproximate = options.UseApproximateFluence;
 
@@ -94,7 +102,7 @@ public class FluenceCreator
             {
                 MaxDegreeOfParallelism = options.MaxParallelism
             },
-            () => new GridF(bounds, options.Cols, options.Rows),
+            () => new GridF(bounds, cols, rows),
             (item, loopState, localGrid) => ProcessLocalGrid(options, item, localGrid, useApproximate),
             (localGrid) =>
             {
@@ -250,6 +258,26 @@ public class FluenceCreator
             : new List<Point[]>();
 
         return new Rect(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    /// <summary>
+    /// Expands <paramref name="bounds"/> so that pixel centres lie on multiples of <paramref name="pixelSize"/>.
+    /// Fluences created with the same pixel size therefore share pixel positions, regardless of field size.
+    /// </summary>
+    private static Rect SnapToPixelLattice(Rect bounds, double pixelSize, out int cols, out int rows)
+    {
+        if (pixelSize <= 0)
+            throw new ArgumentException($"Pixel size must be greater than zero: {pixelSize}");
+
+        var xMin = Math.Floor(bounds.X / pixelSize + 0.5) - 0.5;
+        var xMax = Math.Ceiling((bounds.X + bounds.Width) / pixelSize - 0.5) + 0.5;
+        var yMin = Math.Floor(bounds.Y / pixelSize + 0.5) - 0.5;
+        var yMax = Math.Ceiling((bounds.Y + bounds.Height) / pixelSize - 0.5) + 0.5;
+
+        cols = (int)Math.Round(xMax - xMin);
+        rows = (int)Math.Round(yMax - yMin);
+
+        return new Rect(xMin * pixelSize, yMin * pixelSize, cols * pixelSize, rows * pixelSize);
     }
 
     private static Point RotatePoint(double x, double y, double cos, double sin)
