@@ -109,6 +109,9 @@ public class PlanModelReader
 
         var nControlPoints = beamSeq.GetSingleValue<int>(DicomTag.NumberOfControlPoints);
 
+        if (beamSeq.Contains(DicomTag.FinalCumulativeMetersetWeight))
+            beam.FinalCumulativeMetersetWeight = beamSeq.GetSingleValue<float>(DicomTag.FinalCumulativeMetersetWeight);
+
         var radType = beamSeq.GetSingleValueOrDefault(DicomTag.RadiationType, string.Empty);
         if (Enum.TryParse<RadiationType>(radType, true, out var rt))
         {

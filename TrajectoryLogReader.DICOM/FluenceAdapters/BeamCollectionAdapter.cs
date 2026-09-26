@@ -53,7 +53,7 @@ public class BeamCollectionAdapter : IFieldDataCollection
             var cp1 = _beam.ControlPoints[index + 1];
 
             var cpInterp = ControlPointInterpolator.Interpolate(cp0, cp1, cpFrac);
-            var mu = cpInterp.CumulativeMetersetWeight * _beam.MU;
+            var mu = _beam.GetCumulativeMu(cpInterp.CumulativeMetersetWeight);
 
             yield return new BeamFieldDataAdapter(cpInterp, mu - prevMu, _beam);
 
@@ -63,7 +63,7 @@ public class BeamCollectionAdapter : IFieldDataCollection
 
         // Include the final control point to ensure we account for the total dose
         var cpLast = _beam.ControlPoints[maxIndex];
-        var muLast = cpLast.CumulativeMetersetWeight * _beam.MU;
+        var muLast = _beam.GetCumulativeMu(cpLast.CumulativeMetersetWeight);
 
         // Only yield if there is remaining MU or if it's the only point (to show static fields correctly)
         // However, for consistency, we always yield the final state to reach the total MU.

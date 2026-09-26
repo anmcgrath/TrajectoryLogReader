@@ -24,6 +24,25 @@ public class BeamModel
     public IMLCModel? Mlc { get; set; }
 
     /// <summary>
+    /// The cumulative meterset weight at the end of the beam. Control point cumulative meterset weights
+    /// are relative to this value, which is not necessarily 1. If not set, the last control point's
+    /// cumulative meterset weight is used.
+    /// </summary>
+    public float? FinalCumulativeMetersetWeight { get; set; }
+
+    /// <summary>
+    /// Returns the MU delivered up to the cumulative meterset weight <paramref name="cumulativeMetersetWeight"/>.
+    /// </summary>
+    public float GetCumulativeMu(float cumulativeMetersetWeight)
+    {
+        var finalWeight = FinalCumulativeMetersetWeight ?? ControlPoints.LastOrDefault()?.CumulativeMetersetWeight ?? 0;
+        if (finalWeight <= 0)
+            throw new InvalidOperationException($"Final cumulative meterset weight must be > 0: {finalWeight}");
+
+        return cumulativeMetersetWeight / finalWeight * MU;
+    }
+
+    /// <summary>
     /// Calculates the Average Leaf Pair Opening (ALPO) for this sub-beam.
     /// ALPO measures the average gap between opposing MLC leaves for leaf pairs within the jaw opening.
     /// </summary>
