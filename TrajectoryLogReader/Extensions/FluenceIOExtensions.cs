@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using TrajectoryLogReader.Fluence;
 
@@ -28,7 +29,7 @@ public static class FluenceIOExtensions
         {
             for (int j = 0; j < cols; j++)
             {
-                sb.Append(grid.GetData(i, j));
+                sb.Append(grid.GetData(j, i).ToString(CultureInfo.InvariantCulture));
                 if (j != cols - 1)
                     sb.Append("\t");
             }
@@ -42,23 +43,24 @@ public static class FluenceIOExtensions
 
     /// <summary>
     /// Saves the fluence grid to a PTW-Image File Format (.dat) file.
+    /// Coordinates are pixel centres in mm, with lines written from the top (+Y) down.
     /// </summary>
     /// <param name="grid">The field fluence.</param>
     /// <param name="fileName">The output file name.</param>
     public static void SaveToDat(this IGrid<float> grid, string fileName)
     {
+        static string Format(double value) => value.ToString("F3", CultureInfo.InvariantCulture);
+
         var sb = new StringBuilder();
         // write header
         sb.AppendLine("PTW-Image File Format");
         sb.AppendLine("Version\t1.0");
         sb.AppendLine($"PIXELSPERLINE\t{grid.Cols}");
         sb.AppendLine($"LINESPERIMAGE\t{grid.Rows}");
-        sb.AppendLine($"XRESOLUTION\t{(grid.XRes * 10):N3}");
-        sb.AppendLine($"YRESOLUTION\t{(grid.YRes * 10):N3}");
-        var x0 = grid.Bounds.X;
-        var y0 = grid.Bounds.Y;
-        sb.AppendLine($"XCOORDINATE\t{(x0 * 10):N3}");
-        sb.AppendLine($"YCOORDINATE\t{(y0 * 10):N3}");
+        sb.AppendLine($"XRESOLUTION\t{Format(grid.XRes)}");
+        sb.AppendLine($"YRESOLUTION\t{Format(grid.YRes)}");
+        sb.AppendLine($"XCOORDINATE\t{Format(grid.GetX(0))}");
+        sb.AppendLine($"YCOORDINATE\t{Format(grid.GetY(grid.Rows - 1))}");
         sb.AppendLine("OFFSET\t\t0.00");
         sb.AppendLine("UNIT\t\tGy");
         sb.AppendLine("SOFTWARE\tLOGFILEANALYSER");
@@ -67,17 +69,19 @@ public static class FluenceIOExtensions
         // x coords
         var xCoords = Enumerable
             .Range(0, grid.Cols)
-            .Select(x => $"{(10 * x * grid.XRes + 10 * x0):N3}");
+            .Select(x => Format(grid.GetX(x)));
 
         sb.AppendLine($"0;" + string.Join("\t", xCoords));
 
         var cols = grid.Cols;
         for (int i = 0; i < grid.Rows; i++)
         {
-            sb.Append($"{(10 * y0 - 10 * grid.YRes * i):N3}\t");
+            // Grid row 0 is at the bottom (-Y), lines are written from the top
+            var row = grid.Rows - 1 - i;
+            sb.Append($"{Format(grid.GetY(row))}\t");
             for (int j = 0; j < cols; j++)
             {
-                sb.Append($"{(grid.GetData(i, j)):N3}");
+                sb.Append(Format(grid.GetData(j, row)));
                 if (j != cols - 1)
                     sb.Append("\t");
             }

@@ -43,12 +43,12 @@ public interface IGrid<T>
     T Interpolate(double x, double y, T valIfNotFound = default(T));
 
     /// <summary>
-    /// Returns the data at <paramref name="row"/> and <paramref name="col"/> 
+    /// Returns the data at <paramref name="col"/> and <paramref name="row"/>
     /// </summary>
-    /// <param name="row"></param>
     /// <param name="col"></param>
+    /// <param name="row"></param>
     /// <returns></returns>
-    T GetData(int row, int col);
+    T GetData(int col, int row);
 
     /// <summary>
     /// Returns the x value at the centre of col <paramref name="col"/>
