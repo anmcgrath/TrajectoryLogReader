@@ -12,6 +12,8 @@ using System.Linq;
 
 public static class DicomFluenceExtensions
 {
+    private const double IsocentreDistanceMm = 1000;
+
     /// <summary>
     /// Saves a fluence map as a DICOM RT Image for interoperability with clinical tooling.
     /// The resulting dataset uses derived RTIMAGE semantics and encodes fluence as a
@@ -27,7 +29,8 @@ public static class DicomFluenceExtensions
     /// <summary>
     /// Saves a numeric grid as a DICOM RT Image. Pixel values are linearly rescaled into
     /// unsigned 16-bit storage, with the rescale slope/intercept recorded so that the
-    /// original floating-point values can be reconstructed downstream.
+    /// original floating-point values can be reconstructed downstream. The image is placed
+    /// in the isocentre plane, with the first row at the top (+Y) of the grid.
     /// </summary>
     /// <param name="grid">The fluence-like grid to save (units are user-defined).</param>
     /// <param name="fileName">The destination DICOM file path.</param>
@@ -42,8 +45,8 @@ public static class DicomFluenceExtensions
         int cols = grid.Cols;
 
         // 1. Calculate Scaling (Map float grid to 16-bit unsigned integer)
-        float maxVal = fluenceGrid.Cast<float>().Max();
-        float minVal = fluenceGrid.Cast<float>().Min();
+        float maxVal = fluenceGrid.Max();
+        float minVal = fluenceGrid.Min();
 
         // We use a small epsilon to avoid division by zero if grid is empty
         double range = Math.Max(maxVal - minVal, 1e-10);
@@ -53,11 +56,14 @@ public static class DicomFluenceExtensions
         ushort[] pixelData = new ushort[rows * cols];
         for (int i = 0; i < rows; i++)
         {
-            int rowOffset = i * cols;
+            // DICOM rows run from the top (+Y) down, grid row 0 is at the bottom (-Y)
+            int pixelRowOffset = i * cols;
+            int gridRowOffset = (rows - 1 - i) * cols;
             for (int j = 0; j < cols; j++)
             {
                 // SV = (Value - Intercept) / Slope
-                pixelData[rowOffset + j] = (ushort)((fluenceGrid[rowOffset + j] - rescaleIntercept) / rescaleSlope);
+                pixelData[pixelRowOffset + j] =
+                    (ushort)Math.Round((fluenceGrid[gridRowOffset + j] - rescaleIntercept) / rescaleSlope);
             }
         }
 
@@ -81,12 +87,16 @@ public static class DicomFluenceExtensions
         dataset.Add(DicomTag.ImagePlanePixelSpacing,
             $"{spacingY.ToString("G12", CultureInfo.InvariantCulture)}\\{spacingX.ToString("G12", CultureInfo.InvariantCulture)}");
 
-        // RT Image Position: X and Y of the top-left pixel relative to Beam Central Axis
-        // Centering the grid:
-        double posX = -(cols * spacingX / 2.0);
-        double posY = -(rows * spacingY / 2.0);
+        // RT Image Position: X and Y of the centre of the top-left pixel relative to the beam central axis
+        double posX = grid.GetX(0);
+        double posY = grid.GetY(rows - 1);
         dataset.Add(DicomTag.RTImagePosition,
             $"{posX.ToString("G10", CultureInfo.InvariantCulture)}\\{posY.ToString("G10", CultureInfo.InvariantCulture)}");
+
+        // The fluence is defined in the isocentre plane
+        dataset.Add(DicomTag.RTImagePlane, "NORMAL");
+        dataset.Add(DicomTag.RadiationMachineSAD, IsocentreDistanceMm.ToString(CultureInfo.InvariantCulture));
+        dataset.Add(DicomTag.RTImageSID, IsocentreDistanceMm.ToString(CultureInfo.InvariantCulture));
 
         // --- IMAGE STRUCTURE ---
         dataset.Add(DicomTag.SamplesPerPixel, (ushort)1);
