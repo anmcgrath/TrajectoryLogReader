@@ -91,19 +91,19 @@ public class GridF : IGrid<float>
     }
 
     /// <summary>
-    /// Returns the physical X coordinate for the given column index.
+    /// Returns the physical X coordinate of the centre of the given column.
     /// </summary>
     public double GetX(int col)
     {
-        return Bounds.X + col * XRes;
+        return Bounds.X + (col + 0.5) * XRes;
     }
 
     /// <summary>
-    /// Returns the physical Y coordinate for the given row index.
+    /// Returns the physical Y coordinate of the centre of the given row.
     /// </summary>
     public double GetY(int row)
     {
-        return Bounds.Y + row * YRes;
+        return Bounds.Y + (row + 0.5) * YRes;
     }
 
     public float[] Flatten() => Data;
@@ -532,6 +532,8 @@ public class GridF : IGrid<float>
 
     /// <summary>
     /// Bilinearly interpolates the grid value at the specified physical coordinates (x, y).
+    /// Pixel values are located at pixel centres; between the outermost pixel centres and the
+    /// grid bounds the edge value is used.
     /// </summary>
     /// <param name="x">X coordinate in mm.</param>
     /// <param name="y">Y coordinate in mm.</param>
@@ -542,24 +544,17 @@ public class GridF : IGrid<float>
         if (!Bounds.Contains(x, y))
             return valIfNotFound;
 
-        if (Cols <= 1 || Rows <= 1)
-            return valIfNotFound;
+        // Fractional column/row relative to pixel centres, held at the edge pixels
+        var colF = Math.Min(Math.Max((x - Bounds.X) / XRes - 0.5, 0), Cols - 1);
+        var rowF = Math.Min(Math.Max((y - Bounds.Y) / YRes - 0.5, 0), Rows - 1);
 
-        var xi1 = GetCol(x);
-        var yi1 = GetRow(y);
+        var xi1 = Math.Min((int)colF, Math.Max(Cols - 2, 0));
+        var yi1 = Math.Min((int)rowF, Math.Max(Rows - 2, 0));
+        var xi2 = Math.Min(xi1 + 1, Cols - 1);
+        var yi2 = Math.Min(yi1 + 1, Rows - 1);
 
-        // Ensure we don't go out of bounds for the second point
-        if (xi1 >= Cols - 1) xi1 = Cols - 2;
-        if (yi1 >= Rows - 1) yi1 = Rows - 2;
-
-        var xi2 = xi1 + 1;
-        var yi2 = yi1 + 1;
-
-        var x1 = GetX(xi1);
-        var x2 = GetX(xi2);
-
-        var y1 = GetY(yi1);
-        var y2 = GetY(yi2);
+        var tx = colF - xi1;
+        var ty = rowF - yi1;
 
         // Optimization: Pre-calculate row offsets
         int row1Offset = yi1 * Cols;
@@ -570,17 +565,8 @@ public class GridF : IGrid<float>
         var fX2Y1 = Data[row1Offset + xi2];
         var fX2Y2 = Data[row2Offset + xi2];
 
-        return InterpXy(x, y, x1, x2, fX1Y1, fX2Y1, fX1Y2, fX2Y2, y1, y2);
-    }
-
-    private static float InterpXy(double x, double y, double x1, double x2, double fX1Y1, double fX2Y1,
-        float fX1Y2,
-        float fX2Y2, double y1, double y2)
-    {
-        var fxY1 = (x2 - x) / (x2 - x1) * fX1Y1 + (x - x1) / (x2 - x1) * fX2Y1;
-        var fxY2 = (x2 - x) / (x2 - x1) * fX1Y2 + (x - x1) / (x2 - x1) * fX2Y2;
-        var fxy = (y2 - y) / (y2 - y1) * fxY1 + (y - y1) / (y2 - y1) * fxY2;
-
-        return (float)fxy;
+        var fxY1 = (1 - tx) * fX1Y1 + tx * fX2Y1;
+        var fxY2 = (1 - tx) * fX1Y2 + tx * fX2Y2;
+        return (float)((1 - ty) * fxY1 + ty * fxY2);
     }
 }

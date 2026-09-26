@@ -122,19 +122,20 @@ public class GridFTests
     public void GetX_GetY_ReturnCorrectPhysicalCoordinates()
     {
         // Width 10, Cols 5 -> XRes 2. Center 0. Bounds X -5.
-        // Col 0: -5
-        // Col 1: -3
-        // Col 2: -1
-        // Col 3: 1
-        // Col 4: 3
+        // Pixel centres:
+        // Col 0: -4
+        // Col 1: -2
+        // Col 2: 0
+        // Col 3: 2
+        // Col 4: 4
         var grid = new GridF(10, 10, 5, 5);
 
-        grid.GetX(0).ShouldBe(-5.0);
-        grid.GetX(2).ShouldBe(-1.0);
-        grid.GetX(4).ShouldBe(3.0);
+        grid.GetX(0).ShouldBe(-4.0);
+        grid.GetX(2).ShouldBe(0.0);
+        grid.GetX(4).ShouldBe(4.0);
 
         // Similar for Y
-        grid.GetY(0).ShouldBe(-5.0);
+        grid.GetY(0).ShouldBe(-4.0);
     }
 
     [Test]
@@ -147,13 +148,17 @@ public class GridFTests
         grid[1, 0] = 0;
         grid[1, 1] = 10;
 
-        // Interpolate at (-2.5, -2.5) -> Middle of the square formed by these points
+        // Pixel centres are at -2.5 and 2.5.
+        // Interpolate at (0, 0) -> Middle of the square formed by these points
+        grid.Interpolate(0, 0).ShouldBe(5.0f);
 
-        grid.Interpolate(-2.5, -2.5).ShouldBe(5.0f);
+        // Point exactly on pixel centre
+        grid.Interpolate(-2.5, -2.5).ShouldBe(0f);
+        grid.Interpolate(2.5, 2.5).ShouldBe(10f);
 
-        // Point exactly on grid point
+        // Between the outer pixel centre and the grid edge, the edge value is used
         grid.Interpolate(-5, -5).ShouldBe(0f);
-        grid.Interpolate(0, 0).ShouldBe(10f);
+        grid.Interpolate(5, 5).ShouldBe(10f);
     }
 
     [Test]
@@ -181,10 +186,10 @@ public class GridFTests
         var bounds = new Rect { X = 10, Y = 20, Width = 10, Height = 20 };
         var grid = new GridF(bounds, 5, 4);
 
-        grid.GetX(0).ShouldBe(10.0);
-        grid.GetX(1).ShouldBe(12.0);
-        grid.GetY(0).ShouldBe(20.0);
-        grid.GetY(1).ShouldBe(25.0);
+        grid.GetX(0).ShouldBe(11.0);
+        grid.GetX(1).ShouldBe(13.0);
+        grid.GetY(0).ShouldBe(22.5);
+        grid.GetY(1).ShouldBe(27.5);
     }
 
     [Test]
@@ -212,11 +217,11 @@ public class GridFTests
     {
         // 2x2 grid. 
         // Bounds (10, 10), Width 2, Height 2.
-        // XRes 1, YRes 1.
-        // (10, 10) -> [0,0]
-        // (11, 10) -> [0,1]
-        // (10, 11) -> [1,0]
-        // (11, 11) -> [1,1]
+        // XRes 1, YRes 1. Pixel centres:
+        // (10.5, 10.5) -> [0,0]
+        // (11.5, 10.5) -> [0,1]
+        // (10.5, 11.5) -> [1,0]
+        // (11.5, 11.5) -> [1,1]
         var bounds = new Rect { X = 10, Y = 10, Width = 2, Height = 2 };
         var grid = new GridF(bounds, 2, 2);
 
@@ -225,11 +230,12 @@ public class GridFTests
         grid[1, 0] = 0;
         grid[1, 1] = 10;
 
-        // Interpolate at (10.5, 10.5). Should be center of square.
+        // Interpolate at (11, 11). Should be center of square.
         // Top edge (row 0) goes 0 -> 10. Mid is 5.
         // Bottom edge (row 1) goes 0 -> 10. Mid is 5.
         // So 5.
-        grid.Interpolate(10.5, 10.5).ShouldBe(5.0f);
+        grid.Interpolate(11, 11).ShouldBe(5.0f);
+        grid.Interpolate(10.5, 10.5).ShouldBe(0f);
 
         // Outside
         grid.Interpolate(0, 0, -1).ShouldBe(-1);

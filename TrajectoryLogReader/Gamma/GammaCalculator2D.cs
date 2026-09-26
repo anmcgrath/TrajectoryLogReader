@@ -108,14 +108,14 @@ public static class GammaCalculator2D
         var comparedMax = compared.Max();
         var referenceMax = reference.Max();
 
-        // Build resampled coordinate arrays
+        // Build resampled coordinate arrays, starting at the first pixel centre
         var resampledX = new double[resampledSizeX];
         for (int i = 0; i < resampledSizeX; i++)
-            resampledX[i] = compared.Bounds.X + i * xSearchRes;
+            resampledX[i] = compared.GetX(0) + i * xSearchRes;
 
         var resampledY = new double[resampledSizeY];
         for (int i = 0; i < resampledSizeY; i++)
-            resampledY[i] = compared.Bounds.Y + i * ySearchRes;
+            resampledY[i] = compared.GetY(0) + i * ySearchRes;
 
         return new GammaContext
         {
@@ -158,8 +158,9 @@ public static class GammaCalculator2D
     {
         var refCols = reference.Cols;
         var refRows = reference.Rows;
-        var refXMin = reference.Bounds.X;
-        var refYMin = reference.Bounds.Y;
+        // Reference samples are located at pixel centres
+        var refXMin = reference.GetX(0);
+        var refYMin = reference.GetY(0);
         var refXRes = reference.XRes;
         var refYRes = reference.YRes;
 

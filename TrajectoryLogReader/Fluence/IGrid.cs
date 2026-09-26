@@ -51,14 +51,14 @@ public interface IGrid<T>
     T GetData(int row, int col);
 
     /// <summary>
-    /// Returns the x value at col <paramref name="col"/>
+    /// Returns the x value at the centre of col <paramref name="col"/>
     /// </summary>
     /// <param name="col"></param>
     /// <returns></returns>
     double GetX(int col);
 
     /// <summary>
-    /// Returns the y value at row <paramref name="row"/>
+    /// Returns the y value at the centre of row <paramref name="row"/>
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>

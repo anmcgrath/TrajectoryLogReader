@@ -115,6 +115,36 @@ public class PhysicistGammaTests
     }
 
     [Test]
+    public void Gamma_Same_Field_At_Different_Resolutions_Passes()
+    {
+        // Scenario: A 100 x 100 mm field centred in a 200 mm grid, sampled at 1 mm and 4 mm.
+        // Pixel values must be located at pixel centres, otherwise the grids are
+        // misaligned by half the difference in pixel size and the field edges fail.
+        GridF Field(int n)
+        {
+            var res = 200.0 / n;
+            var grid = new GridF(new Rect(-100, -100, 200, 200), n, n);
+            for (int r = 0; r < n; r++)
+            {
+                for (int c = 0; c < n; c++)
+                {
+                    // Fraction of each pixel covered by [-50, 50] in x and y
+                    double Cover(double lo) => Math.Max(0, Math.Min(lo + res, 50) - Math.Max(lo, -50)) / res;
+                    grid.SetData(c, r, (float)(100 * Cover(-100 + c * res) * Cover(-100 + r * res)));
+                }
+            }
+
+            return grid;
+        }
+
+        var fine = Field(200);
+        var coarse = Field(50);
+
+        var result = GammaCalculator2D.Calculate(new GammaParameters2D(1, 1, true, 10), fine, coarse);
+        result.FracPass.ShouldBe(1);
+    }
+
+    [Test]
     public void Gamma_Threshold_Ignores_Low_Dose_Points()
     {
         var refGrid = CreateGrid(5, 5, (_, _) => 1f);
