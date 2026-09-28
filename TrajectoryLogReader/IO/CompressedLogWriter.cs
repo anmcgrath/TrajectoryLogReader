@@ -389,9 +389,12 @@ public static class CompressedLogWriter
     /// </summary>
     private static float NormalizeAngularDeltaFloat(float delta)
     {
-        while (delta > 180)
+        // Modulo rather than repeated subtraction: a sentinel such as float.MaxValue is too large
+        // for +/-360 to change it, so a loop would never terminate.
+        delta %= 360;
+        if (delta > 180)
             delta -= 360;
-        while (delta < -180)
+        else if (delta < -180)
             delta += 360;
         return delta;
     }
@@ -514,9 +517,13 @@ public static class CompressedLogWriter
         long halfCircle = (long)(180.0f * scale);
         long fullCircle = halfCircle * 2;
 
-        while (delta > halfCircle)
+        if (fullCircle <= 0)
+            return delta;
+
+        delta %= fullCircle;
+        if (delta > halfCircle)
             delta -= fullCircle;
-        while (delta < -halfCircle)
+        else if (delta < -halfCircle)
             delta += fullCircle;
 
         return delta;

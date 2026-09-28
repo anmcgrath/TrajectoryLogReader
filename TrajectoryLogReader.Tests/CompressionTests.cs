@@ -357,6 +357,23 @@ public class CompressionTests
 
     #endregion
 
+    [Test]
+    public void Compress_SentinelGantryValue_ThrowsInsteadOfHanging()
+    {
+        // Some kV setup logs record float.MaxValue for gantry; normalising its delta by repeatedly
+        // subtracting 360 never terminated.
+        var original = LogReader.ReadBinary(TestFiles.GetPath("AnonFile0.bin"));
+        var gantry = original.AxisData[original.Header.GetAxisIndex(Axis.GantryRtn)];
+        gantry.Data[gantry.SamplesPerSnapshot] = float.MaxValue;
+        var compressedPath = Path.Combine(_tempDir, "compressed.cbin");
+
+        var write = Task.Run(() => CompressedLogWriter.Write(original, compressedPath));
+
+        write.ContinueWith(_ => { }).Wait(TimeSpan.FromSeconds(30)).ShouldBeTrue("Compression did not finish");
+        write.IsFaulted.ShouldBeTrue();
+        write.Exception!.InnerException.ShouldBeOfType<InvalidDataException>();
+    }
+
     #region Async Tests
 
     [Test]
