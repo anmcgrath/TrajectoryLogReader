@@ -138,11 +138,14 @@ namespace TrajectoryLogReader.Log
             var stride = cpData.SamplesPerSnapshot;
 
 
+            // The previous beam ends at this control point and dwells there for a few snapshots
+            // while the actual MU catches up with the expected, so this beam starts once the
+            // control point moves past it.
             for (int i = 0; i < cpData.NumSnapshots; i++)
             {
                 var cp = cpData.Data[i * stride + 0];
-                if (cp >= ControlPoint)
-                    return i + 1; // +1 as the prev beam must get to the cp index
+                if (cp > ControlPoint)
+                    return i;
             }
 
             return -2;

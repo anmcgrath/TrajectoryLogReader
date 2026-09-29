@@ -92,4 +92,44 @@ public class TrajectoryLogTests
         log.FilePath.ShouldBe("F-Path");
         log.SubBeams[0].Name.ShouldBe("SB-Name");
     }
+
+    [Test]
+    public void SubBeam_starts_once_the_control_point_moves_past_the_previous_beams_end()
+    {
+        // The first beam reaches control point 1 and dwells there (snapshots 2-4) while the
+        // actual MU catches up with the expected; that tail belongs to the first beam.
+        var expectedCps = new[] { 0f, 0.5f, 1f, 1f, 1f, 2f, 2.5f, 3f };
+        var cpData = new AxisData(expectedCps.Length, 2);
+        for (int i = 0; i < expectedCps.Length; i++)
+        {
+            cpData.Data[i * 2] = expectedCps[i];
+            cpData.Data[i * 2 + 1] = expectedCps[i];
+        }
+
+        var log = new TrajectoryLog
+        {
+            Header = new Header
+            {
+                Version = 5,
+                SamplingIntervalInMS = 20,
+                NumAxesSampled = 1,
+                AxesSampled = new[] { Axis.ControlPoint },
+                SamplesPerAxis = new[] { 1 },
+                NumberOfSubBeams = 2,
+                NumberOfSnapshots = expectedCps.Length
+            },
+            MetaData = new MetaData(),
+            AxisData = new[] { cpData }
+        };
+        log.SubBeams = new List<SubBeam>
+        {
+            new SubBeam(log) { ControlPoint = 0, SequenceNumber = 0 },
+            new SubBeam(log) { ControlPoint = 1, SequenceNumber = 1 }
+        };
+
+        log.SubBeams[0].StartIndex.ShouldBe(0);
+        log.SubBeams[0].EndIndex.ShouldBe(4);
+        log.SubBeams[1].StartIndex.ShouldBe(5);
+        log.SubBeams[1].EndIndex.ShouldBe(7);
+    }
 }
